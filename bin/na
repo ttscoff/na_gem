@@ -66,8 +66,8 @@ class App
         cmd = ['add']
         cmd.push('--note') if global_options[:note]
         cmd.concat(['--priority', global_options[:priority]]) if global_options[:priority]
-        cmd.push(ARGV.unshift(@command))
-        p cmd
+        cmd.push(ARGV.unshift($first_arg)) if ARGV.count.positive?
+
         exit run(cmd)
       end
 
@@ -190,7 +190,7 @@ class App
         end
       end
 
-      save_working_dir(File.expand_path(target))
+      NA.save_working_dir(File.expand_path(target))
       NA.add_action(target, action, note)
     end
   end
@@ -304,7 +304,7 @@ class App
       if ARGV.count.positive?
         cmd.concat(ARGV.unshift($first_arg))
       end
-      p cmd
+
       exit run(cmd)
     when SystemExit
       false
