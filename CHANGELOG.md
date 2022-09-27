@@ -1,3 +1,15 @@
+### 1.0.2
+
+2022-09-27 14:18
+
+#### IMPROVED
+
+- When using gum input, make the input field the width of the terminal
+
+#### FIXED
+
+- -a with no arguments will work for backward compatability
+
 ### 1.0.1
 
 2022-09-27 12:52
