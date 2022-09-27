@@ -3,8 +3,8 @@
 
 
 [![Gem](https://img.shields.io/gem/v/na.svg)](https://rubygems.org/gems/na)
-[![Travis](https://app.travis-ci.com/ttscoff/na_gem.svg?branch=master)](https://travis-ci.org/makenew/na_gem)
-[![GitHub license](https://img.shields.io/github/license/ttscoff/na.svg)](./LICENSE.txt)
+[![Travis](https://app.travis-ci.com/ttscoff/na_gem.svg?branch=main)](https://travis-ci.org/makenew/na_gem)
+[![GitHub license](https://img.shields.io/github/license/ttscoff/na_gem.svg)](./LICENSE.txt)
 
 **A command line tool for adding and listing per-project todos.**
 
