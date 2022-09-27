@@ -5,4 +5,3 @@
 #### IMPROVED
 
 - Backwards compatibility with the Bash version of NA
-
