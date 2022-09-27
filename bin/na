@@ -130,7 +130,7 @@ class App
       action = if args.count.positive?
                  args.join(' ').strip
                elsif TTY::Which.exist?('gum')
-                 `gum input --placeholder "Enter a task"`.strip
+                 `gum input --placeholder "Enter a task" --char-limit=500 --width=#{TTY::Screen.columns}`.strip
                else
                  puts NA::Color.template('{bm}Enter task:{x}')
                  reader.read_line(NA::Color.template('{by}> {bw}')).strip

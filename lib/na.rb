@@ -4,6 +4,7 @@ require 'na/version.rb'
 # you just need to require this one file in your bin file
 require 'fileutils'
 require 'shellwords'
+require 'tty-screen'
 require 'tty-reader'
 require 'tty-which'
 require 'na/colors.rb'
