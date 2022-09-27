@@ -1,0 +1,5 @@
+= na
+
+Generate this with
+    na _doc
+After you have described your command line interface

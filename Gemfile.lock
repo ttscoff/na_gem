@@ -1,0 +1,35 @@
+PATH
+  remote: .
+  specs:
+    na (0.0.1)
+      gli (~> 2.21.0)
+      tty-reader (~> 0.9, >= 0.9.0)
+      tty-which (~> 0.5, >= 0.5.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    gli (2.21.0)
+    minitest (5.16.3)
+    rake (0.9.6)
+    rdoc (4.3.0)
+    tty-cursor (0.7.1)
+    tty-reader (0.9.0)
+      tty-cursor (~> 0.7)
+      tty-screen (~> 0.8)
+      wisper (~> 2.0)
+    tty-screen (0.8.1)
+    tty-which (0.5.0)
+    wisper (2.0.1)
+
+PLATFORMS
+  arm64-darwin-20
+
+DEPENDENCIES
+  minitest (~> 5.14)
+  na!
+  rake (~> 0.9.2)
+  rdoc (~> 4.3)
+
+BUNDLED WITH
+   2.2.29

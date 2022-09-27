@@ -1,0 +1,153 @@
+#!/usr/bin/env ruby
+$LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
+require 'gli'
+require 'na'
+
+class App
+  extend GLI::App
+
+  program_desc 'Add and list next actions for the current project'
+
+  version Na::VERSION
+  hide_commands_without_desc true
+  autocomplete_commands false
+  wrap_help_text :one_line unless $stdout.isatty
+
+  subcommand_option_handling :normal
+  arguments :strict
+
+  config_file '.na.rc'
+
+  desc 'File extension to consider a todo file'
+  default_value 'taskpaper'
+  arg_name 'FILE_EXTENSION'
+  flag :ext
+
+  desc 'Tag to consider a next action'
+  default_value 'na'
+  arg_name 'TAG'
+  flag :na_tag
+
+  default_command :next
+
+  NA::Color.coloring = $stdin.isatty
+
+  desc 'Show next actions'
+  command %i[next show] do |c|
+    c.desc 'Recurse to depth'
+    c.default_value 1
+    c.arg_name 'DEPTH'
+    c.flag %i[d depth], type: :integer, must_match: /^\d+$/
+
+    c.desc 'Alternate tag to search for'
+    c.default_value 'na'
+    c.flag %i[t tag]
+
+    c.action do |global_options, options, _|
+      tag = options[:tag] == global_options[:na_tag] ? nil : options[:tag]
+      actions = NA.parse_actions(depth: options[:depth],
+                                 extension: global_options[:ext],
+                                 na_tag: global_options[:na_tag],
+                                 tag: tag)
+      if NA.find_files(depth: options[:depth], extension: global_options[:ext]).count > 1
+        puts actions.map { |action| action.pretty(template: { output: '%project%parent%action' }) }
+      else
+        puts actions.map { |action| action.pretty(template: { output: '%parent%action'}) }
+      end
+    end
+  end
+
+  desc 'Describe add here'
+  arg_name 'TASK'
+  command :add do |c|
+    c.desc 'Prompt for additional notes'
+    c.switch %i[n note]
+
+    c.desc 'Add a priority level 1-5'
+    c.flag %i[p priority], must_match: /[1-5]/, type: :integer, default_value: 0
+
+    c.action do |global_options, options, args|
+      reader = TTY::Reader.new
+      action = if args.count.positive?
+                 args.join(' ').strip
+               else
+                 if TTY::Which.exist?('gum')
+                   `gum input --placeholder "Enter a task"`.strip
+                 else
+                   puts NA::Color.template('{bm}Enter task:{x}')
+                   reader.read_line(NA::Color.template('{by}> {bw}')).strip
+                 end
+               end
+
+      if action.nil? || action.empty?
+        puts 'Empty input, cancelled'
+        Process.exit 1
+      end
+
+      if options[:priority]&.to_i&.positive?
+        action = "#{action.gsub(/@priority\(\d+\)/, '')} @priority(#{options[:priority]})"
+      end
+
+      na_tag = global_options[:na_tag]
+      action = "#{action.gsub(/@#{na_tag}/, '')} @#{na_tag}"
+
+      note = if options[:note]
+               if TTY::Which.exist?('gum')
+                 `gum write --placeholder "Enter a note" --width $(tput cols) --char-limit 0`.strip.split("\n")
+               else
+                 puts NA::Color.template('{bm}Enter a note, {bw}CTRL-d{bm} to end editing{bw}')
+                 reader.read_multiline
+               end
+             end
+
+      files = NA.find_files(depth: 1, extension: global_options[:ext])
+      target = files.count > 1 ? NA.select_file(files) : files[0]
+
+      NA.add_action(target, action, note)
+    end
+  end
+
+  desc 'Find actions matching a tag'
+  arg_name 'TAG [VALUE]'
+  command %i[find tagged] do |c|
+    c.desc 'Recurse to depth'
+    c.arg_name 'DEPTH'
+    c.default_value 1
+    c.flag %i[d depth], type: :integer, must_match: /^\d+$/
+
+    c.action do |global_options, options, args|
+      tag = args[0]
+      value = args.count >= 2 && args[1] !~ /^-/ ? args[1] : nil
+
+      actions = NA.parse_actions(depth: options[:depth], extension: global_options[:ext], na_tag: global_options[:na_tag], tag: tag, value: value)
+      if NA.find_files(depth: options[:depth], extension: global_options[:ext]).count > 1
+        puts actions.map { |action| action.pretty(template: { output: '%project%parent%action' }) }
+      else
+        puts actions.map { |action| action.pretty(template: {output: '%parent%action'}) }
+      end
+    end
+  end
+
+  pre do |global,command,options,args|
+    # Pre logic here
+    # Return true to proceed; false to abort and not call the
+    # chosen command
+    # Use skips_pre before a command to skip this block
+    # on that command only
+    true
+  end
+
+  post do |global,command,options,args|
+    # Post logic here
+    # Use skips_post before a command to skip this
+    # block on that command only
+  end
+
+  on_error do |exception|
+    # Error logic here
+    # return false to skip default error handling
+    true
+  end
+end
+
+exit App.run(ARGV)
