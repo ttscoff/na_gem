@@ -206,6 +206,26 @@ Global options such as todo extension and default next action tag can be stored 
 
 Example: `na --ext md --na_tag next initconfig --force`
 
+When this command is run, it doesn't include options for subcommands, but inserts placeholders for them. If you want to permanently set an option for a subcommand, you'll need to edit `~/.na.rc`. For example, if you wanted the `next` command to always recurse 2 levels deep, you could edit it to look like this:
+
+```yaml
+---
+:ext: taskpaper
+:na_tag: na
+:d: 1
+commands:
+  :next:
+    :depth: 2
+  :add: {}
+  :find: {}
+  :tagged: {}
+```
+
+Note that I created a new YAML dictionary inside of the `:next:` command, and added a `:depth:` key that matches the setting I want to make permanent.
+
+> **WARNING** Don't touch most of the settings at the top of the auto-generated file. Setting any of them to true will alter the way na interprets the commands you're running. Most of those options are there for backwards compatibility with the bash version of this tool and will eventually be removed.
+
+
 ### Prompt Hooks
 
 You can add a prompt command to your shell to have na automatically list your next actions when you `cd` into a directory. Add the appropriate command to your login file for your shell:
