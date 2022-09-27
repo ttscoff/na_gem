@@ -13,9 +13,6 @@ class App
   autocomplete_commands false
   wrap_help_text :one_line unless $stdout.isatty
 
-  subcommand_option_handling :normal
-  arguments :strict
-
   config_file '.na.rc'
 
   desc 'File extension to consider a todo file'
@@ -32,10 +29,14 @@ class App
 
   NA::Color.coloring = $stdin.isatty
 
+  desc 'Recurse to depth'
+  arg_name 'DEPTH'
+  default_value 1
+  flag %i[d depth], type: :integer, must_match: /^\d+$/
+
   desc 'Show next actions'
   command %i[next show] do |c|
     c.desc 'Recurse to depth'
-    c.default_value 1
     c.arg_name 'DEPTH'
     c.flag %i[d depth], type: :integer, must_match: /^\d+$/
 
@@ -44,13 +45,18 @@ class App
     c.flag %i[t tag]
 
     c.action do |global_options, options, _|
+      depth = options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
       tag = options[:tag] == global_options[:na_tag] ? nil : options[:tag]
-      actions = NA.parse_actions(depth: options[:depth],
+      actions = NA.parse_actions(depth: depth,
                                  extension: global_options[:ext],
                                  na_tag: global_options[:na_tag],
                                  tag: tag)
-      if NA.find_files(depth: options[:depth], extension: global_options[:ext]).count > 1
-        puts actions.map { |action| action.pretty(template: { output: '%project%parent%action' }) }
+      if NA.find_files(depth: depth, extension: global_options[:ext]).count > 1
+        if depth > 1
+          puts actions.map { |action| action.pretty(template: { output: '%filename%parent%action' }) }
+        else
+          puts actions.map { |action| action.pretty(template: { output: '%project%parent%action' }) }
+        end
       else
         puts actions.map { |action| action.pretty(template: { output: '%parent%action'}) }
       end
@@ -66,17 +72,19 @@ class App
     c.desc 'Add a priority level 1-5'
     c.flag %i[p priority], must_match: /[1-5]/, type: :integer, default_value: 0
 
+    c.desc 'Use a tag other than the default next action tag'
+    c.arg_name 'TAG'
+    c.flag %i[t tag]
+
     c.action do |global_options, options, args|
       reader = TTY::Reader.new
       action = if args.count.positive?
                  args.join(' ').strip
+               elsif TTY::Which.exist?('gum')
+                 `gum input --placeholder "Enter a task"`.strip
                else
-                 if TTY::Which.exist?('gum')
-                   `gum input --placeholder "Enter a task"`.strip
-                 else
-                   puts NA::Color.template('{bm}Enter task:{x}')
-                   reader.read_line(NA::Color.template('{by}> {bw}')).strip
-                 end
+                 puts NA::Color.template('{bm}Enter task:{x}')
+                 reader.read_line(NA::Color.template('{by}> {bw}')).strip
                end
 
       if action.nil? || action.empty?
@@ -89,6 +97,8 @@ class App
       end
 
       na_tag = global_options[:na_tag]
+      na_tag = options[:tag] unless options[:tag].nil?
+
       action = "#{action.gsub(/@#{na_tag}/, '')} @#{na_tag}"
 
       note = if options[:note]
@@ -101,6 +111,32 @@ class App
              end
 
       files = NA.find_files(depth: 1, extension: global_options[:ext])
+      if files.count == 0
+        print NA::Color.template('{by}No todo file found, create one? {w}(y/{g}N{w}){x} ')
+        res = reader.read_char
+        if res =~ /y/i
+          basename = File.expand_path('.').split('/').last
+          target = "#{basename}.#{global_options[:ext]}"
+          File.open(target, 'w') do |f|
+            content = <<~ENDCONTENT
+            Inbox: @inbox
+            #{basename}:
+            \tNew Features:
+            \tIdeas:
+            \tBugs:
+            Archive:
+            Search Definitions:
+            \tTop Priority @search(@priority = 5 and not @done)
+            \tHigh Priority @search(@priority > 3 and not @done)
+            \tMaybe @search(@maybe)
+            \tNext @search(@na and not @done and not project = \"Archive\")
+            ENDCONTENT
+            f.puts(content)
+          end
+          puts NA::Color.template("{y}Created {bw}#{target}{x}")
+          files = NA.find_files(depth: 1, extension: global_options[:ext])
+        end
+      end
       target = files.count > 1 ? NA.select_file(files) : files[0]
 
       NA.add_action(target, action, note)
@@ -116,11 +152,13 @@ class App
     c.flag %i[d depth], type: :integer, must_match: /^\d+$/
 
     c.action do |global_options, options, args|
+      depth = options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
+
       tag = args[0]
       value = args.count >= 2 && args[1] !~ /^-/ ? args[1] : nil
 
-      actions = NA.parse_actions(depth: options[:depth], extension: global_options[:ext], na_tag: global_options[:na_tag], tag: tag, value: value)
-      if NA.find_files(depth: options[:depth], extension: global_options[:ext]).count > 1
+      actions = NA.parse_actions(depth: depth, extension: global_options[:ext], na_tag: global_options[:na_tag], tag: tag, value: value)
+      if NA.find_files(depth: depth, extension: global_options[:ext]).count > 1
         puts actions.map { |action| action.pretty(template: { output: '%project%parent%action' }) }
       else
         puts actions.map { |action| action.pretty(template: {output: '%parent%action'}) }

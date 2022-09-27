@@ -60,6 +60,8 @@ module NA
               else
                 "#{tag}\\(#{value}\\)"
               end
+      else
+        tag = na_tag
       end
 
       files = find_files(depth: depth, extension: extension)
@@ -81,9 +83,7 @@ module NA
               parent.push(proj)
               indent_level = indent
             end
-          elsif line =~ /^[ \t]*- / && line =~ / #{na_tag}/ && line !~ / @done/
-            next if !tag.nil? && line !~ / #{tag}/
-
+          elsif line =~ /^[ \t]*- / && line =~ / #{tag}/ && line !~ / @done/
             action = line.sub(/^[ \t]*- /, '').sub(/ #{na_tag}/, '')
             actions.push(NA::Action.new(file, File.basename(file, ".#{extension}"), parent, action))
           end

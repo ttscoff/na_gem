@@ -23,7 +23,7 @@ module NA
         parent: '{c}',
         parent_divider: '{xw}/',
         action: '{g}',
-        project: '{bc}',
+        project: '{xbk}',
         tags: '{m}',
         value_parens: '{m}',
         values: '{y}',
@@ -42,7 +42,7 @@ module NA
 
       project = NA::Color.template("#{template[:project]}#{@project}{x} ")
 
-      filename = NA::Color.template("#{template[:file]}#{File.basename(@file, ".#{extension}")} {x}")
+      filename = NA::Color.template("#{template[:file]}#{@file.sub(/^\.\//, '').sub(/\.#{extension}$/, '')} {x}")
 
       action = NA::Color.template("#{template[:action]}#{@action}{x}")
       action = action.highlight_tags(color: template[:tags], parens: template[:value_parens], value: template[:values])
