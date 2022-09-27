@@ -1,17 +1,19 @@
 # na
 
+<!--README-->
+<!--GITHUB-->
 [![Gem](https://img.shields.io/gem/v/doing.svg)](https://rubygems.org/gems/na)
 [![Travis](https://app.travis-ci.com/ttscoff/doing.svg?branch=master)](https://travis-ci.org/makenew/na_gem)
 [![GitHub license](https://img.shields.io/github/license/ttscoff/doing.svg)](./LICENSE.txt)
-
+<!--END GITHUB-->
 **A command line tool for adding and listing per-project todos.**
 
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
-<!--README-->
+
 The current version of `na` is <!--VER-->1.0.1<!--END VER-->.
 
-`na` is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
+`na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
 
 Used with Taskpaper files, it can add new todo items quickly from the command line, automatically tagging them as next actions.
 
