@@ -66,7 +66,7 @@ class App
         cmd = ['add']
         cmd.push('--note') if global_options[:note]
         cmd.concat(['--priority', global_options[:priority]]) if global_options[:priority]
-        cmd.push(ARGV.unshift($first_arg)) if ARGV.count.positive?
+        cmd.push(ARGV.unshift($first_arg)) if ARGV.count > 2
 
         exit run(cmd)
       end
