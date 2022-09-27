@@ -50,6 +50,9 @@ class App
   desc 'Show next actions'
   arg_name 'OPTIONAL_QUERY'
   command %i[next show] do |c|
+    c.example 'doing next', desc: 'display the next actions from any todo files in the current directory'
+    c.example 'doing next -d 3', desc: 'display the next actions from the current directory and its children, 3 levels deep'
+
     c.desc 'Recurse to depth'
     c.arg_name 'DEPTH'
     c.flag %i[d depth], type: :integer, must_match: /^\d+$/
@@ -97,8 +100,17 @@ class App
   end
 
   desc 'Add a new next action'
+  long_desc 'Provides an easy way to store todos while you work. Add quick reminders and (if you set up Prompt Hooks)
+  they\'ll automatically display next time you enter the directory.
+
+  If multiple todo files are found in the current directory, a menu will allow you to pick to which
+  file the action gets added.'
   arg_name 'TASK'
   command :add do |c|
+    c.example 'na add "A cool feature I thought of @idea"', desc: 'Add a new action to the Inbox, including a tag'
+    c.example 'na add "A bug I need to fix" -p 4 -n',
+              desc: 'Add a new action to the Inbox, set its @priority to 4, and prompt for an additional note'
+
     c.desc 'Prompt for additional notes'
     c.switch %i[n note]
 
@@ -188,6 +200,10 @@ class App
   (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe`'
   arg_name 'PATTERN'
   command %i[find] do |c|
+    c.example 'na find feature +idea +swift', desc: 'Find all actions containing feature, idea, and swift'
+    c.example 'na find -x feature idea', desc: 'Find all actions containing the exact text "feature idea"'
+    c.example 'na find -d 3 swift obj-c', desc: 'Find all actions 3 directories deep containing either swift or obj-c'
+
     c.desc 'Match pattern exactly'
     c.switch %i[x exact]
 
@@ -231,6 +247,9 @@ class App
   e.g. `na tagged feature +maybe`'
   arg_name 'TAG [VALUE]'
   command %i[tagged] do |c|
+    c.example 'na tagged +maybe', desc: 'Show all actions tagged @maybe'
+    c.example 'na tagged -d 3 feature idea', desc: 'Show all actions tagged either @feature or @idea, recurse 3 levels'
+
     c.desc 'Recurse to depth'
     c.arg_name 'DEPTH'
     c.default_value 1

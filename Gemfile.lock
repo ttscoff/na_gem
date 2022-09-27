@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    na (1.0.1)
+    na (1.0.2)
       gli (~> 2.21.0)
       tty-reader (~> 0.9, >= 0.9.0)
       tty-which (~> 0.5, >= 0.5.0)
