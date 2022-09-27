@@ -29,6 +29,19 @@ class App
 
   NA::Color.coloring = $stdin.isatty
 
+  desc 'Add a next action (deprecated, for backwards compatibility)'
+  switch %i[a add]
+
+  desc 'Set a priority 0-5 (deprecated, for backwards compatibility)'
+  arg_name 'PRIORITY'
+  flag %i[p priority]
+
+  desc 'Prompt for additional notes (deprecated, for backwards compatibility)'
+  switch %i[n note]
+
+  desc 'Recurse 3 directories deep (deprecated, for backwards compatability)'
+  switch %i[r recurse], default_value: false, negatable: true
+
   desc 'Recurse to depth'
   arg_name 'DEPTH'
   default_value 1
@@ -45,25 +58,30 @@ class App
     c.flag %i[t tag]
 
     c.action do |global_options, options, _|
-      depth = options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
+      if global_options[:add]
+        cmd = ['add']
+        cmd.push('--note') if global_options[:note]
+        cmd.concat(['--priority', global_options[:priority]]) if global_options[:priority]
+        cmd.push(ARGV.unshift(@command))
+        p cmd
+        exit run(cmd)
+      end
+
+      depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
+                3
+              else
+                options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
+              end
       tag = options[:tag] == global_options[:na_tag] ? nil : options[:tag]
       actions = NA.parse_actions(depth: depth,
                                  extension: global_options[:ext],
                                  na_tag: global_options[:na_tag],
                                  tag: tag)
-      if NA.find_files(depth: depth, extension: global_options[:ext]).count > 1
-        if depth > 1
-          puts actions.map { |action| action.pretty(template: { output: '%filename%parent%action' }) }
-        else
-          puts actions.map { |action| action.pretty(template: { output: '%project%parent%action' }) }
-        end
-      else
-        puts actions.map { |action| action.pretty(template: { output: '%parent%action'}) }
-      end
+      NA.output_actions(actions, depth, global_options[:ext])
     end
   end
 
-  desc 'Describe add here'
+  desc 'Add a new next action'
   arg_name 'TASK'
   command :add do |c|
     c.desc 'Prompt for additional notes'
@@ -75,6 +93,10 @@ class App
     c.desc 'Use a tag other than the default next action tag'
     c.arg_name 'TAG'
     c.flag %i[t tag]
+
+    c.desc 'Specify the file to which the task should be added'
+    c.arg_name 'PATH'
+    c.flag %i[f file]
 
     c.action do |global_options, options, args|
       reader = TTY::Reader.new
@@ -103,66 +125,125 @@ class App
 
       note = if options[:note]
                if TTY::Which.exist?('gum')
-                 `gum write --placeholder "Enter a note" --width $(tput cols) --char-limit 0`.strip.split("\n")
+                 `gum write --placeholder "Enter a note, CTRL-d to save" --width $(tput cols) --char-limit 0`.strip.split("\n")
                else
                  puts NA::Color.template('{bm}Enter a note, {bw}CTRL-d{bm} to end editing{bw}')
                  reader.read_multiline
                end
              end
-
-      files = NA.find_files(depth: 1, extension: global_options[:ext])
-      if files.count == 0
-        print NA::Color.template('{by}No todo file found, create one? {w}(y/{g}N{w}){x} ')
-        res = reader.read_char
-        if res =~ /y/i
-          basename = File.expand_path('.').split('/').last
-          target = "#{basename}.#{global_options[:ext]}"
-          File.open(target, 'w') do |f|
-            content = <<~ENDCONTENT
-            Inbox: @inbox
-            #{basename}:
-            \tNew Features:
-            \tIdeas:
-            \tBugs:
-            Archive:
-            Search Definitions:
-            \tTop Priority @search(@priority = 5 and not @done)
-            \tHigh Priority @search(@priority > 3 and not @done)
-            \tMaybe @search(@maybe)
-            \tNext @search(@na and not @done and not project = \"Archive\")
-            ENDCONTENT
-            f.puts(content)
+      if options[:file]
+        target = File.expand_path(options[:file])
+        unless File.exist?(target)
+          print NA::Color.template('{by}Specified file not found, create it? {w}(y/{g}N{w}){x} ')
+          res = reader.read_char
+          if res =~ /y/i
+            basename = File.basename(target, ".#{global_options[:ext]}")
+            NA.create_todo(target, basename)
+          else
+            puts NA::Color.template('{r}Cancelled{x}')
+            Process.exit 1
           end
-          puts NA::Color.template("{y}Created {bw}#{target}{x}")
-          files = NA.find_files(depth: 1, extension: global_options[:ext])
+        end
+      else
+        files = NA.find_files(depth: 1, extension: global_options[:ext])
+        if files.count == 0
+          print NA::Color.template('{by}No todo file found, create one? {w}(y/{g}N{w}){x} ')
+          res = reader.read_char
+          if res =~ /y/i
+            basename = File.expand_path('.').split('/').last
+            target = "#{basename}.#{global_options[:ext]}"
+            NA.create_todo(target, basename)
+            files = NA.find_files(depth: 1, extension: global_options[:ext])
+          end
+        end
+        target = files.count > 1 ? NA.select_file(files) : files[0]
+        unless files.count.positive? && File.exist?(target)
+          puts NA::Color.template('{r}Cancelled{x}')
+          Process.exit 1
         end
       end
-      target = files.count > 1 ? NA.select_file(files) : files[0]
 
       NA.add_action(target, action, note)
     end
   end
 
-  desc 'Find actions matching a tag'
-  arg_name 'TAG [VALUE]'
-  command %i[find tagged] do |c|
+  desc 'Find actions matching a search pattern'
+  long_desc 'Search tokens are separated by spaces. Actions matching any token in the pattern will be shown
+  (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe`'
+  arg_name 'PATTERN'
+  command %i[find] do |c|
+    c.desc 'Match pattern exactly'
+    c.switch %i[x exact]
+
     c.desc 'Recurse to depth'
     c.arg_name 'DEPTH'
     c.default_value 1
     c.flag %i[d depth], type: :integer, must_match: /^\d+$/
 
     c.action do |global_options, options, args|
-      depth = options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
-
-      tag = args[0]
-      value = args.count >= 2 && args[1] !~ /^-/ ? args[1] : nil
-
-      actions = NA.parse_actions(depth: depth, extension: global_options[:ext], na_tag: global_options[:na_tag], tag: tag, value: value)
-      if NA.find_files(depth: depth, extension: global_options[:ext]).count > 1
-        puts actions.map { |action| action.pretty(template: { output: '%project%parent%action' }) }
+      depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
+                3
+              else
+                options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
+              end
+      tokens = nil
+      if options[:exact]
+        tokens = args.join(' ')
       else
-        puts actions.map { |action| action.pretty(template: {output: '%parent%action'}) }
+        tokens = []
+        args.each do |arg|
+          m = arg.match(/^(?<req>\+)?(?<tok>.*?)$/)
+          tokens.push({
+                        token: m['tok'],
+                        required: !m['req'].nil?
+                      })
+        end
       end
+
+      actions = NA.parse_actions(depth: depth,
+                                 extension: global_options[:ext],
+                                 na_tag: global_options[:na_tag],
+                                 search: tokens)
+      NA.output_actions(actions, depth, global_options[:ext])
+    end
+  end
+
+
+  desc 'Find actions matching a tag'
+  long_desc 'Finds actions with tags matching the arguments. An action is shown if it
+  contains any of the tags listed. Add a + before a tag to make it required,
+  e.g. `na tagged feature +maybe`'
+  arg_name 'TAG [VALUE]'
+  command %i[tagged] do |c|
+    c.desc 'Recurse to depth'
+    c.arg_name 'DEPTH'
+    c.default_value 1
+    c.flag %i[d depth], type: :integer, must_match: /^\d+$/
+
+    c.action do |global_options, options, args|
+      depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
+                3
+              else
+                options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
+              end
+
+      tags = []
+      args.each do |arg|
+        # TODO: <> comparisons do nothing right now
+        m = arg.match(/^(?<req>\+)?(?<tag>[^ =<>]+)(?:(?<op>[=<>]+)(?<val>\S+))?$/)
+        tags.push({
+                    tag: m['tag'],
+                    comp: m['op'],
+                    value: m['val'],
+                    required: !m['req'].nil?
+                  })
+      end
+
+      actions = NA.parse_actions(depth: depth,
+                                 extension: global_options[:ext],
+                                 na_tag: global_options[:na_tag],
+                                 tag: tags)
+      NA.output_actions(actions, depth, global_options[:ext])
     end
   end
 
@@ -182,10 +263,23 @@ class App
   end
 
   on_error do |exception|
-    # Error logic here
-    # return false to skip default error handling
-    true
+    case exception
+    when GLI::UnknownCommand
+      cmd = ['add']
+      if ARGV.count.positive?
+        cmd.concat(ARGV.unshift($first_arg))
+      end
+      p cmd
+      exit run(cmd)
+    when SystemExit
+      false
+    else
+      true
+    end
   end
 end
+
+@command = ARGV[0]
+$first_arg = ARGV[1]
 
 exit App.run(ARGV)

@@ -15,10 +15,28 @@ class ::String
   ##
   ## @return     [String] string with @tags highlighted
   ##
-  def highlight_tags(color: '{m}', value: '{y}', parens: '{m}')
+  def highlight_tags(color: '{m}', value: '{y}', parens: '{m}', last_color: '{g}')
     tag_color = NA::Color.template(color)
     paren_color = NA::Color.template(parens)
     value_color = NA::Color.template(value)
-    gsub(/(\s|m)(@[^ ("']+)(?:(\()(.*?)(\)))?/, "\\1#{tag_color}\\2#{paren_color}\\3#{value_color}\\4#{paren_color}\\5")
+    gsub(/(\s|m)(@[^ ("']+)(?:(\()(.*?)(\)))?/, "\\1#{tag_color}\\2#{paren_color}\\3#{value_color}\\4#{paren_color}\\5#{last_color}")
+  end
+
+  def matches(any: [], all: [])
+    matches_any(any) && matches_all(all)
+  end
+
+  def matches_any(regexes)
+    regexes.each do |rx|
+      return true if match(Regexp.new(rx, Regexp::IGNORECASE))
+    end
+    false
+  end
+
+  def matches_all(regexes)
+    regexes.each do |rx|
+      return false unless match(Regexp.new(rx, Regexp::IGNORECASE))
+    end
+    true
   end
 end

@@ -3,6 +3,26 @@
 # Next Action methods
 module NA
   class << self
+    def create_todo(target, basename)
+      File.open(target, 'w') do |f|
+        content = <<~ENDCONTENT
+        Inbox: @inbox
+        #{basename}:
+        \tNew Features:
+        \tIdeas:
+        \tBugs:
+        Archive:
+        Search Definitions:
+        \tTop Priority @search(@priority = 5 and not @done)
+        \tHigh Priority @search(@priority > 3 and not @done)
+        \tMaybe @search(@maybe)
+        \tNext @search(@na and not @done and not project = \"Archive\")
+        ENDCONTENT
+        f.puts(content)
+      end
+      puts NA::Color.template("{y}Created {bw}#{target}{x}")
+    end
+
     def find_files(depth: 1, extension: 'taskpaper')
       `find . -name "*.#{extension}" -maxdepth #{depth}`.strip.split("\n")
     end
@@ -50,19 +70,47 @@ module NA
       puts NA::Color.template("{by}Task added to {bw}#{file}{x}")
     end
 
-    def parse_actions(depth: 1, extension: 'taskpaper', na_tag: 'na', tag: nil, value: nil)
+    def output_actions(actions, depth, extension)
+      template = if NA.find_files(depth: depth, extension: extension).count > 1
+                   if depth > 1
+                     '%filename%parent%action'
+                   else
+                     '%project%parent%action'
+                   end
+                 else
+                   '%parent%action'
+                 end
+      puts actions.map { |action| action.pretty(template: { output: template }) }
+    end
+
+    def parse_actions(depth: 1, extension: 'taskpaper', na_tag: 'na', tag: nil, search: nil)
       actions = []
-      na_tag = "@#{na_tag.sub(/^@/, '')}"
-      if tag
-        tag = "@#{tag.sub(/^@/, '')}"
-        tag = if value.nil?
-                "#{tag}(\\((.*?)\\))?"
-              else
-                "#{tag}\\(#{value}\\)"
-              end
-      else
-        tag = na_tag
+      required = []
+      optional = []
+
+      tag&.each do |t|
+        new_rx = " @#{t[:tag]}"
+        new_rx = "#{new_rx}\\(#{t[:value]}\\)" if t[:value]
+
+        optional.push(new_rx)
+        required.push(new_rx) if t[:required]
       end
+
+      unless search.nil?
+        if search.is_a?(String)
+          optional.push(search)
+          required.push(search)
+        else
+          search.each do |t|
+            new_rx = t[:token].to_s
+
+            optional.push(new_rx)
+            required.push(new_rx) if t[:required]
+          end
+        end
+      end
+
+      na_tag = "@#{na_tag.sub(/^@/, '')}"
 
       files = find_files(depth: depth, extension: extension)
       files.each do |file|
@@ -70,7 +118,8 @@ module NA
         indent_level = 0
         parent = []
         content.split("\n").each do |line|
-          if line =~ /([ \t]*)(\S+.*?):/
+          new_action = nil
+          if line =~ /([ \t]*)([^\-]+.*?):/
             proj = Regexp.last_match(2)
             indent = line.indent_level
 
@@ -83,9 +132,15 @@ module NA
               parent.push(proj)
               indent_level = indent
             end
-          elsif line =~ /^[ \t]*- / && line =~ / #{tag}/ && line !~ / @done/
+          elsif line =~ /^[ \t]*- / && line !~ / @done/
+            unless optional.empty? && required.empty?
+              next unless line.matches(any: optional, all: required)
+
+            end
+
             action = line.sub(/^[ \t]*- /, '').sub(/ #{na_tag}/, '')
-            actions.push(NA::Action.new(file, File.basename(file, ".#{extension}"), parent, action))
+            new_action = NA::Action.new(file, File.basename(file, ".#{extension}"), parent.dup, action)
+            actions.push(new_action)
           end
         end
       end

@@ -1,6 +1,6 @@
 = na
 
-Describe your project here
+A command line tool for adding and listing project todos in TaskPaper format.
 
 :include:na.rdoc
 

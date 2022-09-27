@@ -1,5 +1,167 @@
-= na
+== na - Add and list next actions for the current project
 
-Generate this with
-    na _doc
-After you have described your command line interface
+v1.0.0
+
+=== Global Options
+=== -d|--depth DEPTH
+
+Recurse to depth
+
+[Default Value] 1
+[Must Match] (?-mix:^\d+$)
+
+
+=== --ext FILE_EXTENSION
+
+File extension to consider a todo file
+
+[Default Value] taskpaper
+
+
+=== --na_tag TAG
+
+Tag to consider a next action
+
+[Default Value] na
+
+
+=== -p|--priority PRIORITY
+
+Set a priority 0-5 (deprecated, for backwards compatibility)
+
+[Default Value] None
+
+
+=== -a|--[no-]add
+Add a next action (deprecated, for backwards compatibility)
+
+
+
+=== --help
+Show this message
+
+
+
+=== -n|--[no-]note
+Prompt for additional notes (deprecated, for backwards compatibility)
+
+
+
+=== -r|--[no-]recurse
+Recurse 3 directories deep (deprecated, for backwards compatability)
+
+
+
+=== --version
+Display the program version
+
+
+
+=== Commands
+==== Command: <tt>add  TASK</tt>
+Add a new next action
+
+
+===== Options
+===== -f|--file PATH
+
+Specify the file to which the task should be added
+
+[Default Value] None
+
+
+===== -p|--priority arg
+
+Add a priority level 1-5
+
+[Default Value] 0
+[Must Match] (?-mix:[1-5])
+
+
+===== -t|--tag TAG
+
+Use a tag other than the default next action tag
+
+[Default Value] None
+
+
+===== -n|--[no-]note
+Prompt for additional notes
+
+
+
+==== Command: <tt>find  PATTERN</tt>
+Find actions matching a search pattern
+
+Search tokens are separated by spaces. Actions matching any token in the pattern will be shown
+  (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe`
+===== Options
+===== -d|--depth DEPTH
+
+Recurse to depth
+
+[Default Value] 1
+[Must Match] (?-mix:^\d+$)
+
+
+===== -x|--[no-]exact
+Match pattern exactly
+
+
+
+==== Command: <tt>help  command</tt>
+Shows a list of commands or help for one command
+
+Gets help for the application or its commands. Can also list the commands in a way helpful to creating a bash-style completion function
+===== Options
+===== -c
+List commands one per line, to assist with shell completion
+
+
+
+==== Command: <tt>initconfig </tt>
+Initialize the config file using current global options
+
+Initializes a configuration file where you can set default options for command line flags, both globally and on a per-command basis.  These defaults override the built-in defaults and allow you to omit commonly-used command line flags when invoking this program
+===== Options
+===== --[no-]force
+force overwrite of existing config file
+
+
+
+==== Command: <tt>next|show </tt>
+Show next actions
+
+
+===== Options
+===== -d|--depth DEPTH
+
+Recurse to depth
+
+[Default Value] None
+[Must Match] (?-mix:^\d+$)
+
+
+===== -t|--tag arg
+
+Alternate tag to search for
+
+[Default Value] na
+
+
+==== Command: <tt>tagged  TAG [VALUE]</tt>
+Find actions matching a tag
+
+Finds actions with tags matching the arguments. An action is shown if it
+  contains any of the tags listed. Add a + before a tag to make it required,
+  e.g. `na tagged feature +maybe`
+===== Options
+===== -d|--depth DEPTH
+
+Recurse to depth
+
+[Default Value] 1
+[Must Match] (?-mix:^\d+$)
+
+
+[Default Command] next

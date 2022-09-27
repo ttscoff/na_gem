@@ -17,12 +17,21 @@ module NA
       "(#{@file}) #{@project}:#{@parent.join('>')} | #{@action}"
     end
 
+    def inspect
+      <<~EOINSPECT
+      @file: #{@file}
+      @project: #{@project}
+      @parent: #{@parent.join('>')}
+      @action: #{@action}
+      EOINSPECT
+    end
+
     def pretty(extension: 'taskpaper', template: {})
       default_template = {
         file: '{xbk}',
         parent: '{c}',
         parent_divider: '{xw}/',
-        action: '{g}',
+        action: '{bg}',
         project: '{xbk}',
         tags: '{m}',
         value_parens: '{m}',
@@ -45,7 +54,7 @@ module NA
       filename = NA::Color.template("#{template[:file]}#{@file.sub(/^\.\//, '').sub(/\.#{extension}$/, '')} {x}")
 
       action = NA::Color.template("#{template[:action]}#{@action}{x}")
-      action = action.highlight_tags(color: template[:tags], parens: template[:value_parens], value: template[:values])
+      action = action.highlight_tags(color: template[:tags], parens: template[:value_parens], value: template[:values], last_color: template[:action])
 
       NA::Color.template(template[:output].gsub(/%filename/, filename)
                           .gsub(/%project/, project)
