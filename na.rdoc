@@ -1,6 +1,6 @@
 == na - Add and list next actions for the current project
 
-v1.0.0
+v1.0.2
 
 === Global Options
 === -d|--depth DEPTH
@@ -61,7 +61,11 @@ Display the program version
 ==== Command: <tt>add  TASK</tt>
 Add a new next action
 
+Provides an easy way to store todos while you work. Add quick reminders and (if you set up Prompt Hooks)
+  they'll automatically display next time you enter the directory.
 
+  If multiple todo files are found in the current directory, a menu will allow you to pick to which
+  file the action gets added.
 ===== Options
 ===== -f|--file PATH
 
@@ -129,7 +133,7 @@ force overwrite of existing config file
 
 
 
-==== Command: <tt>next|show </tt>
+==== Command: <tt>next|show  OPTIONAL_QUERY</tt>
 Show next actions
 
 
