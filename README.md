@@ -1,7 +1,5 @@
 # na
 
-
-
 [![Gem](https://img.shields.io/gem/v/na.svg)](https://rubygems.org/gems/na)
 [![Travis](https://app.travis-ci.com/ttscoff/na_gem.svg?branch=main)](https://travis-ci.org/makenew/na_gem)
 [![GitHub license](https://img.shields.io/github/license/ttscoff/na_gem.svg)](./LICENSE.txt)
@@ -39,9 +37,11 @@ If found, it will try to locate an `Inbox:` project, or create one if it doesn't
 
 ### Installation
 
-Just run `gem install na`. If you run into errors, use `sudo gem install na`.
+Assuming you have Ruby and RubyGems installed, you can just run `gem install na`. If you run into errors, use `sudo gem install na`.
 
-> You can find the source code (MIT license) on [GitHub][].
+If you don't have Ruby/RubyGems, you can install them pretty easily with Homebrew, rvm, or asdf. I can't swear this tool is worth the time, but there _are_ a lot of great gems available...
+
+
 
 ### Usage
 
