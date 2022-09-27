@@ -48,6 +48,7 @@ class App
   flag %i[d depth], type: :integer, must_match: /^\d+$/
 
   desc 'Show next actions'
+  arg_name 'OPTIONAL_QUERY'
   command %i[next show] do |c|
     c.desc 'Recurse to depth'
     c.arg_name 'DEPTH'
@@ -57,7 +58,7 @@ class App
     c.default_value 'na'
     c.flag %i[t tag]
 
-    c.action do |global_options, options, _|
+    c.action do |global_options, options, args|
       if global_options[:add]
         cmd = ['add']
         cmd.push('--note') if global_options[:note]
@@ -67,6 +68,18 @@ class App
         exit run(cmd)
       end
 
+
+      if args.count.positive?
+        tokens = []
+        args.each do |arg|
+          m = arg.match(/^(?<req>\+)?(?<tok>.*?)$/)
+          tokens.push({
+                        token: m['tok'],
+                        required: !m['req'].nil?
+                      })
+        end
+      end
+
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
                 3
               else
@@ -74,9 +87,11 @@ class App
               end
       tag = options[:tag] == global_options[:na_tag] ? nil : options[:tag]
       actions = NA.parse_actions(depth: depth,
+                                 query: tokens,
                                  extension: global_options[:ext],
                                  na_tag: global_options[:na_tag],
                                  tag: tag)
+
       NA.output_actions(actions, depth, global_options[:ext])
     end
   end
@@ -163,6 +178,7 @@ class App
         end
       end
 
+      save_working_dir(File.expand_path(target))
       NA.add_action(target, action, note)
     end
   end

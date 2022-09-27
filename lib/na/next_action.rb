@@ -83,7 +83,7 @@ module NA
       puts actions.map { |action| action.pretty(template: { output: template }) }
     end
 
-    def parse_actions(depth: 1, extension: 'taskpaper', na_tag: 'na', tag: nil, search: nil)
+    def parse_actions(depth: 1, extension: 'taskpaper', na_tag: 'na', query: nil, tag: nil, search: nil)
       actions = []
       required = []
       optional = []
@@ -112,8 +112,14 @@ module NA
 
       na_tag = "@#{na_tag.sub(/^@/, '')}"
 
-      files = find_files(depth: depth, extension: extension)
+      if query.nil?
+        files = find_files(depth: depth, extension: extension)
+      else
+        files = match_working_dir(query)
+      end
+
       files.each do |file|
+        save_working_dir(File.expand_path(file))
         content = IO.read(file)
         indent_level = 0
         parent = []
@@ -176,6 +182,53 @@ module NA
       return false if res.strip.size.zero?
 
       res
+    end
+
+    def match_working_dir(search)
+      optional = []
+      required = []
+
+      search&.each do |t|
+        new_rx = t[:token].to_s
+
+        optional.push(new_rx)
+        required.push(new_rx) if t[:required]
+      end
+
+      db_dir = File.expand_path('~/.local/share/na')
+      db_file = 'tdlist.txt'
+      file = File.join(db_dir, db_file)
+      if File.exist?(file)
+        dirs = IO.read(file).split("\n")
+        dirs.delete_if { |d| !d.matches(any: optional, all: required) }
+        dirs.sort.uniq
+      else
+        puts NA::Color.template('{r}No na database found{x}')
+        Process.exit 1
+      end
+    end
+
+    def save_working_dir(todo_file)
+      db_dir = File.expand_path('~/.local/share/na')
+      FileUtils.mkdir_p(db_dir) unless File.directory?(db_dir)
+      db_file = 'tdlist.txt'
+      file = File.join(db_dir, db_file)
+      content = File.exist?(file) ? IO.read(file) : ''
+      dirs = content.split(/\n/)
+      dirs.push(File.expand_path(todo_file))
+      dirs.sort!.uniq!
+      File.open(file, 'w') { |f| f.puts dirs.join("\n") }
+    end
+
+    def weed_cache_file
+      db_dir = File.expand_path('~/.local/share/na')
+      db_file = 'tdlist.txt'
+      file = File.join(db_dir, db_file)
+      if File.exist?(file)
+        dirs = IO.read(file).split("\n")
+        dirs.delete_if { |f| !File.exist?(f) }
+        File.open(file, 'w') { |f| f.puts dirs.join("\n") }
+      end
     end
   end
 end
