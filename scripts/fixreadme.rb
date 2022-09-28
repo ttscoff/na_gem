@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-current_ver = `git ver`
+current_ver = `rake cver`
 src = 'src/README.md'
 dest = 'README.md'
 
