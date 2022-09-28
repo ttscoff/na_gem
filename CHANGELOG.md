@@ -1,3 +1,11 @@
+### 1.1.2
+
+2022-09-28 06:37
+
+#### IMPROVED
+
+- Detailed instructions after installing prompt hooks
+
 ### 1.1.1
 
 2022-09-28 04:49

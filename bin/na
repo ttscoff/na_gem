@@ -37,7 +37,7 @@ class App
   flag %i[p priority]
 
   desc 'Prompt for additional notes (deprecated, for backwards compatibility)'
-  switch %i[n note]
+  switch %i[n note], negatable: false
 
   desc 'Recurse 3 directories deep (deprecated, for backwards compatability)'
   switch %i[r recurse], default_value: false, negatable: true
@@ -113,7 +113,7 @@ class App
               desc: 'Add a new action to the Inbox, set its @priority to 4, and prompt for an additional note'
 
     c.desc 'Prompt for additional notes'
-    c.switch %i[n note]
+    c.switch %i[n note], negatable: false
 
     c.desc 'Add a priority level 1-5'
     c.flag %i[p priority], must_match: /[1-5]/, type: :integer, default_value: 0
@@ -213,7 +213,7 @@ class App
     c.example 'na find -d 3 swift obj-c', desc: 'Find all actions 3 directories deep containing either swift or obj-c'
 
     c.desc 'Match pattern exactly'
-    c.switch %i[x exact]
+    c.switch %i[x exact], negatable: false
 
     c.desc 'Recurse to depth'
     c.arg_name 'DEPTH'
@@ -402,12 +402,11 @@ class App
     end
   end
 
-
-
   pre do |global, command, options, args|
     NA.verbose = global[:debug]
     NA.extension = global[:ext]
     NA.na_tag = global[:na_tag]
+    NA.weed_cache_file
     true
   end
 

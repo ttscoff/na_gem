@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.1.1
+The current version of `na` is 1.1.2
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -54,18 +54,18 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.0.4
+    1.1.1
 
 GLOBAL OPTIONS
     -a, --[no-]add          - Add a next action (deprecated, for backwards compatibility)
     -d, --depth=DEPTH       - Recurse to depth (default: 1)
+    --[no-]debug            - Display verbose output
     --ext=FILE_EXTENSION    - File extension to consider a todo file (default: taskpaper)
     --help                  - Show this message
     -n, --[no-]note         - Prompt for additional notes (deprecated, for backwards compatibility)
     --na_tag=TAG            - Tag to consider a next action (default: na)
     -p, --priority=PRIORITY - Set a priority 0-5 (deprecated, for backwards compatibility) (default: none)
     -r, --[no-]recurse      - Recurse 3 directories deep (deprecated, for backwards compatability) (default: enabled)
-    --[no-]verbose          - Display verbose output
     --version               - Display the program version
 
 COMMANDS
@@ -76,6 +76,7 @@ COMMANDS
     init, create - Create a new todo file in the current directory
     initconfig   - Initialize the config file using current global options
     next, show   - Show next actions
+    prompt       - Show or install prompt hooks for the current shell
     tagged       - Find actions matching a tag
 ```
 
@@ -84,6 +85,8 @@ COMMANDS
 ##### add
 
 Example: `na add This feature @idea I have`
+
+If you run the `add` command with no arguments, you'll be asked for input on the command line.
 
 ```
 NAME
@@ -98,9 +101,10 @@ DESCRIPTION
 
 COMMAND OPTIONS
     -f, --file=PATH    - Specify the file to which the task should be added (default: none)
-    -n, --[no-]note    - Prompt for additional notes
+    -n, --note         - Prompt for additional notes
     -p, --priority=arg - Add a priority level 1-5 (default: 0)
     -t, --tag=TAG      - Use a tag other than the default next action tag (default: none)
+    -x                 - Don't add next action tag to new entry
 
 EXAMPLES
 
@@ -156,7 +160,7 @@ DESCRIPTION
 
 COMMAND OPTIONS
     -d, --depth=DEPTH - Recurse to depth (default: 1)
-    -x, --[no-]exact  - Match pattern exactly
+    -x, --exact       - Match pattern exactly
 
 EXAMPLES
 
@@ -273,36 +277,15 @@ Note that I created a new YAML dictionary inside of the `:next:` command, and ad
 
 ### Prompt Hooks
 
-You can add a prompt command to your shell to have na automatically list your next actions when you `cd` into a directory. Add the appropriate command to your login file for your shell:
+You can add a prompt command to your shell to have na automatically list your next actions when you `cd` into a directory. To install a prompt command for your current shell, just run `na prompt install`. It works with Zsh, Bash, and Fish. If you'd rather make the changes to your startup file yourself, run `na prompt show` to get the hook and instructions printed out for copying.
 
-_(You can add `-r` to any of these calls to na to automatically recurse 3 directories deep)_
+> You can also get output for shells other than the one you're currently using by adding "bash", "zsh", or "fish" to the show or install command.
 
-Bash (in ~/.bash_profile):
 
-```bash
-last_command_was_cd() {
-	[[ $(history 1|sed -e "s/^[ ]*[0-9]*[ ]*//") =~ ^((cd|z|j|jump|g|f|pushd|popd|exit)([ ]|$)) ]] && na
-}
-if [[ -z "$PROMPT_COMMAND" ]]; then
-	PROMPT_COMMAND="eval 'last_command_was_cd'"
-else
-	echo $PROMPT_COMMAND | grep -v -q "last_command_was_cd" && PROMPT_COMMAND="$PROMPT_COMMAND;"'eval "last_command_was_cd"'
-fi
-```
+> You can add `-r` to any of the calls to na to automatically recurse 3 directories deep, or just set the depth config permanently
 
-Fish (in ~/.config/fish/conf.d/*.fish):
 
-```fish
-function __should_na --on-variable PWD
-	test -s (basename $PWD)".taskpaper" && na
-end
-```
-
-Zsh (in ~/.zshrc):
-
-```zsh
-chpwd() { na }
-```
+After installing a hook, you'll need to close your terminal and start a new session to initialize the new commands.
 
 
 ### Misc
