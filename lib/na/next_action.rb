@@ -137,7 +137,7 @@ module NA
         parent = []
         content.split("\n").each do |line|
           new_action = nil
-          if line =~ /([ \t]*)([^\-]+.*?):/
+          if line =~ /([ \t]*)([^\-]+.*?): *(@\S+ *)*$/
             proj = Regexp.last_match(2)
             indent = line.indent_level
 
