@@ -1,3 +1,11 @@
+### 1.0.6
+
+2022-09-28 04:22
+
+#### NEW
+
+- `na prompt [show|install]` command to help with adding prompt hooks to your shell
+
 ### 1.0.5
 
 2022-09-28 01:53
