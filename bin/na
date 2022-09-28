@@ -48,7 +48,7 @@ class App
   flag %i[d depth], type: :integer, must_match: /^\d+$/
 
   desc 'Display verbose output'
-  switch %i[verbose]
+  switch %i[debug]
 
   desc 'Show next actions'
   arg_name 'OPTIONAL_QUERY'
@@ -94,11 +94,9 @@ class App
       tag = options[:tag] == global_options[:na_tag] ? nil : options[:tag]
       files, actions = NA.parse_actions(depth: depth,
                                         query: tokens,
-                                        extension: global_options[:ext],
-                                        na_tag: global_options[:na_tag],
                                         tag: tag)
 
-      NA.output_actions(actions, depth, global_options[:ext], files: files)
+      NA.output_actions(actions, depth, files: files)
     end
   end
 
@@ -148,7 +146,7 @@ class App
         action = "#{action.gsub(/@priority\(\d+\)/, '')} @priority(#{options[:priority]})"
       end
 
-      na_tag = global_options[:na_tag]
+      na_tag = NA.na_tag
       na_tag = options[:tag] unless options[:tag].nil?
 
       action = "#{action.gsub(/@#{na_tag}/, '')} @#{na_tag}"
@@ -167,7 +165,7 @@ class App
           print NA::Color.template('{by}Specified file not found, create it? {w}(y/{g}N{w}){x} ')
           res = reader.read_char
           if res =~ /y/i
-            basename = File.basename(target, ".#{global_options[:ext]}")
+            basename = File.basename(target, ".#{NA.extension}")
             NA.create_todo(target, basename)
           else
             puts NA::Color.template('{r}Cancelled{x}')
@@ -175,15 +173,15 @@ class App
           end
         end
       else
-        files = NA.find_files(depth: 1, extension: global_options[:ext])
+        files = NA.find_files(depth: 1)
         if files.count == 0
           print NA::Color.template('{by}No todo file found, create one? {w}(y/{g}N{w}){x} ')
           res = reader.read_char
           if res =~ /y/i
             basename = File.expand_path('.').split('/').last
-            target = "#{basename}.#{global_options[:ext]}"
+            target = "#{basename}.#{NA.extension}"
             NA.create_todo(target, basename)
-            files = NA.find_files(depth: 1, extension: global_options[:ext])
+            files = NA.find_files(depth: 1)
           end
         end
         target = files.count > 1 ? NA.select_file(files) : files[0]
@@ -236,10 +234,8 @@ class App
       end
 
       files, actions = NA.parse_actions(depth: depth,
-                                        extension: global_options[:ext],
-                                        na_tag: global_options[:na_tag],
                                         search: tokens)
-      NA.output_actions(actions, depth, global_options[:ext], files: files)
+      NA.output_actions(actions, depth, files: files)
     end
   end
 
@@ -278,10 +274,8 @@ class App
       end
 
       files, actions = NA.parse_actions(depth: depth,
-                                        extension: global_options[:ext],
-                                        na_tag: global_options[:na_tag],
                                         tag: tags)
-      NA.output_actions(actions, depth, global_options[:ext], files: files)
+      NA.output_actions(actions, depth, files: files)
     end
   end
 
@@ -300,7 +294,7 @@ class App
         project = reader.read_line(NA::Color.template('{y}Project name {bw}> {x}'), value: project).strip
       end
 
-      target = "#{project}.#{global_options[:ext]}"
+      target = "#{project}.#{NA.extension}"
 
       if File.exist?(target)
         print NA::Color.template("{r}File {bw}#{target}{r} already exists, overwrite it? {br}y{w}/{bg}N{x} ")
@@ -339,7 +333,7 @@ class App
               else
                 options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
               end
-      files = NA.find_files(depth: depth, extension: global_options[:ext])
+      files = NA.find_files(depth: depth)
       file = if files.count > 1
                NA.select_file(files)
              else
@@ -354,8 +348,59 @@ class App
     end
   end
 
+  desc 'Show or install prompt hooks for the current shell'
+  long_desc 'Installing the prompt hook allows you to automatically
+  list next actions when you cd into a directory'
+  command %i[prompt] do |c|
+    c.desc 'Output the prompt hook for the current shell to STDOUT. Pass an argument to specify a shell (zsh, bash, fish)'
+    c.arg_name '[SHELL]'
+    c.command %i[show] do |s|
+      s.action do |global_options, options, args|
+        if args.count.positive?
+          shell = args[0]
+        else
+          shell = File.basename(ENV['SHELL'])
+        end
+
+        case shell
+        when /^f/i
+          NA::Prompt.show_prompt_hook(:fish)
+        when /^z/i
+          NA::Prompt.show_prompt_hook(:zsh)
+        when /^b/i
+          NA::Prompt.show_prompt_hook(:bash)
+        end
+      end
+    end
+
+    c.desc 'Install the hook for the current shell to the appropriate startup file.'
+    c.arg_name '[SHELL]'
+    c.command %i[install] do |s|
+      s.action do |global_options, options, args|
+        if args.count.positive?
+          shell = args[0]
+        else
+          shell = File.basename(ENV['SHELL'])
+        end
+
+        case shell
+        when /^f/i
+          NA::Prompt.install_prompt_hook(:fish)
+        when /^z/i
+          NA::Prompt.install_prompt_hook(:zsh)
+        when /^b/i
+          NA::Prompt.install_prompt_hook(:bash)
+        end
+      end
+    end
+  end
+
+
+
   pre do |global, command, options, args|
-    NA.verbose = global[:verbose]
+    NA.verbose = global[:debug]
+    NA.extension = global[:ext]
+    NA.na_tag = global[:na_tag]
     true
   end
 

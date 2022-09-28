@@ -3,7 +3,7 @@
 # Next Action methods
 module NA
   class << self
-    attr_accessor :verbose
+    attr_accessor :verbose, :extension, :na_tag
 
     def create_todo(target, basename)
       File.open(target, 'w') do |f|
@@ -22,11 +22,11 @@ module NA
         ENDCONTENT
         f.puts(content)
       end
-      puts NA::Color.template("{y}Created {bw}#{target}{x}")
+      $stderr.puts NA::Color.template("{y}Created {bw}#{target}{x}")
     end
 
-    def find_files(depth: 1, extension: 'taskpaper')
-      `find . -name "*.#{extension}" -maxdepth #{depth}`.strip.split("\n")
+    def find_files(depth: 1)
+      `find . -name "*.#{NA.extension}" -maxdepth #{depth}`.strip.split("\n")
     end
 
     def select_file(files)
@@ -39,7 +39,7 @@ module NA
       elsif TTY::Which.exist?('fzf')
         res = choose_from(files, prompt: 'Use which file?')
         unless res
-          puts 'No file selected, cancelled'
+          $stderr.puts 'No file selected, cancelled'
           Process.exit 1
         end
 
@@ -69,17 +69,17 @@ module NA
 
       File.open(file, 'w') { |f| f.puts content }
 
-      puts NA::Color.template("{by}Task added to {bw}#{file}{x}")
+      $stderr.puts NA::Color.template("{by}Task added to {bw}#{file}{x}")
     end
 
-    def output_actions(actions, depth, extension, files: nil)
+    def output_actions(actions, depth, files: nil)
       template = if files&.count.positive?
                    if files.count == 1
                      '%parent%action'
                    else
                      '%filename%parent%action'
                    end
-                 elsif NA.find_files(depth: depth, extension: extension).count > 1
+                 elsif NA.find_files(depth: depth).count > 1
                    if depth > 1
                      '%filename%parent%action'
                    else
@@ -89,13 +89,13 @@ module NA
                    '%parent%action'
                  end
       if files && @verbose
-        puts files.map { |f| NA::Color.template("{dw}#{f}{x}") }
+        $stderr.puts files.map { |f| NA::Color.template("{dw}#{f}{x}") }
       end
 
       puts actions.map { |action| action.pretty(template: { output: template }) }
     end
 
-    def parse_actions(depth: 1, extension: 'taskpaper', na_tag: 'na', query: nil, tag: nil, search: nil)
+    def parse_actions(depth: 1, query: nil, tag: nil, search: nil)
       actions = []
       required = []
       optional = []
@@ -122,10 +122,10 @@ module NA
         end
       end
 
-      na_tag = "@#{na_tag.sub(/^@/, '')}"
+      na_tag = "@#{NA.na_tag.sub(/^@/, '')}"
 
       if query.nil?
-        files = find_files(depth: depth, extension: extension)
+        files = find_files(depth: depth)
       else
         files = match_working_dir(query)
       end
@@ -156,8 +156,8 @@ module NA
 
             end
 
-            action = line.sub(/^[ \t]*- /, '').sub(/ #{na_tag}/, '')
-            new_action = NA::Action.new(file, File.basename(file, ".#{extension}"), parent.dup, action)
+            action = line.sub(/^[ \t]*- /, '').sub(/ #{NA.na_tag}/, '')
+            new_action = NA::Action.new(file, File.basename(file, ".#{NA.extension}"), parent.dup, action)
             actions.push(new_action)
           end
         end
@@ -220,7 +220,7 @@ module NA
         dirs.delete_if { |d| !d.matches(any: optional, all: required) }
         dirs.sort.uniq
       else
-        puts NA::Color.template('{r}No na database found{x}')
+        $stderr.puts NA::Color.template('{r}No na database found{x}')
         Process.exit 1
       end
     end
@@ -269,7 +269,7 @@ module NA
         if 'xdg-open'.available?
           `xdg-open #{Shellwords.escape(file)}`
         else
-          puts NA::Color.template('{r}Unable to determine executable for `open`.{x}')
+          $stderr.puts NA::Color.template('{r}Unable to determine executable for `open`.{x}')
         end
       end
     end
