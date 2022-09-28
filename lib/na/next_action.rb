@@ -103,11 +103,13 @@ module NA
       optional = []
 
       tag&.each do |t|
-        new_rx = " @#{t[:tag]}"
-        new_rx = "#{new_rx}\\(#{t[:value]}\\)" if t[:value]
+        unless t[:tag].nil?
+          new_rx = " @#{t[:tag]}"
+          new_rx = "#{new_rx}\\(#{t[:value]}\\)" if t[:value]
 
-        optional.push(new_rx)
-        required.push(new_rx) if t[:required]
+          optional.push(new_rx)
+          required.push(new_rx) if t[:required]
+        end
       end
 
       unless search.nil?

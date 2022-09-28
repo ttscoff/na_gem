@@ -92,6 +92,7 @@ class App
       end
 
       tag = options[:tag] == NA.na_tag ? nil : options[:tag]
+      tag = [{ tag: tag, value: nil }]
       files, actions = NA.parse_actions(depth: depth,
                                         query: tokens,
                                         tag: tag)
