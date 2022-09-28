@@ -81,7 +81,7 @@ module NA
                    else
                      '%filename%parent%action'
                    end
-                 elsif NA.find_files(depth: depth).count > 1
+                 elsif find_files(depth: depth).count > 1
                    if depth > 1
                      '%filename%parent%action'
                    else
