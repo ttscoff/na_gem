@@ -9,20 +9,20 @@ module NA
         when :zsh
           <<~EOHOOK
             # zsh prompt hook for na
-            chpwd() { na }
+            chpwd() { na next }
           EOHOOK
         when :fish
           <<~EOHOOK
             # Fish Prompt Command
             function __should_na --on-variable PWD
-              test -s (basename $PWD)".#{NA.extension}" && na
+              test -s (basename $PWD)".#{NA.extension}" && na next
             end
           EOHOOK
         when :bash
           <<~EOHOOK
             # Bash PROMPT_COMMAND for na
             last_command_was_cd() {
-              [[ $(history 1|sed -e "s/^[ ]*[0-9]*[ ]*//") =~ ^((cd|z|j|jump|g|f|pushd|popd|exit)([ ]|$)) ]] && na
+              [[ $(history 1|sed -e "s/^[ ]*[0-9]*[ ]*//") =~ ^((cd|z|j|jump|g|f|pushd|popd|exit)([ ]|$)) ]] && na next
             }
             if [[ -z "$PROMPT_COMMAND" ]]; then
               PROMPT_COMMAND="eval 'last_command_was_cd'"

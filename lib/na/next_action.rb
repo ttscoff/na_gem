@@ -26,7 +26,9 @@ module NA
     end
 
     def find_files(depth: 1)
-      `find . -name "*.#{NA.extension}" -maxdepth #{depth}`.strip.split("\n")
+      files = `find . -name "*.#{NA.extension}" -maxdepth #{depth}`.strip.split("\n")
+      files.each { |f| save_working_dir(File.expand_path(f)) }
+      files
     end
 
     def select_file(files)
@@ -151,12 +153,14 @@ module NA
               indent_level = indent
             end
           elsif line =~ /^[ \t]*- / && line !~ / @done/
+            next unless line =~ /@#{NA.na_tag}\b/
+
             unless optional.empty? && required.empty?
               next unless line.matches(any: optional, all: required)
 
             end
 
-            action = line.sub(/^[ \t]*- /, '').sub(/ #{NA.na_tag}/, '')
+            action = line.sub(/^[ \t]*- /, '').sub(/ @#{NA.na_tag}\b/, '')
             new_action = NA::Action.new(file, File.basename(file, ".#{NA.extension}"), parent.dup, action)
             actions.push(new_action)
           end

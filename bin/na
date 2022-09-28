@@ -91,7 +91,7 @@ class App
         end
       end
 
-      tag = options[:tag] == global_options[:na_tag] ? nil : options[:tag]
+      tag = options[:tag] == NA.na_tag ? nil : options[:tag]
       files, actions = NA.parse_actions(depth: depth,
                                         query: tokens,
                                         tag: tag)
@@ -122,6 +122,9 @@ class App
     c.arg_name 'TAG'
     c.flag %i[t tag]
 
+    c.desc 'Don\'t add next action tag to new entry'
+    c.switch %i[x]
+
     c.desc 'Specify the file to which the task should be added'
     c.arg_name 'PATH'
     c.flag %i[f file]
@@ -147,9 +150,14 @@ class App
       end
 
       na_tag = NA.na_tag
-      na_tag = options[:tag] unless options[:tag].nil?
+      if options[:x]
+        na_tag = ''
+      else
+        na_tag = options[:tag] unless options[:tag].nil?
+        na_tag = " @#{na_tag}"
+      end
 
-      action = "#{action.gsub(/@#{na_tag}/, '')} @#{na_tag}"
+      action = "#{action.gsub(/#{na_tag}/, '')}#{na_tag}"
 
       note = if options[:note]
                if TTY::Which.exist?('gum')
@@ -191,7 +199,6 @@ class App
         end
       end
 
-      NA.save_working_dir(File.expand_path(target))
       NA.add_action(target, action, note)
     end
   end
