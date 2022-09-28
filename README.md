@@ -18,6 +18,14 @@ Used with Taskpaper files, it can add new todo items quickly from the command li
 
 It can also auto-display next actions when you enter a project directory, automatically locating any todo files and listing their next actions when you `cd` to the project (optionally recursive). See the [Prompt Hooks](#prompt-hooks) section for details.
 
+### Installation
+
+Assuming you have Ruby and RubyGems installed, you can just run `gem install na`. If you run into errors, use `sudo gem install na`.
+
+If you don't have Ruby/RubyGems, you can install them pretty easily with Homebrew, rvm, or asdf. I can't swear this tool is worth the time, but there _are_ a lot of great gems available...
+
+
+
 ### Features
 
 You can list next actions in files in the current directory by typing `na`. By default, `na` looks for `*.taskpaper` files and extracts items tagged `@na` and not `@done`. All of these can be changed in the configuration.
@@ -35,14 +43,6 @@ You can list next actions in files in the current directory by typing `na`. By d
 You can also quickly add todo items from the command line with the `add` subcommand. The script will look for a file in the current directory with a `.taskpaper` extension (configurable). 
 
 If found, it will try to locate an `Inbox:` project, or create one if it doesn't exist. Any arguments after `add` will be combined to create a new task in TaskPaper format. They will automatically be assigned as next actions (tagged `@na`) and will show up when `na` lists the tasks for the project.
-
-### Installation
-
-Assuming you have Ruby and RubyGems installed, you can just run `gem install na`. If you run into errors, use `sudo gem install na`.
-
-If you don't have Ruby/RubyGems, you can install them pretty easily with Homebrew, rvm, or asdf. I can't swear this tool is worth the time, but there _are_ a lot of great gems available...
-
-
 
 ### Usage
 
@@ -296,4 +296,9 @@ If you have [gum][] installed, na will use it for command line input when adding
 [donate]: http://brettterpstra.com/donate/
 [github]: https://github.com/ttscoff/na_gem/
 
+
 PayPal link: [paypal.me/ttscoff](https://paypal.me/ttscoff)
+
+## Changelog
+
+See [CHANGELOG.md](https://github.com/ttscoff/na_gem/blob/master/CHANGELOG.md)
