@@ -54,7 +54,8 @@ module NA
         file = prompt_file(shell)
 
         File.open(File.expand_path(file), 'a') { |f| f.puts prompt_hook(shell) }
-        $stderr.puts NA::Color.template("{y}Added {bw}#{shell}{xy} prompt hook to {bw}#{file}{x}")
+        $stderr.puts NA::Color.template("{y}Added {bw}#{shell}{xy} prompt hook to {bw}#{file}{xy}.{x}")
+        $stderr.puts NA::Color.template("{y}You may need to close the current terminal and open a new one to enable the script.{x}")
       end
     end
   end
