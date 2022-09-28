@@ -1,10 +1,16 @@
 ### 1.0.4
 
-2022-09-27 23:56
+2022-09-28 00:53
 
 #### NEW
 
 - OS agnostic command to open todo file in an editor
+- `na init` command to generate a new todo file
+
+#### IMPROVED
+
+- Output formatting
+- Make directory matching fuzzy for `na next`
 
 ### 1.0.3
 

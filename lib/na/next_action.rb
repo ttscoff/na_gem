@@ -198,7 +198,7 @@ module NA
       required = []
 
       search&.each do |t|
-        new_rx = t[:token].to_s.split('').join('.{0,2}')
+        new_rx = t[:token].to_s.split('').join('.{0,1}')
 
         optional.push(new_rx)
         required.push(new_rx) if t[:required]
