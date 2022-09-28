@@ -70,8 +70,10 @@ module NA
       puts NA::Color.template("{by}Task added to {bw}#{file}{x}")
     end
 
-    def output_actions(actions, depth, extension)
-      template = if NA.find_files(depth: depth, extension: extension).count > 1
+    def output_actions(actions, depth, extension, search: false)
+      template = if search
+                   '%filename%parent%action'
+                 elsif NA.find_files(depth: depth, extension: extension).count > 1
                    if depth > 1
                      '%filename%parent%action'
                    else
@@ -150,7 +152,7 @@ module NA
           end
         end
       end
-      actions
+      [files, actions]
     end
 
     ##
@@ -184,20 +186,25 @@ module NA
       res
     end
 
+    def database_path
+      db_dir = File.expand_path('~/.local/share/na')
+      FileUtils.mkdir_p(db_dir) unless File.directory?(db_dir)
+      db_file = 'tdlist.txt'
+      File.join(db_dir, db_file)
+    end
+
     def match_working_dir(search)
       optional = []
       required = []
 
       search&.each do |t|
-        new_rx = t[:token].to_s
+        new_rx = t[:token].to_s.split('').join('.{0,2}')
 
         optional.push(new_rx)
         required.push(new_rx) if t[:required]
       end
 
-      db_dir = File.expand_path('~/.local/share/na')
-      db_file = 'tdlist.txt'
-      file = File.join(db_dir, db_file)
+      file = database_path
       if File.exist?(file)
         dirs = IO.read(file).split("\n")
         dirs.delete_if { |d| !d.matches(any: optional, all: required) }
@@ -209,10 +216,7 @@ module NA
     end
 
     def save_working_dir(todo_file)
-      db_dir = File.expand_path('~/.local/share/na')
-      FileUtils.mkdir_p(db_dir) unless File.directory?(db_dir)
-      db_file = 'tdlist.txt'
-      file = File.join(db_dir, db_file)
+      file = database_path
       content = File.exist?(file) ? IO.read(file) : ''
       dirs = content.split(/\n/)
       dirs.push(File.expand_path(todo_file))

@@ -113,6 +113,34 @@ EXAMPLES
     na add "A bug I need to fix" -p 4 -n
 ```
 
+##### edit
+
+```
+NAME
+    edit - Open a todo file in the default editor
+
+SYNOPSIS
+
+    na [global options] edit [command options] 
+
+DESCRIPTION
+    Let the system choose the defualt, (e.g. TaskPaper), or specify a command line utility (e.g. vim).              If more than one todo file is found, a menu is displayed. 
+
+COMMAND OPTIONS
+    -a, --app=EDITOR    - Specify a Mac app (default: none)
+    -d, --depth=DEPTH   - Recurse to depth (default: 1)
+    -e, --editor=EDITOR - Specify an editor CLI (default: none)
+
+EXAMPLES
+
+    # Open the main todo file in the default editor
+    na edit
+
+    # Display a menu of all todo files three levels deep from the
+               current directory, open selection in vim.
+    na edit -d 3 -a vim
+```
+
 ##### find
 
 Example: `na find cool feature idea`
@@ -142,6 +170,25 @@ EXAMPLES
 
     # Find all actions 3 directories deep containing either swift or obj-c
     na find -d 3 swift obj-c
+```
+
+##### init, create
+
+```
+NAME
+    init - Create a new todo file in the current directory
+
+SYNOPSIS
+
+    na [global options] init [PROJECT]
+
+EXAMPLES
+
+    # Generate a new todo file, prompting for project name
+    na init
+
+    # Generate a new todo for a project called warpspeed
+    na init warpspeed
 ```
 
 ##### next, show

@@ -51,8 +51,8 @@ class App
   arg_name 'OPTIONAL_QUERY'
   command %i[next show] do |c|
     c.example 'doing next', desc: 'display the next actions from any todo files in the current directory'
-    c.example 'doing next -d 3', desc: 'display the next actions from the current directory and its children, 3 levels deep'
-
+    c.example 'doing next -d 3', desc: 'display the next actions from the current directory, traversing 3 levels deep'
+    c.example 'doing next marked', desc: 'display next actions for a project you visited in the past'
     c.desc 'Recurse to depth'
     c.arg_name 'DEPTH'
     c.flag %i[d depth], type: :integer, must_match: /^\d+$/
@@ -71,8 +71,15 @@ class App
         exit run(cmd)
       end
 
+      depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
+                3
+              else
+                options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
+              end
 
+      search = false
       if args.count.positive?
+        search = true
         tokens = []
         args.each do |arg|
           m = arg.match(/^(?<req>\+)?(?<tok>.*?)$/)
@@ -83,19 +90,14 @@ class App
         end
       end
 
-      depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
-                3
-              else
-                options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
-              end
       tag = options[:tag] == global_options[:na_tag] ? nil : options[:tag]
-      actions = NA.parse_actions(depth: depth,
-                                 query: tokens,
-                                 extension: global_options[:ext],
-                                 na_tag: global_options[:na_tag],
-                                 tag: tag)
+      _, actions = NA.parse_actions(depth: depth,
+                                        query: tokens,
+                                        extension: global_options[:ext],
+                                        na_tag: global_options[:na_tag],
+                                        tag: tag)
 
-      NA.output_actions(actions, depth, global_options[:ext])
+      NA.output_actions(actions, depth, global_options[:ext], search: search)
     end
   end
 
@@ -232,11 +234,11 @@ class App
         end
       end
 
-      actions = NA.parse_actions(depth: depth,
-                                 extension: global_options[:ext],
-                                 na_tag: global_options[:na_tag],
-                                 search: tokens)
-      NA.output_actions(actions, depth, global_options[:ext])
+      _, actions = NA.parse_actions(depth: depth,
+                                        extension: global_options[:ext],
+                                        na_tag: global_options[:na_tag],
+                                        search: tokens)
+      NA.output_actions(actions, depth, global_options[:ext], search: true)
     end
   end
 
@@ -274,11 +276,11 @@ class App
                   })
       end
 
-      actions = NA.parse_actions(depth: depth,
-                                 extension: global_options[:ext],
-                                 na_tag: global_options[:na_tag],
-                                 tag: tags)
-      NA.output_actions(actions, depth, global_options[:ext])
+      _, actions = NA.parse_actions(depth: depth,
+                                        extension: global_options[:ext],
+                                        na_tag: global_options[:na_tag],
+                                        tag: tags)
+      NA.output_actions(actions, depth, global_options[:ext], search: true)
     end
   end
 
