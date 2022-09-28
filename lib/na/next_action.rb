@@ -8,7 +8,7 @@ module NA
         content = <<~ENDCONTENT
         Inbox: @inbox
         #{basename}:
-        \tNew Features:
+        \tFeature Requests:
         \tIdeas:
         \tBugs:
         Archive:

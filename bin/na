@@ -282,6 +282,32 @@ class App
     end
   end
 
+  desc 'Create a new todo file in the current directory'
+  arg_name '[PROJECT]'
+  command %i[init create] do |c|
+    c.example 'na init', desc: 'Generate a new todo file, prompting for project name'
+    c.example 'na init warpspeed', desc: 'Generate a new todo for a project called warpspeed'
+
+    c.action do |global_options, _, args|
+      reader = TTY::Reader.new
+      if args.count.positive?
+        project = args.join(' ')
+      else
+        project = File.expand_path('.').split('/').last
+        project = reader.read_line(NA::Color.template('{y}Project name {bw}> {x}'), value: project).strip
+      end
+
+      target = "#{project}.#{global_options[:ext]}"
+
+      if File.exist?(target)
+        print NA::Color.template("{r}File {bw}#{target}{r} already exists, overwrite it? {br}y{w}/{bg}N{x} ")
+        res = reader.read_char
+        Process.exit 1 unless res =~ /y/i
+      end
+
+      NA.create_todo(target, project)
+    end
+  end
 
   desc 'Open a todo file in the default editor'
   long_desc 'Let the system choose the defualt, (e.g. TaskPaper), or specify a command line utility (e.g. vim).

@@ -1,3 +1,11 @@
+### 1.0.4
+
+2022-09-27 23:56
+
+#### NEW
+
+- OS agnostic command to open todo file in an editor
+
 ### 1.0.3
 
 2022-09-27 14:30
