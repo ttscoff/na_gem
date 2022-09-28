@@ -230,5 +230,34 @@ module NA
         File.open(file, 'w') { |f| f.puts dirs.join("\n") }
       end
     end
+
+    def edit_file(file: nil, app: nil)
+      os_open(file, app: app) if file && File.exist?(file)
+    end
+
+    ##
+    ## Platform-agnostic open command
+    ##
+    ## @param      file  [String] The file to open
+    ##
+    def os_open(file, app: nil)
+      os = RbConfig::CONFIG['target_os']
+      case os
+      when /darwin.*/i
+        if app
+          `open -a "#{app}" #{Shellwords.escape(file)}`
+        else
+          `open #{Shellwords.escape(file)}`
+        end
+      when /mingw|mswin/i
+        `start #{Shellwords.escape(file)}`
+      else
+        if 'xdg-open'.available?
+          `xdg-open #{Shellwords.escape(file)}`
+        else
+          puts NA::Color.template('{r}Unable to determine executable for `open`.{x}')
+        end
+      end
+    end
   end
 end
