@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-current_ver = ARGV[0]
+current_ver = `git ver`
 src = 'src/README.md'
 dest = 'README.md'
 

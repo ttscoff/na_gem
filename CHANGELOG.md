@@ -1,6 +1,6 @@
 ### 1.0.4
 
-2022-09-28 00:53
+2022-09-28 01:18
 
 #### NEW
 
@@ -11,6 +11,7 @@
 
 - Output formatting
 - Make directory matching fuzzy for `na next`
+- --verbose global switch to output debug info
 
 ### 1.0.3
 
