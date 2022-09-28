@@ -1,3 +1,11 @@
+### 1.0.5
+
+2022-09-28 01:53
+
+#### FIXED
+
+- A note containing a colon would be recognized as a project line
+
 ### 1.0.4
 
 2022-09-28 01:18
