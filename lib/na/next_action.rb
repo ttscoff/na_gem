@@ -3,20 +3,22 @@
 # Next Action methods
 module NA
   class << self
+    attr_accessor :verbose
+
     def create_todo(target, basename)
       File.open(target, 'w') do |f|
         content = <<~ENDCONTENT
-        Inbox: @inbox
-        #{basename}:
-        \tFeature Requests:
-        \tIdeas:
-        \tBugs:
-        Archive:
-        Search Definitions:
-        \tTop Priority @search(@priority = 5 and not @done)
-        \tHigh Priority @search(@priority > 3 and not @done)
-        \tMaybe @search(@maybe)
-        \tNext @search(@na and not @done and not project = \"Archive\")
+          Inbox: @inbox
+          #{basename}:
+          \tFeature Requests:
+          \tIdeas:
+          \tBugs:
+          Archive:
+          Search Definitions:
+          \tTop Priority @search(@priority = 5 and not @done)
+          \tHigh Priority @search(@priority > 3 and not @done)
+          \tMaybe @search(@maybe)
+          \tNext @search(@na and not @done and not project = \"Archive\")
         ENDCONTENT
         f.puts(content)
       end
@@ -70,9 +72,13 @@ module NA
       puts NA::Color.template("{by}Task added to {bw}#{file}{x}")
     end
 
-    def output_actions(actions, depth, extension, search: false)
-      template = if search
-                   '%filename%parent%action'
+    def output_actions(actions, depth, extension, files: nil)
+      template = if files&.count.positive?
+                   if files.count == 1
+                     '%parent%action'
+                   else
+                     '%filename%parent%action'
+                   end
                  elsif NA.find_files(depth: depth, extension: extension).count > 1
                    if depth > 1
                      '%filename%parent%action'
@@ -82,6 +88,10 @@ module NA
                  else
                    '%parent%action'
                  end
+      if files && @verbose
+        puts files.map { |f| NA::Color.template("{dw}#{f}{x}") }
+      end
+
       puts actions.map { |action| action.pretty(template: { output: template }) }
     end
 

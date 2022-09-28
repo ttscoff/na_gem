@@ -47,6 +47,9 @@ class App
   default_value 1
   flag %i[d depth], type: :integer, must_match: /^\d+$/
 
+  desc 'Display verbose output'
+  switch %i[verbose]
+
   desc 'Show next actions'
   arg_name 'OPTIONAL_QUERY'
   command %i[next show] do |c|
@@ -77,9 +80,7 @@ class App
                 options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
               end
 
-      search = false
       if args.count.positive?
-        search = true
         tokens = []
         args.each do |arg|
           m = arg.match(/^(?<req>\+)?(?<tok>.*?)$/)
@@ -91,13 +92,13 @@ class App
       end
 
       tag = options[:tag] == global_options[:na_tag] ? nil : options[:tag]
-      _, actions = NA.parse_actions(depth: depth,
+      files, actions = NA.parse_actions(depth: depth,
                                         query: tokens,
                                         extension: global_options[:ext],
                                         na_tag: global_options[:na_tag],
                                         tag: tag)
 
-      NA.output_actions(actions, depth, global_options[:ext], search: search)
+      NA.output_actions(actions, depth, global_options[:ext], files: files)
     end
   end
 
@@ -234,23 +235,23 @@ class App
         end
       end
 
-      _, actions = NA.parse_actions(depth: depth,
+      files, actions = NA.parse_actions(depth: depth,
                                         extension: global_options[:ext],
                                         na_tag: global_options[:na_tag],
                                         search: tokens)
-      NA.output_actions(actions, depth, global_options[:ext], search: true)
+      NA.output_actions(actions, depth, global_options[:ext], files: files)
     end
   end
 
 
   desc 'Find actions matching a tag'
   long_desc 'Finds actions with tags matching the arguments. An action is shown if it
-  contains any of the tags listed. Add a + before a tag to make it required,
-  e.g. `na tagged feature +maybe`'
+  contains any of the tags listed. Add a + before a tag to make it required. You can specify values using TAG=VALUE pairs.'
   arg_name 'TAG [VALUE]'
   command %i[tagged] do |c|
     c.example 'na tagged +maybe', desc: 'Show all actions tagged @maybe'
     c.example 'na tagged -d 3 feature idea', desc: 'Show all actions tagged either @feature or @idea, recurse 3 levels'
+    c.example 'na tagged +priority=5', desc: 'Show actions with @priority(5)'
 
     c.desc 'Recurse to depth'
     c.arg_name 'DEPTH'
@@ -276,11 +277,11 @@ class App
                   })
       end
 
-      _, actions = NA.parse_actions(depth: depth,
+      files, actions = NA.parse_actions(depth: depth,
                                         extension: global_options[:ext],
                                         na_tag: global_options[:na_tag],
                                         tag: tags)
-      NA.output_actions(actions, depth, global_options[:ext], search: true)
+      NA.output_actions(actions, depth, global_options[:ext], files: files)
     end
   end
 
@@ -353,16 +354,12 @@ class App
     end
   end
 
-  pre do |global,command,options,args|
-    # Pre logic here
-    # Return true to proceed; false to abort and not call the
-    # chosen command
-    # Use skips_pre before a command to skip this block
-    # on that command only
+  pre do |global, command, options, args|
+    NA.verbose = global[:verbose]
     true
   end
 
-  post do |global,command,options,args|
+  post do |global, command, options, args|
     # Post logic here
     # Use skips_post before a command to skip this
     # block on that command only

@@ -49,15 +49,11 @@ If you don't have Ruby/RubyGems, you can install them pretty easily with Homebre
 NAME
     na - Add and list next actions for the current project
 
-
 SYNOPSIS
     na [global options] command [command options] [arguments...]
 
-
 VERSION
-    1.0.2
-
-
+    1.0.4
 
 GLOBAL OPTIONS
     -a, --[no-]add          - Add a next action (deprecated, for backwards compatibility)
@@ -67,18 +63,19 @@ GLOBAL OPTIONS
     -n, --[no-]note         - Prompt for additional notes (deprecated, for backwards compatibility)
     --na_tag=TAG            - Tag to consider a next action (default: na)
     -p, --priority=PRIORITY - Set a priority 0-5 (deprecated, for backwards compatibility) (default: none)
-    -r, --[no-]recurse      - Recurse 3 directories deep (deprecated, for backwards compatability)
+    -r, --[no-]recurse      - Recurse 3 directories deep (deprecated, for backwards compatability) (default: enabled)
+    --[no-]verbose          - Display verbose output
     --version               - Display the program version
 
-
-
 COMMANDS
-    add        - Add a new next action
-    find       - Find actions matching a search pattern
-    help       - Shows a list of commands or help for one command
-    initconfig - Initialize the config file using current global options
-    next, show - Show next actions
-    tagged     - Find actions matching a tag
+    add          - Add a new next action
+    edit         - Open a todo file in the default editor
+    find         - Find actions matching a search pattern
+    help         - Shows a list of commands or help for one command
+    init, create - Create a new todo file in the current directory
+    initconfig   - Initialize the config file using current global options
+    next, show   - Show next actions
+    tagged       - Find actions matching a tag
 ```
 
 #### Commands
