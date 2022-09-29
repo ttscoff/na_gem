@@ -53,9 +53,9 @@ class App
   desc 'Show next actions'
   arg_name 'OPTIONAL_QUERY'
   command %i[next show] do |c|
-    c.example 'doing next', desc: 'display the next actions from any todo files in the current directory'
-    c.example 'doing next -d 3', desc: 'display the next actions from the current directory, traversing 3 levels deep'
-    c.example 'doing next marked', desc: 'display next actions for a project you visited in the past'
+    c.example 'na next', desc: 'display the next actions from any todo files in the current directory'
+    c.example 'na next -d 3', desc: 'display the next actions from the current directory, traversing 3 levels deep'
+    c.example 'na next marked', desc: 'display next actions for a project you visited in the past'
     c.desc 'Recurse to depth'
     c.arg_name 'DEPTH'
     c.flag %i[d depth], type: :integer, must_match: /^\d+$/
@@ -349,7 +349,7 @@ class App
              end
 
       if options[:editor]
-        system %(#{options[:editor]} "#{file}")
+        system options[:editor], file
       else
         NA.edit_file(file: file, app: options[:app])
       end
