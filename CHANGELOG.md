@@ -1,3 +1,11 @@
+### 1.1.5
+
+2022-10-01 11:32
+
+#### FIXED
+
+- Parsing of project hierarchy for an action
+
 ### 1.1.4
 
 2022-09-29 04:17
