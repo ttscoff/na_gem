@@ -5,7 +5,9 @@ class ::String
     prefix = match(/(^[ \t]+)/)
     return 0 if prefix.nil?
 
-    prefix[1].gsub(/  /, "\t").scan(/\t/).count
+    tabs = prefix[1].gsub(/  /, "\t").scan(/\t/).count
+
+    tabs
   end
 
   ##

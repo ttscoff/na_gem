@@ -148,12 +148,13 @@ module NA
             if indent.zero?
               parent = [proj]
             elsif indent <= indent_level
-              parent.slice!(indent_level, parent.count - indent_level)
+              parent.slice!(indent, parent.count - indent)
               parent.push(proj)
             elsif indent > indent_level
               parent.push(proj)
-              indent_level = indent
             end
+
+            indent_level = indent
           elsif line =~ /^[ \t]*- / && line !~ / @done/
             next unless line =~ /@#{NA.na_tag}\b/
 
