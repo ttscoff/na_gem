@@ -1,3 +1,11 @@
+### 1.1.6
+
+2022-10-02 11:46
+
+#### CHANGED
+
+- `na find` and `na tagged` now operate on all actions, not just actions tagged @na. If you want to limit to @na actions, just include +na in the query.
+
 ### 1.1.5
 
 2022-10-01 11:32
