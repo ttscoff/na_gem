@@ -91,11 +91,19 @@ class App
         end
       end
 
-      tag = options[:tag] == NA.na_tag ? nil : options[:tag]
+      if options[:tag] == NA.na_tag
+        tag = nil
+        require_na = true
+      else
+        tag = options[:tag]
+        require_na = false
+      end
+
       tag = [{ tag: tag, value: nil }]
       files, actions = NA.parse_actions(depth: depth,
                                         query: tokens,
-                                        tag: tag)
+                                        tag: tag,
+                                        require_na: require_na)
 
       NA.output_actions(actions, depth, files: files)
     end
