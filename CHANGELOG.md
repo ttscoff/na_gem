@@ -1,3 +1,11 @@
+### 1.1.7
+
+2022-10-02 12:20
+
+#### IMPROVED
+
+- You can use !token to add negative values to tag/search queries, e.g. `na tagged +maybe !waiting`
+
 ### 1.1.6
 
 2022-10-02 11:46
