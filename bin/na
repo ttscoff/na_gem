@@ -242,7 +242,8 @@ class App
       end
 
       files, actions = NA.parse_actions(depth: depth,
-                                        search: tokens)
+                                        search: tokens,
+                                        require_na: false)
       NA.output_actions(actions, depth, files: files)
     end
   end
@@ -282,7 +283,8 @@ class App
       end
 
       files, actions = NA.parse_actions(depth: depth,
-                                        tag: tags)
+                                        tag: tags,
+                                        require_na: false)
       NA.output_actions(actions, depth, files: files)
     end
   end

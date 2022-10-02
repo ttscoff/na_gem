@@ -97,7 +97,7 @@ module NA
       puts actions.map { |action| action.pretty(template: { output: template }) }
     end
 
-    def parse_actions(depth: 1, query: nil, tag: nil, search: nil)
+    def parse_actions(depth: 1, query: nil, tag: nil, search: nil, require_na: true)
       actions = []
       required = []
       optional = []
@@ -156,7 +156,7 @@ module NA
 
             indent_level = indent
           elsif line =~ /^[ \t]*- / && line !~ / @done/
-            next unless line =~ /@#{NA.na_tag}\b/
+            next if require_na && line !~ /@#{NA.na_tag}\b/
 
             unless optional.empty? && required.empty?
               next unless line.matches(any: optional, all: required)
