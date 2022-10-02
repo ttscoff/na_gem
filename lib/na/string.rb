@@ -24,8 +24,15 @@ class ::String
     gsub(/(\s|m)(@[^ ("']+)(?:(\()(.*?)(\)))?/, "\\1#{tag_color}\\2#{paren_color}\\3#{value_color}\\4#{paren_color}\\5#{last_color}")
   end
 
-  def matches(any: [], all: [])
-    matches_any(any) && matches_all(all)
+  def matches(any: [], all: [], none: [])
+    matches_any(any) && matches_all(all) && matches_none(none)
+  end
+
+  def matches_none(regexes)
+    regexes.each do |rx|
+      return false if match(Regexp.new(rx, Regexp::IGNORECASE))
+    end
+    true
   end
 
   def matches_any(regexes)

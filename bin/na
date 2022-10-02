@@ -233,10 +233,11 @@ class App
       else
         tokens = []
         args.each do |arg|
-          m = arg.match(/^(?<req>\+)?(?<tok>.*?)$/)
+          m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
           tokens.push({
                         token: m['tok'],
-                        required: !m['req'].nil?
+                        required: !m['req'].nil? && m['req'] == '+',
+                        negate: !m['req'].nil? && m['req'] =~ /[!\-]/
                       })
         end
       end
@@ -273,12 +274,13 @@ class App
       tags = []
       args.each do |arg|
         # TODO: <> comparisons do nothing right now
-        m = arg.match(/^(?<req>\+)?(?<tag>[^ =<>]+)(?:(?<op>[=<>]+)(?<val>\S+))?$/)
+        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>]+)(?:(?<op>[=<>]+)(?<val>\S+))?$/)
         tags.push({
                     tag: m['tag'],
                     comp: m['op'],
                     value: m['val'],
-                    required: !m['req'].nil?
+                    required: !m['req'].nil? && m['req'] == '+',
+                    negate: !m['req'].nil? && m['req'] =~ /[!\-]/
                   })
       end
 

@@ -101,14 +101,16 @@ module NA
       actions = []
       required = []
       optional = []
+      negated = []
 
       tag&.each do |t|
         unless t[:tag].nil?
           new_rx = " @#{t[:tag]}"
           new_rx = "#{new_rx}\\(#{t[:value]}\\)" if t[:value]
 
-          optional.push(new_rx)
-          required.push(new_rx) if t[:required]
+          optional.push(new_rx) unless t[:negate]
+          required.push(new_rx) if t[:required] && !t[:negate]
+          negated.push(new_rx) if t[:negate]
         end
       end
 
@@ -120,8 +122,9 @@ module NA
           search.each do |t|
             new_rx = t[:token].to_s
 
-            optional.push(new_rx)
-            required.push(new_rx) if t[:required]
+            optional.push(new_rx) unless t[:negate]
+            required.push(new_rx) if t[:required] && !t[:negate]
+            negated.push(new_rx) if t[:negate]
           end
         end
       end
@@ -140,7 +143,6 @@ module NA
         indent_level = 0
         parent = []
         content.split("\n").each do |line|
-          new_action = nil
           if line =~ /([ \t]*)([^\-]+.*?): *(@\S+ *)*$/
             proj = Regexp.last_match(2)
             indent = line.indent_level
@@ -158,8 +160,8 @@ module NA
           elsif line =~ /^[ \t]*- / && line !~ / @done/
             next if require_na && line !~ /@#{NA.na_tag}\b/
 
-            unless optional.empty? && required.empty?
-              next unless line.matches(any: optional, all: required)
+            unless optional.empty? && required.empty? && negated.empty?
+              next unless line.matches(any: optional, all: required, none: negated)
 
             end
 
