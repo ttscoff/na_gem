@@ -1,3 +1,11 @@
+### 1.1.8
+
+2022-10-02 16:40
+
+#### FIXED
+
+- `na next -t X` didn't replace @na tag in search, but appended to it
+
 ### 1.1.7
 
 2022-10-02 12:20

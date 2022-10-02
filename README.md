@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.1.7
+The current version of `na` is 1.1.8
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -21,6 +21,11 @@ It can also auto-display next actions when you enter a project directory, automa
 ### Installation
 
 Assuming you have Ruby and RubyGems installed, you can just run `gem install na`. If you run into errors, use `sudo gem install na`.
+
+If you're using Homebrew, you have the option to install via [brew-gem](https://github.com/sportngin/brew-gem):
+
+    brew install brew-gem
+    brew gem install na
 
 If you don't have Ruby/RubyGems, you can install them pretty easily with Homebrew, rvm, or asdf. I can't swear this tool is worth the time, but there _are_ a lot of great gems available...
 
