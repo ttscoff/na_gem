@@ -57,16 +57,16 @@ module NA
       end
     end
 
-    def add_action(file, action, note = nil)
+    def add_action(file, project, action, note = nil)
       content = IO.read(file)
-      unless content =~ /^[ \t]*Inbox:/i
-        content = "Inbox: @inbox\n#{content}"
+      unless content =~ /^[ \t]*#{project}:/i
+        content = "#{project.capitalize}:\n#{content}"
       end
 
-      content.sub!(/^([ \t]*)Inbox:(.*?)$/) do
+      content.sub!(/^([ \t]*)#{project}:(.*?)$/i) do
         m = Regexp.last_match
         note = note.nil? ? '' : "\n#{m[1]}\t\t#{note.join('').strip}"
-        "#{m[1]}Inbox:#{m[2]}\n#{m[1]}\t- #{action}#{note}"
+        "#{m[1]}#{project.capitalize}:#{m[2]}\n#{m[1]}\t- #{action}#{note}"
       end
 
       File.open(file, 'w') { |f| f.puts content }

@@ -121,6 +121,10 @@ class App
     c.desc 'Add a priority level 1-5'
     c.flag %i[p priority], must_match: /[1-5]/, type: :integer, default_value: 0
 
+    c.desc 'Add action to specific project'
+    c.default_value 'Inbox'
+    c.flag %[to]
+
     c.desc 'Use a tag other than the default next action tag'
     c.arg_name 'TAG'
     c.flag %i[t tag]
@@ -203,7 +207,7 @@ class App
         end
       end
 
-      NA.add_action(target, action, note)
+      NA.add_action(target, options[:to], action, note)
     end
   end
 
