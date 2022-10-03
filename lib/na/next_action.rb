@@ -105,7 +105,7 @@ module NA
 
       tag&.each do |t|
         unless t[:tag].nil?
-          new_rx = " @#{t[:tag]}"
+          new_rx = " @#{t[:tag]}\\b"
           new_rx = "#{new_rx}\\(#{t[:value]}\\)" if t[:value]
 
           optional.push(new_rx) unless t[:negate]

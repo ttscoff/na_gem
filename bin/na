@@ -23,7 +23,7 @@ class App
   desc 'Tag to consider a next action'
   default_value 'na'
   arg_name 'TAG'
-  flag :na_tag
+  flag %i[t na_tag]
 
   default_command :next
 
@@ -61,7 +61,6 @@ class App
     c.flag %i[d depth], type: :integer, must_match: /^\d+$/
 
     c.desc 'Alternate tag to search for'
-    c.default_value 'na'
     c.flag %i[t tag]
 
     c.action do |global_options, options, args|
@@ -91,13 +90,8 @@ class App
         end
       end
 
-      if options[:tag] == NA.na_tag
-        tag = nil
-        require_na = true
-      else
-        tag = options[:tag]
-        require_na = false
-      end
+      NA.na_tag = options[:tag] unless options[:tag].nil?
+      require_na = true
 
       tag = [{ tag: tag, value: nil }]
       files, actions = NA.parse_actions(depth: depth,
@@ -166,7 +160,7 @@ class App
         na_tag = " @#{na_tag}"
       end
 
-      action = "#{action.gsub(/#{na_tag}/, '')}#{na_tag}"
+      action = "#{action.gsub(/#{na_tag}\b/, '')}#{na_tag}"
 
       note = if options[:note]
                if TTY::Which.exist?('gum')
@@ -176,6 +170,7 @@ class App
                  reader.read_multiline
                end
              end
+
       if options[:file]
         target = File.expand_path(options[:file])
         unless File.exist?(target)
