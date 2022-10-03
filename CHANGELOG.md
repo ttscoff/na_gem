@@ -1,3 +1,15 @@
+### 1.1.9
+
+2022-10-03 12:08
+
+#### NEW
+
+- `na add --to PROJECT` option to add an action to a project other than Inbox. Case insensitive but requires exact project match. Missing project will be created at top of file.
+
+#### FIXED
+
+- `-t ALT_TAG` functionality fixed
+
 ### 1.1.8
 
 2022-10-02 16:40
