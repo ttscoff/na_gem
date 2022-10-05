@@ -48,4 +48,15 @@ class ::String
     end
     true
   end
+
+  def cap_first!
+    replace cap_first
+  end
+
+  def cap_first
+    sub(/^([a-z])(.*)$/) do
+      m = Regexp.last_match
+      m[1].upcase << m[2]
+    end
+  end
 end
