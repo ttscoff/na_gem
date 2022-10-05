@@ -1,3 +1,12 @@
+### 1.1.11
+
+2022-10-05 08:56
+
+#### IMPROVED
+
+- Respect na_tag setting when creating new todo file
+- Code cleanup
+
 ### 1.1.10
 
 2022-10-05 08:19
