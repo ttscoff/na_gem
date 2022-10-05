@@ -1,8 +1,11 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
+
 $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
 require 'gli'
 require 'na'
 
+# Main application
 class App
   extend GLI::App
 
@@ -123,7 +126,7 @@ class App
 
     c.desc 'Add action to specific project'
     c.default_value 'Inbox'
-    c.flag %[to]
+    c.flag %i[to]
 
     c.desc 'Use a tag other than the default next action tag'
     c.arg_name 'TAG'
@@ -136,7 +139,7 @@ class App
     c.arg_name 'PATH'
     c.flag %i[f file]
 
-    c.action do |global_options, options, args|
+    c.action do |_global_options, options, args|
       reader = TTY::Reader.new
       action = if args.count.positive?
                  args.join(' ').strip
@@ -168,7 +171,10 @@ class App
 
       note = if options[:note]
                if TTY::Which.exist?('gum')
-                 `gum write --placeholder "Enter a note, CTRL-d to save" --width $(tput cols) --char-limit 0`.strip.split("\n")
+                 args = ['--placeholder "Enter a note, CTRL-d to save"']
+                 args << '--char-limit 0'
+                 args << '--width $(tput cols)'
+                 `gum write #{args.join(' ')}`.strip.split("\n")
                else
                  puts NA::Color.template('{bm}Enter a note, {bw}CTRL-d{bm} to end editing{bw}')
                  reader.read_multiline
@@ -190,7 +196,7 @@ class App
         end
       else
         files = NA.find_files(depth: 1)
-        if files.count == 0
+        if files.count.zero?
           print NA::Color.template('{by}No todo file found, create one? {w}(y/{g}N{w}){x} ')
           res = reader.read_char
           if res =~ /y/i
@@ -256,10 +262,10 @@ class App
     end
   end
 
-
   desc 'Find actions matching a tag'
   long_desc 'Finds actions with tags matching the arguments. An action is shown if it
-  contains any of the tags listed. Add a + before a tag to make it required. You can specify values using TAG=VALUE pairs.'
+             contains any of the tags listed. Add a + before a tag to make it required.
+             You can specify values using TAG=VALUE pairs.'
   arg_name 'TAG [VALUE]'
   command %i[tagged] do |c|
     c.example 'na tagged +maybe', desc: 'Show all actions tagged @maybe'
@@ -304,7 +310,7 @@ class App
     c.example 'na init', desc: 'Generate a new todo file, prompting for project name'
     c.example 'na init warpspeed', desc: 'Generate a new todo for a project called warpspeed'
 
-    c.action do |global_options, _, args|
+    c.action do |_global_options, _options, args|
       reader = TTY::Reader.new
       if args.count.positive?
         project = args.join(' ')
@@ -346,7 +352,7 @@ class App
     c.arg_name 'EDITOR'
     c.flag %i[a app]
 
-    c.action do |global_options, options, args|
+    c.action do |global_options, options, _args|
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
                 3
               else
@@ -371,15 +377,16 @@ class App
   long_desc 'Installing the prompt hook allows you to automatically
   list next actions when you cd into a directory'
   command %i[prompt] do |c|
-    c.desc 'Output the prompt hook for the current shell to STDOUT. Pass an argument to specify a shell (zsh, bash, fish)'
+    c.desc 'Output the prompt hook for the current shell to STDOUT. Pass an argument to
+            specify a shell (zsh, bash, fish)'
     c.arg_name '[SHELL]'
     c.command %i[show] do |s|
-      s.action do |global_options, options, args|
-        if args.count.positive?
-          shell = args[0]
-        else
-          shell = File.basename(ENV['SHELL'])
-        end
+      s.action do |_global_options, _options, args|
+        shell = if args.count.positive?
+                  args[0]
+                else
+                  File.basename(ENV['SHELL'])
+                end
 
         case shell
         when /^f/i
@@ -395,12 +402,12 @@ class App
     c.desc 'Install the hook for the current shell to the appropriate startup file.'
     c.arg_name '[SHELL]'
     c.command %i[install] do |s|
-      s.action do |global_options, options, args|
-        if args.count.positive?
-          shell = args[0]
-        else
-          shell = File.basename(ENV['SHELL'])
-        end
+      s.action do |_global_options, _options, args|
+        shell = if args.count.positive?
+                  args[0]
+                else
+                  File.basename(ENV['SHELL'])
+                end
 
         case shell
         when /^f/i
@@ -414,7 +421,7 @@ class App
     end
   end
 
-  pre do |global, command, options, args|
+  pre do |global, _command, _options, _args|
     NA.verbose = global[:debug]
     NA.extension = global[:ext]
     NA.na_tag = global[:na_tag]
@@ -432,9 +439,7 @@ class App
     case exception
     when GLI::UnknownCommand
       cmd = ['add']
-      if ARGV.count.positive?
-        cmd.concat(ARGV.unshift($first_arg))
-      end
+      cmd.concat(ARGV.unshift($first_arg)) if ARGV.count.positive?
 
       exit run(cmd)
     when SystemExit

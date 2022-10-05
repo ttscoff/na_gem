@@ -5,10 +5,17 @@ module NA
   class << self
     attr_accessor :verbose, :extension, :na_tag
 
+    def notify(msg, exit_code: false)
+      $stderr.puts NA::Color.template("{x}#{msg}{x}")
+      if exit_code && exit_code.is_a?(Number)
+        Process.exit exit_code
+      end
+    end
+
     def create_todo(target, basename)
       File.open(target, 'w') do |f|
         content = <<~ENDCONTENT
-          Inbox: @inbox
+          Inbox:
           #{basename}:
           \tFeature Requests:
           \tIdeas:
@@ -18,11 +25,11 @@ module NA
           \tTop Priority @search(@priority = 5 and not @done)
           \tHigh Priority @search(@priority > 3 and not @done)
           \tMaybe @search(@maybe)
-          \tNext @search(@na and not @done and not project = \"Archive\")
+          \tNext @search(@#{NA.na_tag} and not @done and not project = \"Archive\")
         ENDCONTENT
         f.puts(content)
       end
-      $stderr.puts NA::Color.template("{y}Created {bw}#{target}{x}")
+      notify("{y}Created {bw}#{target}")
     end
 
     def find_files(depth: 1)
@@ -41,8 +48,7 @@ module NA
       elsif TTY::Which.exist?('fzf')
         res = choose_from(files, prompt: 'Use which file?')
         unless res
-          $stderr.puts 'No file selected, cancelled'
-          Process.exit 1
+          notify('{r}No file selected, cancelled', exit_code: 1)
         end
 
         res.strip
@@ -71,7 +77,7 @@ module NA
 
       File.open(file, 'w') { |f| f.puts content }
 
-      $stderr.puts NA::Color.template("{by}Task added to {bw}#{file}{x}")
+      notify("{by}Task added to {bw}#{file}")
     end
 
     def output_actions(actions, depth, files: nil)
@@ -91,7 +97,7 @@ module NA
                    '%parent%action'
                  end
       if files && @verbose
-        $stderr.puts files.map { |f| NA::Color.template("{dw}#{f}{x}") }
+        files.map { |f| notify("{dw}#{f}") }
       end
 
       puts actions.map { |action| action.pretty(template: { output: template }) }
@@ -188,11 +194,7 @@ module NA
     def choose_from(options, prompt: 'Make a selection: ', multiple: false, sorted: true, fzf_args: [])
       return nil unless $stdout.isatty
 
-      # fzf_args << '-1' # User is expecting a menu, and even if only one it seves as confirmation
-      default_args = []
-      default_args << %(--prompt="#{prompt}")
-      default_args << "--height=#{options.count + 2}"
-      default_args << '--info=inline'
+      default_args = [%(--prompt="#{prompt}"), "--height=#{options.count + 2}", '--info=inline']
       default_args << '--multi' if multiple
       header = "esc: cancel,#{multiple ? ' tab: multi-select, ctrl-a: select all,' : ''} return: confirm"
       default_args << %(--header="#{header}")
@@ -205,33 +207,50 @@ module NA
       res
     end
 
+    ##
+    ## Get path to database of known todo files
+    ##
+    ## @return     [String] File path
+    ##
     def database_path
       db_dir = File.expand_path('~/.local/share/na')
+      # Create directory if needed
       FileUtils.mkdir_p(db_dir) unless File.directory?(db_dir)
       db_file = 'tdlist.txt'
       File.join(db_dir, db_file)
     end
 
-    def match_working_dir(search)
+    ##
+    ## Find a matching path using semi-fuzzy matching.
+    ## Search tokens can include ! and + to negate or make
+    ## required.
+    ##
+    ## @param      search    [Array] search tokens to match
+    ## @param      distance  [Integer] allowed distance
+    ##                       between characters
+    ##
+    def match_working_dir(search, distance: 1)
       optional = []
       required = []
 
       search&.each do |t|
-        new_rx = t[:token].to_s.split('').join('.{0,1}')
+        # Make "search" into "s.{0,1}e.{0,1}a.{0,1}r.{0,1}c.{0,1}h"
+        new_rx = t[:token].to_s.split('').join(".{0,#{distance}}")
 
         optional.push(new_rx)
         required.push(new_rx) if t[:required]
       end
 
+      match_dir(optional, required)
+    end
+
+    def match_dir(optional, required)
       file = database_path
-      if File.exist?(file)
-        dirs = IO.read(file).split("\n")
-        dirs.delete_if { |d| !d.matches(any: optional, all: required) }
-        dirs.sort.uniq
-      else
-        $stderr.puts NA::Color.template('{r}No na database found{x}')
-        Process.exit 1
-      end
+      notify('{r}No na database found', exit_code: 1) unless File.exist?(file)
+
+      dirs = IO.read(file).split("\n")
+      dirs.delete_if { |d| !d.matches(any: optional, all: required) }
+      dirs.sort.uniq
     end
 
     def save_working_dir(todo_file)
@@ -258,6 +277,26 @@ module NA
       os_open(file, app: app) if file && File.exist?(file)
     end
 
+    def darwin_open(file, app: nil)
+      if app
+        `open -a "#{app}" #{Shellwords.escape(file)}`
+      else
+        `open #{Shellwords.escape(file)}`
+      end
+    end
+
+    def win_open(file)
+      `start #{Shellwords.escape(file)}`
+    end
+
+    def linux_open(file)
+      if TTY::Which.exist?('xdg-open')
+        `xdg-open #{Shellwords.escape(file)}`
+      else
+        notify('{r}Unable to determine executable for `xdg-open`.')
+      end
+    end
+
     ##
     ## Platform-agnostic open command
     ##
@@ -267,19 +306,11 @@ module NA
       os = RbConfig::CONFIG['target_os']
       case os
       when /darwin.*/i
-        if app
-          `open -a "#{app}" #{Shellwords.escape(file)}`
-        else
-          `open #{Shellwords.escape(file)}`
-        end
+        darwin_open(file, app: app)
       when /mingw|mswin/i
-        `start #{Shellwords.escape(file)}`
+        win_open(file)
       else
-        if 'xdg-open'.available?
-          `xdg-open #{Shellwords.escape(file)}`
-        else
-          $stderr.puts NA::Color.template('{r}Unable to determine executable for `open`.{x}')
-        end
+        linux_open(file)
       end
     end
   end
