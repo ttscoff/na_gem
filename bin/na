@@ -20,7 +20,7 @@ class App
 
   desc 'File extension to consider a todo file'
   default_value 'taskpaper'
-  arg_name 'FILE_EXTENSION'
+  arg_name 'EXT'
   flag :ext
 
   desc 'Tag to consider a next action'
@@ -48,7 +48,7 @@ class App
   desc 'Recurse to depth'
   arg_name 'DEPTH'
   default_value 1
-  flag %i[d depth], type: :integer, must_match: /^\d+$/
+  flag %i[d depth], type: :integer, must_match: /^[1-9]$/
 
   desc 'Display verbose output'
   switch %i[debug]
@@ -61,7 +61,7 @@ class App
     c.example 'na next marked', desc: 'display next actions for a project you visited in the past'
     c.desc 'Recurse to depth'
     c.arg_name 'DEPTH'
-    c.flag %i[d depth], type: :integer, must_match: /^\d+$/
+    c.flag %i[d depth], type: :integer, must_match: /^[1-9]$/
 
     c.desc 'Alternate tag to search for'
     c.flag %i[t tag]
@@ -122,9 +122,11 @@ class App
     c.switch %i[n note], negatable: false
 
     c.desc 'Add a priority level 1-5'
+    c.arg_name 'PRIO'
     c.flag %i[p priority], must_match: /[1-5]/, type: :integer, default_value: 0
 
     c.desc 'Add action to specific project'
+    c.arg_name 'PROJECT'
     c.default_value 'Inbox'
     c.flag %i[to]
 
@@ -138,6 +140,10 @@ class App
     c.desc 'Specify the file to which the task should be added'
     c.arg_name 'PATH'
     c.flag %i[f file]
+
+    c.desc 'Search for files X directories deep'
+    c.arg_name 'DEPTH'
+    c.flag %i[d depth], must_match: /^[1-9]$/, type: :integer, default_value: 1
 
     c.action do |_global_options, options, args|
       reader = TTY::Reader.new
@@ -195,7 +201,7 @@ class App
           end
         end
       else
-        files = NA.find_files(depth: 1)
+        files = NA.find_files(depth: options[:depth])
         if files.count.zero?
           print NA::Color.template('{by}No todo file found, create one? {w}(y/{g}N{w}){x} ')
           res = reader.read_char
@@ -231,7 +237,6 @@ class App
 
     c.desc 'Recurse to depth'
     c.arg_name 'DEPTH'
-    c.default_value 1
     c.flag %i[d depth], type: :integer, must_match: /^\d+$/
 
     c.action do |global_options, options, args|
