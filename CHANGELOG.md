@@ -1,3 +1,11 @@
+### 1.1.10
+
+2022-10-05 08:19
+
+#### FIXED
+
+- When adding a project, don't use Ruby #capitalize, which downcases the rest of the project name
+
 ### 1.1.9
 
 2022-10-03 12:08
