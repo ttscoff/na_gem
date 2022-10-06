@@ -103,6 +103,25 @@ module NA
       puts actions.map { |action| action.pretty(template: { output: template }) }
     end
 
+    def parse_search(tag, negate)
+      required = []
+      optional = []
+      negated = []
+      new_rx = tag[:token].to_s.wildcard_to_rx
+
+      if negate
+        optional.push(new_rx) if tag[:negate]
+        required.push(new_rx) if tag[:required] && tag[:negate]
+        negated.push(new_rx) unless tag[:negate]
+      else
+        optional.push(new_rx) unless tag[:negate]
+        required.push(new_rx) if tag[:required] && !tag[:negate]
+        negated.push(new_rx) if tag[:negate]
+      end
+
+      [optional, required, negated]
+    end
+
     def parse_actions(depth: 1, query: nil, tag: nil, search: nil, negate: false, regex: false, project: nil, require_na: true)
       actions = []
       required = []
@@ -136,28 +155,16 @@ module NA
           end
         else
           search.each do |t|
-            new_rx = t[:token].to_s.wildcard_to_rx
-
-            if negate
-              optional.push(new_rx) if t[:negate]
-              required.push(new_rx) if t[:required] && t[:negate]
-              negated.push(new_rx) unless t[:negate]
-            else
-              optional.push(new_rx) unless t[:negate]
-              required.push(new_rx) if t[:required] && !t[:negate]
-              negated.push(new_rx) if t[:negate]
-            end
+            optional, required, negated = parse_search(t, negate)
           end
         end
       end
 
-      na_tag = "@#{NA.na_tag.sub(/^@/, '')}"
-
-      if query.nil?
-        files = find_files(depth: depth)
-      else
-        files = match_working_dir(query)
-      end
+      files = if query.nil?
+                find_files(depth: depth)
+              else
+                match_working_dir(query)
+              end
 
       files.each do |file|
         save_working_dir(File.expand_path(file))
