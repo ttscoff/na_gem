@@ -344,6 +344,8 @@ class App
               end
 
       tags = []
+
+      all_req = args.join(' ') !~ /[+!\-]/
       args.join(',').split(/ *, */).each do |arg|
         # TODO: <> comparisons do nothing right now
         m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>*$\^]+)(?:(?<op>[=<>*$\^]+)(?<val>.*?))?$/)
@@ -351,7 +353,7 @@ class App
                     tag: m['tag'],
                     comp: m['op'],
                     value: m['val'],
-                    required: !m['req'].nil? && m['req'] == '+',
+                    required: all_req || (!m['req'].nil? && m['req'] == '+'),
                     negate: !m['req'].nil? && m['req'] =~ /[!\-]/
                   })
       end
