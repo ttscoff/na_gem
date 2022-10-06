@@ -103,20 +103,20 @@ module NA
       puts actions.map { |action| action.pretty(template: { output: template }) }
     end
 
-    def parse_actions(depth: 1, query: nil, tag: nil, search: nil, require_na: true)
+    def parse_actions(depth: 1, query: nil, tag: nil, search: nil, project: nil, require_na: true)
       actions = []
       required = []
       optional = []
       negated = []
+      required_tag = []
+      optional_tag = []
+      negated_tag = []
 
       tag&.each do |t|
         unless t[:tag].nil?
-          new_rx = " @#{t[:tag]}\\b"
-          new_rx = "#{new_rx}\\(#{t[:value]}\\)" if t[:value]
-
-          optional.push(new_rx) unless t[:negate]
-          required.push(new_rx) if t[:required] && !t[:negate]
-          negated.push(new_rx) if t[:negate]
+          optional_tag.push(t) unless t[:negate]
+          required_tag.push(t) if t[:required] && !t[:negate]
+          negated_tag.push(t) if t[:negate]
         end
       end
 
@@ -126,7 +126,7 @@ module NA
           required.push(search)
         else
           search.each do |t|
-            new_rx = t[:token].to_s
+            new_rx = t[:token].to_s.wildcard_to_rx
 
             optional.push(new_rx) unless t[:negate]
             required.push(new_rx) if t[:required] && !t[:negate]
@@ -166,13 +166,24 @@ module NA
           elsif line =~ /^[ \t]*- / && line !~ / @done/
             next if require_na && line !~ /@#{NA.na_tag}\b/
 
-            unless optional.empty? && required.empty? && negated.empty?
-              next unless line.matches(any: optional, all: required, none: negated)
-
-            end
-
             action = line.sub(/^[ \t]*- /, '').sub(/ @#{NA.na_tag}\b/, '')
             new_action = NA::Action.new(file, File.basename(file, ".#{NA.extension}"), parent.dup, action)
+
+            has_search = !optional.empty? || !required.empty? || !negated.empty?
+            next if has_search && !new_action.search_match?(any: optional,
+                                                            all: required,
+                                                            none: negated)
+
+            if project
+              rx = project.split(%r{[/:]}).join('.*?/.*?')
+              next unless parent.join('/') =~ Regexp.new(rx, Regexp::IGNORECASE)
+            end
+
+            has_tag = !optional_tag.empty? || !required_tag.empty? || !negated_tag.empty?
+            next if has_tag && !new_action.tags_match?(any: optional_tag,
+                                                       all: required_tag,
+                                                       none: negated_tag)
+
             actions.push(new_action)
           end
         end

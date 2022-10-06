@@ -49,6 +49,10 @@ class ::String
     true
   end
 
+  def wildcard_to_rx
+    gsub(/\*/, '.*?').gsub(/\?/, '.')
+  end
+
   def cap_first!
     replace cap_first
   end
