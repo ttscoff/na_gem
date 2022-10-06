@@ -231,7 +231,7 @@ class App
   end
 
   desc 'Find actions matching a search pattern'
-  long_desc 'Search tokens are separated by spaces. Actions matching any token in the pattern will be shown
+  long_desc 'Search tokens are separated by spaces. Actions matching all tokens in the pattern will be shown
   (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe`'
   arg_name 'PATTERN'
   command %i[find grep] do |c|
@@ -311,8 +311,11 @@ class App
 
   desc 'Find actions matching a tag'
   long_desc 'Finds actions with tags matching the arguments. An action is shown if it
-             contains any of the tags listed. Add a + before a tag to make it required.
-             You can specify values using TAG=VALUE pairs.'
+             contains all of the tags listed. Add a + before a tag to make it required
+             and others optional. You can specify values using TAG=VALUE pairs.
+             Use <, >, and = for numeric comparisons, and *=, ^=, and $= for text comparisons.
+             Date comparisons use natural language (`na tagged "due<=today"`) and
+             are detected automatically.'
   arg_name 'TAG [VALUE]'
   command %i[tagged] do |c|
     c.example 'na tagged maybe', desc: 'Show all actions tagged @maybe'
