@@ -27,7 +27,7 @@ module NA
       EOINSPECT
     end
 
-    def pretty(extension: 'taskpaper', template: {})
+    def pretty(extension: 'taskpaper', template: {}, regexes: [])
       default_template = {
         file: '{xbk}',
         parent: '{c}',
@@ -67,7 +67,7 @@ module NA
       NA::Color.template(template[:output].gsub(/%filename/, filename)
                           .gsub(/%project/, project)
                           .gsub(/%parents?/, parents)
-                          .gsub(/%action/, action))
+                          .gsub(/%action/, action.highlight_search(regexes)))
     end
 
     def tags_match?(any: [], all: [], none: [])

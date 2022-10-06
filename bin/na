@@ -269,7 +269,7 @@ class App
         tokens = Regexp.new(args.join(' '), Regexp::IGNORECASE)
       else
         tokens = []
-        args.each do |arg|
+        args.join(' ').split(/ /).each do |arg|
           m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
           tokens.push({
                         token: m['tok'],
@@ -285,7 +285,8 @@ class App
                                         regex: options[:regex],
                                         project: options[:project],
                                         require_na: false)
-      NA.output_actions(actions, depth, files: files)
+      regexes = tokens.delete_if { |token| token[:negate] }.map { |token| token[:token] }
+      NA.output_actions(actions, depth, files: files, regexes: regexes)
     end
   end
 
@@ -336,7 +337,8 @@ class App
                                         negate: options[:invert],
                                         project: options[:project],
                                         require_na: false)
-      NA.output_actions(actions, depth, files: files)
+      regexes = tags.delete_if { |token| token[:negate] }.map { |token| token[:token] }
+      NA.output_actions(actions, depth, files: files, regexes: regexes)
     end
   end
 

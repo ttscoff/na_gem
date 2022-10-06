@@ -80,8 +80,10 @@ module NA
       notify("{by}Task added to {bw}#{file}")
     end
 
-    def output_actions(actions, depth, files: nil)
-      template = if files&.count.positive?
+    def output_actions(actions, depth, files: nil, regexes: [])
+      return if files.nil?
+
+      template = if files.count.positive?
                    if files.count == 1
                      '%parent%action'
                    else
@@ -96,11 +98,10 @@ module NA
                  else
                    '%parent%action'
                  end
-      if files && @verbose
-        files.map { |f| notify("{dw}#{f}") }
-      end
 
-      puts actions.map { |action| action.pretty(template: { output: template }) }
+      files.map { |f| notify("{dw}#{f}") } if files && @verbose
+
+      puts(actions.map { |action| action.pretty(template: { output: template }, regexes: regexes) })
     end
 
     def parse_actions(depth: 1, query: nil, tag: nil, search: nil, negate: false, regex: false, project: nil, require_na: true)
@@ -136,7 +137,10 @@ module NA
           end
         else
           search.each do |t|
-            optional, required, negated = parse_search(t, negate)
+            opt, req, neg = parse_search(t, negate)
+            optional.concat(opt)
+            required.concat(req)
+            negated.concat(neg)
           end
         end
       end

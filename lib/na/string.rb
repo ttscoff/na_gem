@@ -23,6 +23,30 @@ class ::String
          "\\1#{tag_color}\\2#{paren_color}\\3#{value_color}\\4#{paren_color}\\5#{last_color}")
   end
 
+  def highlight_search(regexes, color: '{Yk}')
+    string = dup
+    color = NA::Color.template(color)
+    regexes.each do |rx|
+      string.gsub!(/(#{rx.wildcard_to_rx})/i, "#{color}\\1#{NA::Color.template('{xg}')}")
+    end
+    string
+  end
+
+  # Returns the last escape sequence from a string.
+  #
+  # Actually returns all escape codes, with the assumption
+  # that the result of inserting them will generate the
+  # same color as was set at the end of the string.
+  # Because you can send modifiers like dark and bold
+  # separate from color codes, only using the last code
+  # may not render the same style.
+  #
+  # @return     [String]  All escape codes in string
+  #
+  def last_color
+    scan(/\e\[[\d;]+m/).join('').gsub(/\e\[0m/, '')
+  end
+
   def dir_to_rx
     "#{split(%r{[/:]}).join('.*?/.*?')}[^/]+$"
   end
@@ -34,6 +58,23 @@ class ::String
   def matches(any: [], all: [], none: [])
     matches_any(any) && matches_all(all) && matches_none(none)
   end
+
+  def wildcard_to_rx
+    gsub(/\./, '\\.').gsub(/\*/, '.*?').gsub(/\?/, '.')
+  end
+
+  def cap_first!
+    replace cap_first
+  end
+
+  def cap_first
+    sub(/^([a-z])(.*)$/) do
+      m = Regexp.last_match
+      m[1].upcase << m[2]
+    end
+  end
+
+  private
 
   def matches_none(regexes)
     regexes.each do |rx|
@@ -54,20 +95,5 @@ class ::String
       return false unless match(Regexp.new(rx, Regexp::IGNORECASE))
     end
     true
-  end
-
-  def wildcard_to_rx
-    gsub(/\./, '\\.').gsub(/\*/, '.*?').gsub(/\?/, '.')
-  end
-
-  def cap_first!
-    replace cap_first
-  end
-
-  def cap_first
-    sub(/^([a-z])(.*)$/) do
-      m = Regexp.last_match
-      m[1].upcase << m[2]
-    end
   end
 end
