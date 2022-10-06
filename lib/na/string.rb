@@ -27,6 +27,8 @@ class ::String
     string = dup
     color = NA::Color.template(color)
     regexes.each do |rx|
+      next if rx.nil?
+
       string.gsub!(/(#{rx.wildcard_to_rx})/i, "#{color}\\1#{NA::Color.template('{xg}')}")
     end
     string
