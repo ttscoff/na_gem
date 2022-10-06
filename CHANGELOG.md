@@ -1,3 +1,11 @@
+### 1.1.17
+
+2022-10-06 17:02
+
+#### CHANGED
+
+- Default to AND search with `tagged` unless a "+" or "!" is specified
+
 ### 1.1.16
 
 2022-10-06 16:47
