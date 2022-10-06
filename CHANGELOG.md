@@ -1,3 +1,16 @@
+### 1.1.14
+
+2022-10-06 12:30
+
+#### IMPROVED
+
+- Code cleanup
+- Highlight search terms in results
+
+#### FIXED
+
+- Multiple search terms overriding each other
+
 ### 1.1.13
 
 2022-10-06 06:28
