@@ -249,6 +249,10 @@ class App
     c.arg_name 'DEPTH'
     c.flag %i[d depth], type: :integer, must_match: /^\d+$/
 
+    c.desc 'Show actions from a specific todo file in history'
+    c.arg_name 'TODO_PATH'
+    c.flag %i[in]
+
     c.desc 'Show actions from a specific project'
     c.arg_name 'PROJECT[/SUBPROJECT]'
     c.flag %i[proj project]
@@ -281,7 +285,16 @@ class App
         end
       end
 
+      todo = nil
+      if options[:in]
+        todo = [{
+          token: options[:in],
+          required: true
+        }]
+      end
+
       files, actions = NA.parse_actions(depth: depth,
+                                        query: todo,
                                         search: tokens,
                                         negate: options[:invert],
                                         regex: options[:regex],
@@ -312,6 +325,10 @@ class App
     c.default_value 1
     c.flag %i[d depth], type: :integer, must_match: /^\d+$/
 
+    c.desc 'Show actions from a specific todo file in history'
+    c.arg_name 'TODO_PATH'
+    c.flag %i[in]
+
     c.desc 'Show actions from a specific project'
     c.arg_name 'PROJECT[/SUBPROJECT]'
     c.flag %i[proj project]
@@ -329,7 +346,7 @@ class App
       tags = []
       args.join(',').split(/ *, */).each do |arg|
         # TODO: <> comparisons do nothing right now
-        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>*$\^]+)(?:(?<op>[=<>*$\^]+)(?<val>\S+))?$/)
+        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>*$\^]+)(?:(?<op>[=<>*$\^]+)(?<val>.*?))?$/)
         tags.push({
                     tag: m['tag'],
                     comp: m['op'],
@@ -339,7 +356,16 @@ class App
                   })
       end
 
+      todo = nil
+      if options[:in]
+        todo = [{
+          token: options[:in],
+          required: true
+        }]
+      end
+
       files, actions = NA.parse_actions(depth: depth,
+                                        query: todo,
                                         tag: tags,
                                         negate: options[:invert],
                                         project: options[:project],

@@ -136,26 +136,54 @@ module NA
 
       return false if tag_val.nil?
 
-      return case tag[:comp]
-             when /^>$/
-               tag_val.to_f > val.to_f
-             when /^<$/
-               tag_val.to_f < val.to_f
-             when /^<=$/
-               tag_val.to_f <= val.to_f
-             when /^>=$/
-               tag_val.to_f >= val.to_f
-             when /^==?$/
-               tag_val =~ /^#{val.wildcard_to_rx}$/
-             when /^\$=$/
-               tag_val =~ /#{val.wildcard_to_rx}$/i
-             when /^\*=$/
-               tag_val =~ /#{val.wildcard_to_rx}/i
-             when /^\^=$/
-               tag_val =~ /^#{val.wildcard_to_rx}/
-             else
-               false
-             end
+      begin
+        tag_date = Time.parse(tag_val)
+        date = Chronic.parse(val)
+
+        puts "Comparing #{tag_date} #{tag[:comp]} #{date}" if NA.verbose
+
+        case tag[:comp]
+        when /^>$/
+          tag_date > date
+        when /^<$/
+          tag_date < date
+        when /^<=$/
+          tag_date <= date
+        when /^>=$/
+          tag_date >= date
+        when /^==?$/
+          tag_date == date
+        when /^\$=$/
+          tag_val =~ /#{val.wildcard_to_rx}/i
+        when /^\*=$/
+          tag_val =~ /#{val.wildcard_to_rx}/i
+        when /^\^=$/
+          tag_val =~ /^#{val.wildcard_to_rx}/
+        else
+          false
+        end
+      rescue
+        case tag[:comp]
+        when /^>$/
+          tag_val.to_f > val.to_f
+        when /^<$/
+          tag_val.to_f < val.to_f
+        when /^<=$/
+          tag_val.to_f <= val.to_f
+        when /^>=$/
+          tag_val.to_f >= val.to_f
+        when /^==?$/
+          tag_val =~ /^#{val.wildcard_to_rx}$/
+        when /^\$=$/
+          tag_val =~ /#{val.wildcard_to_rx}$/i
+        when /^\*=$/
+          tag_val =~ /#{val.wildcard_to_rx}/i
+        when /^\^=$/
+          tag_val =~ /^#{val.wildcard_to_rx}/
+        else
+          false
+        end
+      end
     end
 
     def scan_tags

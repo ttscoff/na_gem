@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 require 'na/version'
+require 'time'
 require 'fileutils'
 require 'shellwords'
+require 'chronic'
 require 'tty-screen'
 require 'tty-reader'
 require 'tty-which'

@@ -1,7 +1,8 @@
 PATH
   remote: .
   specs:
-    na (1.1.15)
+    na (1.1.16)
+      chronic (~> 0.10, >= 0.10.2)
       gli (~> 2.21.0)
       tty-reader (~> 0.9, >= 0.9.0)
       tty-screen (~> 0.8, >= 0.8.1)
@@ -10,6 +11,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
+    chronic (0.10.2)
     gli (2.21.0)
     minitest (5.16.3)
     rake (0.9.6)
