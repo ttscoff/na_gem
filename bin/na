@@ -308,6 +308,9 @@ class App
     c.arg_name 'PROJECT[/SUBPROJECT]'
     c.flag %i[proj project]
 
+    c.desc 'Show actions not matching tags'
+    c.switch %i[v invert], negatable: false
+
     c.action do |global_options, options, args|
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
                 3
@@ -330,6 +333,7 @@ class App
 
       files, actions = NA.parse_actions(depth: depth,
                                         tag: tags,
+                                        negate: options[:invert],
                                         project: options[:project],
                                         require_na: false)
       NA.output_actions(actions, depth, files: files)

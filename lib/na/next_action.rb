@@ -114,9 +114,15 @@ module NA
 
       tag&.each do |t|
         unless t[:tag].nil?
-          optional_tag.push(t) unless t[:negate]
-          required_tag.push(t) if t[:required] && !t[:negate]
-          negated_tag.push(t) if t[:negate]
+          if negate
+            optional_tag.push(t) if t[:negate]
+            required_tag.push(t) if t[:required] && t[:negate]
+            negated_tag.push(t) unless t[:negate]
+          else
+            optional_tag.push(t) unless t[:negate]
+            required_tag.push(t) if t[:required] && !t[:negate]
+            negated_tag.push(t) if t[:negate]
+          end
         end
       end
 
