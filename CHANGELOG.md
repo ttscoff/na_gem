@@ -1,3 +1,11 @@
+### 1.1.16
+
+2022-10-06 16:47
+
+#### NEW
+
+- `--in todo/path` flag for `find` and `tagged` commands to specify a todo file from history
+
 ### 1.1.15
 
 2022-10-06 16:12
