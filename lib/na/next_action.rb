@@ -103,7 +103,7 @@ module NA
       puts actions.map { |action| action.pretty(template: { output: template }) }
     end
 
-    def parse_actions(depth: 1, query: nil, tag: nil, search: nil, project: nil, require_na: true)
+    def parse_actions(depth: 1, query: nil, tag: nil, search: nil, negate: false, regex: false, project: nil, require_na: true)
       actions = []
       required = []
       optional = []
@@ -121,16 +121,26 @@ module NA
       end
 
       unless search.nil?
-        if search.is_a?(String)
-          optional.push(search)
-          required.push(search)
+        if regex || search.is_a?(String)
+          if negate
+            negated.push(search)
+          else
+            optional.push(search)
+            required.push(search)
+          end
         else
           search.each do |t|
             new_rx = t[:token].to_s.wildcard_to_rx
 
-            optional.push(new_rx) unless t[:negate]
-            required.push(new_rx) if t[:required] && !t[:negate]
-            negated.push(new_rx) if t[:negate]
+            if negate
+              optional.push(new_rx) if t[:negate]
+              required.push(new_rx) if t[:required] && t[:negate]
+              negated.push(new_rx) unless t[:negate]
+            else
+              optional.push(new_rx) unless t[:negate]
+              required.push(new_rx) if t[:required] && !t[:negate]
+              negated.push(new_rx) if t[:negate]
+            end
           end
         end
       end
