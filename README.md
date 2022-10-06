@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.1.17
+The current version of `na` is 1.1.18
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -254,7 +254,7 @@ EXAMPLES
     # Show all actions tagged @maybe
     na tagged +maybe
 
-    # Show all actions tagged either @feature or @idea, recurse 3 levels
+    # Show all actions tagged @feature and @idea, recurse 3 levels
     na tagged -d 3 feature idea
 ```
 

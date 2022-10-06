@@ -1,3 +1,11 @@
+### 1.1.18
+
+2022-10-06 17:23
+
+#### FIXED
+
+- Update help to match new default AND searches
+
 ### 1.1.17
 
 2022-10-06 17:02
