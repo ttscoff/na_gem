@@ -1,3 +1,11 @@
+### 1.1.13
+
+2022-10-06 06:28
+
+#### IMPROVED
+
+- When specifying arguments to `next`, allow paths separated by / to do more exact matching
+
 ### 1.1.12
 
 2022-10-06 05:42

@@ -25,7 +25,7 @@ class ::String
   end
 
   def dir_to_rx
-    split(%r{/}).join('.*?/.*?') + '[^/]+$'
+    split(%r{[/:]}).join('.*?/.*?') + '[^/]+$'
   end
 
   def dir_matches(any: [], all: [])
