@@ -23,7 +23,7 @@ class ::String
          "\\1#{tag_color}\\2#{paren_color}\\3#{value_color}\\4#{paren_color}\\5#{last_color}")
   end
 
-  def highlight_search(regexes, color: '{Yk}')
+  def highlight_search(regexes, color: '{y}')
     string = dup
     color = NA::Color.template(color)
     regexes.each do |rx|
