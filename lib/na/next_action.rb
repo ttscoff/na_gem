@@ -103,25 +103,6 @@ module NA
       puts actions.map { |action| action.pretty(template: { output: template }) }
     end
 
-    def parse_search(tag, negate)
-      required = []
-      optional = []
-      negated = []
-      new_rx = tag[:token].to_s.wildcard_to_rx
-
-      if negate
-        optional.push(new_rx) if tag[:negate]
-        required.push(new_rx) if tag[:required] && tag[:negate]
-        negated.push(new_rx) unless tag[:negate]
-      else
-        optional.push(new_rx) unless tag[:negate]
-        required.push(new_rx) if tag[:required] && !tag[:negate]
-        negated.push(new_rx) if tag[:negate]
-      end
-
-      [optional, required, negated]
-    end
-
     def parse_actions(depth: 1, query: nil, tag: nil, search: nil, negate: false, regex: false, project: nil, require_na: true)
       actions = []
       required = []
@@ -214,6 +195,40 @@ module NA
       [files, actions]
     end
 
+    def edit_file(file: nil, app: nil)
+      os_open(file, app: app) if file && File.exist?(file)
+    end
+
+    ##
+    ## Platform-agnostic open command
+    ##
+    ## @param      file  [String] The file to open
+    ##
+    def os_open(file, app: nil)
+      os = RbConfig::CONFIG['target_os']
+      case os
+      when /darwin.*/i
+        darwin_open(file, app: app)
+      when /mingw|mswin/i
+        win_open(file)
+      else
+        linux_open(file)
+      end
+    end
+
+    def weed_cache_file
+      db_dir = File.expand_path('~/.local/share/na')
+      db_file = 'tdlist.txt'
+      file = File.join(db_dir, db_file)
+      if File.exist?(file)
+        dirs = IO.read(file).split("\n")
+        dirs.delete_if { |f| !File.exist?(f) }
+        File.open(file, 'w') { |f| f.puts dirs.join("\n") }
+      end
+    end
+
+    private
+
     ##
     ## Generate a menu of options and allow user selection
     ##
@@ -239,6 +254,25 @@ module NA
       return false if res.strip.size.zero?
 
       res
+    end
+
+    def parse_search(tag, negate)
+      required = []
+      optional = []
+      negated = []
+      new_rx = tag[:token].to_s.wildcard_to_rx
+
+      if negate
+        optional.push(new_rx) if tag[:negate]
+        required.push(new_rx) if tag[:required] && tag[:negate]
+        negated.push(new_rx) unless tag[:negate]
+      else
+        optional.push(new_rx) unless tag[:negate]
+        required.push(new_rx) if tag[:required] && !tag[:negate]
+        negated.push(new_rx) if tag[:negate]
+      end
+
+      [optional, required, negated]
     end
 
     ##
@@ -283,7 +317,7 @@ module NA
       notify('{r}No na database found', exit_code: 1) unless File.exist?(file)
 
       dirs = IO.read(file).split("\n")
-      dirs.delete_if { |d| !d.matches(any: optional, all: required) }
+      dirs.delete_if { |d| !d.dir_matches(any: optional, all: required) }
       dirs.sort.uniq
     end
 
@@ -294,21 +328,6 @@ module NA
       dirs.push(File.expand_path(todo_file))
       dirs.sort!.uniq!
       File.open(file, 'w') { |f| f.puts dirs.join("\n") }
-    end
-
-    def weed_cache_file
-      db_dir = File.expand_path('~/.local/share/na')
-      db_file = 'tdlist.txt'
-      file = File.join(db_dir, db_file)
-      if File.exist?(file)
-        dirs = IO.read(file).split("\n")
-        dirs.delete_if { |f| !File.exist?(f) }
-        File.open(file, 'w') { |f| f.puts dirs.join("\n") }
-      end
-    end
-
-    def edit_file(file: nil, app: nil)
-      os_open(file, app: app) if file && File.exist?(file)
     end
 
     def darwin_open(file, app: nil)
@@ -328,23 +347,6 @@ module NA
         `xdg-open #{Shellwords.escape(file)}`
       else
         notify('{r}Unable to determine executable for `xdg-open`.')
-      end
-    end
-
-    ##
-    ## Platform-agnostic open command
-    ##
-    ## @param      file  [String] The file to open
-    ##
-    def os_open(file, app: nil)
-      os = RbConfig::CONFIG['target_os']
-      case os
-      when /darwin.*/i
-        darwin_open(file, app: app)
-      when /mingw|mswin/i
-        win_open(file)
-      else
-        linux_open(file)
       end
     end
   end

@@ -24,6 +24,14 @@ class ::String
     gsub(/(\s|m)(@[^ ("']+)(?:(\()(.*?)(\)))?/, "\\1#{tag_color}\\2#{paren_color}\\3#{value_color}\\4#{paren_color}\\5#{last_color}")
   end
 
+  def dir_to_rx
+    split(%r{/}).join('.*?/.*?') + '[^/]+$'
+  end
+
+  def dir_matches(any: [], all: [])
+    matches_any(any.map { |token| token.dir_to_rx }) && matches_all(all.map { |token| token.dir_to_rx })
+  end
+
   def matches(any: [], all: [], none: [])
     matches_any(any) && matches_all(all) && matches_none(none)
   end
@@ -36,6 +44,7 @@ class ::String
   end
 
   def matches_any(regexes)
+    string = dup
     regexes.each do |rx|
       return true if match(Regexp.new(rx, Regexp::IGNORECASE))
     end
