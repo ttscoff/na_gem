@@ -269,11 +269,13 @@ class App
         tokens = Regexp.new(args.join(' '), Regexp::IGNORECASE)
       else
         tokens = []
+        all_req = args.join(' ') !~ /[+!\-]/
+
         args.join(' ').split(/ /).each do |arg|
           m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
           tokens.push({
                         token: m['tok'],
-                        required: !m['req'].nil? && m['req'] == '+',
+                        required: all_req || (!m['req'].nil? && m['req'] == '+'),
                         negate: !m['req'].nil? && m['req'] =~ /[!\-]/
                       })
         end
@@ -285,7 +287,12 @@ class App
                                         regex: options[:regex],
                                         project: options[:project],
                                         require_na: false)
-      regexes = tokens.delete_if { |token| token[:negate] }.map { |token| token[:token] }
+      if tokens.is_a?(Array)
+        regexes = tokens.delete_if { |token| token[:negate] }.map { |token| token[:token] }
+      else
+        regexes = [tokens]
+      end
+
       NA.output_actions(actions, depth, files: files, regexes: regexes)
     end
   end

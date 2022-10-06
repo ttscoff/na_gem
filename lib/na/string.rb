@@ -15,7 +15,7 @@ class ::String
   ##
   ## @return     [String] string with @tags highlighted
   ##
-  def highlight_tags(color: '{m}', value: '{y}', parens: '{m}', last_color: '{g}')
+  def highlight_tags(color: '{m}', value: '{y}', parens: '{m}', last_color: '{xg}')
     tag_color = NA::Color.template(color)
     paren_color = NA::Color.template(parens)
     value_color = NA::Color.template(value)
@@ -23,13 +23,19 @@ class ::String
          "\\1#{tag_color}\\2#{paren_color}\\3#{value_color}\\4#{paren_color}\\5#{last_color}")
   end
 
-  def highlight_search(regexes, color: '{y}')
+  def highlight_search(regexes, color: '{y}', last_color: '{xg}')
     string = dup
     color = NA::Color.template(color)
     regexes.each do |rx|
       next if rx.nil?
 
-      string.gsub!(/(#{rx.wildcard_to_rx})/i, "#{color}\\1#{NA::Color.template('{xg}')}")
+      rx = Regexp.new(rx.wildcard_to_rx, Regexp::IGNORECASE) if rx.is_a?(String)
+
+      string.gsub!(rx) do
+        m = Regexp.last_match
+        last = m.pre_match.last_color
+        "#{color}#{m[0]}#{NA::Color.template(last)}"
+      end
     end
     string
   end
@@ -62,7 +68,7 @@ class ::String
   end
 
   def wildcard_to_rx
-    gsub(/\./, '\\.').gsub(/\*/, '.*?').gsub(/\?/, '.')
+    gsub(/\./, '\\.').gsub(/\*/, '[^ ]*?').gsub(/\?/, '.')
   end
 
   def cap_first!
