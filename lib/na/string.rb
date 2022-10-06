@@ -5,9 +5,7 @@ class ::String
     prefix = match(/(^[ \t]+)/)
     return 0 if prefix.nil?
 
-    tabs = prefix[1].gsub(/  /, "\t").scan(/\t/).count
-
-    tabs
+    prefix[1].gsub(/  /, "\t").scan(/\t/).count
   end
 
   ##
@@ -21,15 +19,16 @@ class ::String
     tag_color = NA::Color.template(color)
     paren_color = NA::Color.template(parens)
     value_color = NA::Color.template(value)
-    gsub(/(\s|m)(@[^ ("']+)(?:(\()(.*?)(\)))?/, "\\1#{tag_color}\\2#{paren_color}\\3#{value_color}\\4#{paren_color}\\5#{last_color}")
+    gsub(/(\s|m)(@[^ ("']+)(?:(\()(.*?)(\)))?/,
+         "\\1#{tag_color}\\2#{paren_color}\\3#{value_color}\\4#{paren_color}\\5#{last_color}")
   end
 
   def dir_to_rx
-    split(%r{[/:]}).join('.*?/.*?') + '[^/]+$'
+    "#{split(%r{[/:]}).join('.*?/.*?')}[^/]+$"
   end
 
   def dir_matches(any: [], all: [])
-    matches_any(any.map { |token| token.dir_to_rx }) && matches_all(all.map { |token| token.dir_to_rx })
+    matches_any(any.map(&:dir_to_rx)) && matches_all(all.map(&:dir_to_rx))
   end
 
   def matches(any: [], all: [], none: [])
@@ -44,7 +43,6 @@ class ::String
   end
 
   def matches_any(regexes)
-    string = dup
     regexes.each do |rx|
       return true if match(Regexp.new(rx, Regexp::IGNORECASE))
     end
