@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is <!--VER-->1.1.12<!--END VER-->.
+The current version of `na` is <!--VER-->1.1.13<!--END VER-->.
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
 
@@ -36,7 +36,7 @@ You can list next actions in files in the current directory by typing `na`. By d
 
 #### Easy matching
 
-`na` features intelligent project matching. Every time it locates a todo file, it adds the project to the database. Once a project is recorded, you can list its actions by using any portion of the parent directories or file names. If your project is in `~/Sites/dev/markedapp`, you could quickly list its next actions by typing `na next dev mark`. It will always look for the shortest match.
+`na` features intelligent project matching. Every time it locates a todo file, it adds the project to the database. Once a project is recorded, you can list its actions by using any portion of the parent directories or file names. If your project is in `~/Sites/dev/markedapp`, you could quickly list its next actions by typing `na next dev/mark`. Creat paths by separating with / or :, separate multiple queries with spaces. na will always look for the shortest match for a path.
 
 #### Recursion
 
@@ -151,6 +151,8 @@ EXAMPLES
 
 Example: `na find cool feature idea`
 
+Unless `--exact` is specified, search is tokenized and combined with OR, so `na find cool feature idea` translates to `cool OR feature OR idea`, matching any string that contains any of the words. To make a token required, add a `+` before it (e.g. `cool +feature idea` is `(cool OR idea) AND feature`). Wildcards allowed (`*` and `?`), use `--regex` to interpret the search as a regular expression. Use `-v` to invert the results (display non-matching actions only).
+
 ```
 NAME
     find - Find actions matching a search pattern
@@ -228,7 +230,9 @@ EXAMPLES
 
 ##### tagged
 
-Example: `na tagged feature +maybe`
+Example: `na tagged feature +maybe`.
+
+Separate multiple tags with spaces or commas. By default tags are combined with OR, so actions matching any of the tags listed will be displayed. Use `+` to make a tag required and `!` to negate a tag (only display if the action does _not_ contain the tag). Use `-v` to invert the search and display all actions that _don't_ match.
 
 ```
 NAME
