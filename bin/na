@@ -235,9 +235,8 @@ class App
   (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe`'
   arg_name 'PATTERN'
   command %i[find grep] do |c|
-    c.example 'na find feature +idea +swift', desc: 'Find all actions containing feature, idea, and swift'
+    c.example 'na find feature idea swift', desc: 'Find all actions containing feature, idea, and swift'
     c.example 'na find -x feature idea', desc: 'Find all actions containing the exact text "feature idea"'
-    c.example 'na find -d 3 swift obj-c', desc: 'Find all actions 3 directories deep containing either swift or obj-c'
 
     c.desc 'Interpret search pattern as regular expression'
     c.switch %i[e regex], negatable: false
@@ -316,9 +315,9 @@ class App
              You can specify values using TAG=VALUE pairs.'
   arg_name 'TAG [VALUE]'
   command %i[tagged] do |c|
-    c.example 'na tagged +maybe', desc: 'Show all actions tagged @maybe'
-    c.example 'na tagged -d 3 feature idea', desc: 'Show all actions tagged either @feature or @idea, recurse 3 levels'
-    c.example 'na tagged +priority=5', desc: 'Show actions with @priority(5)'
+    c.example 'na tagged maybe', desc: 'Show all actions tagged @maybe'
+    c.example 'na tagged -d 3 feature idea', desc: 'Show all actions tagged @feature and @idea, recurse 3 levels'
+    c.example 'na tagged priority>=4', desc: 'Show actions with @priority(4) or @priority(5)'
 
     c.desc 'Recurse to depth'
     c.arg_name 'DEPTH'

@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is <!--VER-->1.1.16<!--END VER-->.
+The current version of `na` is <!--VER-->1.1.17<!--END VER-->.
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
 
@@ -151,7 +151,7 @@ EXAMPLES
 
 Example: `na find cool feature idea`
 
-Unless `--exact` is specified, search is tokenized and combined with OR, so `na find cool feature idea` translates to `cool OR feature OR idea`, matching any string that contains any of the words. To make a token required, add a `+` before it (e.g. `cool +feature idea` is `(cool OR idea) AND feature`). Wildcards allowed (`*` and `?`), use `--regex` to interpret the search as a regular expression. Use `-v` to invert the results (display non-matching actions only).
+Unless `--exact` is specified, search is tokenized and combined with AND, so `na find cool feature idea` translates to `cool AND feature AND idea`, matching any string that contains all of the words. To make a token required and others optional, add a `+` before it (e.g. `cool +feature idea` is `(cool OR idea) AND feature`). Wildcards allowed (`*` and `?`), use `--regex` to interpret the search as a regular expression. Use `-v` to invert the results (display non-matching actions only).
 
 ```
 NAME
@@ -232,7 +232,7 @@ EXAMPLES
 
 Example: `na tagged feature +maybe`.
 
-Separate multiple tags with spaces or commas. By default tags are combined with OR, so actions matching any of the tags listed will be displayed. Use `+` to make a tag required and `!` to negate a tag (only display if the action does _not_ contain the tag). Use `-v` to invert the search and display all actions that _don't_ match.
+Separate multiple tags with spaces or commas. By default tags are combined with AND, so actions matching all of the tags listed will be displayed. Use `+` to make a tag required and `!` to negate a tag (only display if the action does _not_ contain the tag). When `+` and/or `!` are used, undecorated tokens become optional matches. Use `-v` to invert the search and display all actions that _don't_ match.
 
 ```
 NAME
@@ -253,7 +253,7 @@ EXAMPLES
     # Show all actions tagged @maybe
     na tagged +maybe
 
-    # Show all actions tagged either @feature or @idea, recurse 3 levels
+    # Show all actions tagged @feature and @idea, recurse 3 levels
     na tagged -d 3 feature idea
 ```
 
