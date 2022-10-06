@@ -1,3 +1,22 @@
+### 1.1.12
+
+2022-10-06 05:42
+
+#### NEW
+
+- `na add -d X` to allow adding new actions to todo files in subdirectories
+- You can now perform <>= queries on tag values (`na tagged "priority>=3"`)
+- You can now perform string matches on tag values (`na tagged "note*=markdown"`)
+- You can use `--project X` to display only actions within a specific project. Specify subprojects with a path, e.g. `na/bugs`. Partial matches allowed, works with `next`, `find`, and `tagged`
+- Find and tagged recognize * and ? as wildcards
+- --regex flag for find command
+- --invert command (like grep -v) for find
+- -v/--invert for tagged command
+
+#### IMPROVED
+
+- Require value 1-9 for --depth option
+
 ### 1.1.11
 
 2022-10-05 08:56
