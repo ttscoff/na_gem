@@ -1,3 +1,19 @@
+### 1.1.15
+
+2022-10-06 16:12
+
+#### CHANGED
+
+- If no + or ! tokens are given in search, default to AND search for tokens
+
+#### IMPROVED
+
+- Better handling of color in search highlighting
+
+#### FIXED
+
+- --regex search broken
+
 ### 1.1.14
 
 2022-10-06 12:30
