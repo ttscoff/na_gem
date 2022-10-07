@@ -390,7 +390,7 @@ module NA
 
       NA.notify("{bw}Directory regex: {x}#{required.map(&:dir_to_rx)}", debug: true)
 
-      dirs.delete_if { |d| !d.dir_matches(any: optional, all: required) }
+      dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required) }
       dirs.sort.uniq
     end
 
