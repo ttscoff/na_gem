@@ -59,7 +59,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.1.21
+    1.1.22
 
 GLOBAL OPTIONS
     -a, --[no-]add          - Add a next action (deprecated, for backwards compatibility)
@@ -209,9 +209,9 @@ EXAMPLES
 
 Examples:
 
-- `na show` (list all next actions in the current directory)
-- `na show -d 3` (list all next actions in the current directory and look for additional files 3 levels deep from there)
-- `na show marked2` (show next actions from another directory you've previously used na on)
+- `na next` (list all next actions in the current directory)
+- `na next -d 3` (list all next actions in the current directory and look for additional files 3 levels deep from there)
+- `na next marked2` (show next actions from another directory you've previously used na on)
 
 ```
 NAME
