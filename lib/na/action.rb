@@ -137,13 +137,13 @@ module NA
       return false if tag_val.nil?
 
       begin
-        if val =~ /^today$/i
-          val = 'today at 12am'
-          tag_val = tag_val.sub(/\d\d:\d\d/, '00:00')
-        end
-
         tag_date = Time.parse(tag_val)
         date = Chronic.parse(val)
+
+        unless val =~ /(\d:\d|a[mp]|now)/i
+          tag_date = Time.parse(tag_date.strftime('%Y-%m-%d 12:00'))
+          date = Time.parse(date.strftime('%Y-%m-%d 12:00'))
+        end
 
         puts "Comparing #{tag_date} #{tag[:comp]} #{date}" if NA.verbose
 
