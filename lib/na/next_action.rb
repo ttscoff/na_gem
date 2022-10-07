@@ -379,16 +379,16 @@ module NA
     ##                       between characters
     ##
     def match_working_dir(search, distance: 1)
-      search = search.map { |t| t[:token] }.join('/')
-      optional = [search]
-      required = [search]
-
       file = database_path
       notify('{r}No na database found', exit_code: 1) unless File.exist?(file)
 
       dirs = IO.read(file).split("\n")
 
-      NA.notify("{bw}Directory regex: {x}#{required.map(&:dir_to_rx)}", debug: true)
+      optional = search.map { |t| t[:token] }
+      required = search.filter { |s| s[:required] }.map { |t| t[:token] }
+
+      NA.notify("{bw}Optional directory regex: {x}#{optional.map(&:dir_to_rx)}", debug: true)
+      NA.notify("{bw}Required directory regex: {x}#{required.map(&:dir_to_rx)}", debug: true)
 
       dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required) }
       dirs.sort.uniq

@@ -89,7 +89,7 @@ class ::String
   ## @param      distance  The distance
   ##
   def dir_to_rx(distance: 2)
-    "#{split(%r{[/:]}).map { |comp| comp.split('').join(".{0,#{distance}}").gsub(/\*/, '[^ ]*?') }.join('.*?/.*?')}[^/]+$"
+    "#{split(%r{[/:]}).map { |comp| comp.split('').join(".{0,#{distance}}").gsub(/\*/, '[^ ]*?') }.join('.*?/.*?')}[^/]*?$"
   end
 
   def dir_matches(any: [], all: [])

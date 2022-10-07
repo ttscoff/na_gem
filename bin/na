@@ -59,7 +59,7 @@ class App
 
   Arguments will target a todo file from history, whether it\'s in the current
   directory or not. Todo file queries can include path components separated by /
-  or :, and may use wildcards (`*` to match any text, `?` to match a single character).'
+  or :, and may use wildcards (`*` to match any text, `?` to match a single character). Multiple queries allowed (separate arguments or separated by comma).'
   arg_name 'QUERY', optional: true
   command %i[next show] do |c|
     c.example 'na next', desc: 'display the next actions from any todo files in the current directory'
@@ -97,11 +97,13 @@ class App
       if args.count.positive?
         tokens = []
         args.each do |arg|
-          m = arg.match(/^(?<req>\+)?(?<tok>.*?)$/)
-          tokens.push({
-                        token: m['tok'],
-                        required: !m['req'].nil?
-                      })
+          arg.split(/ *, */).each do |a|
+            m = a.match(/^(?<req>\+)?(?<tok>.*?)$/)
+            tokens.push({
+                          token: m['tok'],
+                          required: !m['req'].nil?
+                        })
+          end
         end
       end
 
@@ -296,10 +298,14 @@ class App
 
       todo = nil
       if options[:in]
-        todo = [{
-          token: options[:in],
-          required: true
-        }]
+        todo = []
+        options[:in].split(/ *, */).each do |a|
+          m = a.match(/^(?<req>\+)?(?<tok>.*?)$/)
+          todo.push({
+                        token: m['tok'],
+                        required: !m['req'].nil?
+                      })
+        end
       end
 
       files, actions = NA.parse_actions(depth: depth,
@@ -377,10 +383,14 @@ class App
 
       todo = nil
       if options[:in]
-        todo = [{
-          token: options[:in],
-          required: true
-        }]
+        todo = []
+        options[:in].split(/ *, */).each do |a|
+          m = a.match(/^(?<req>\+)?(?<tok>.*?)$/)
+          todo.push({
+                        token: m['tok'],
+                        required: !m['req'].nil?
+                      })
+        end
       end
 
       files, actions = NA.parse_actions(depth: depth,
@@ -473,11 +483,13 @@ class App
       if args.count.positive?
         tokens = []
         args.each do |arg|
-          m = arg.match(/^(?<req>\+)?(?<tok>.*?)$/)
-          tokens.push({
-                        token: m['tok'],
-                        required: !m['req'].nil?
-                      })
+          arg.split(/ *, */).each do |a|
+            m = a.match(/^(?<req>\+)?(?<tok>.*?)$/)
+            tokens.push({
+                          token: m['tok'],
+                          required: !m['req'].nil?
+                        })
+          end
         end
       end
 
