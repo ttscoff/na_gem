@@ -60,8 +60,6 @@ class ::String
   end
 
   def dir_matches(any: [], all: [])
-    $stderr.puts all.map(&:dir_to_rx) if NA.verbose
-
     matches_any(any.map(&:dir_to_rx)) && matches_all(all.map(&:dir_to_rx))
   end
 

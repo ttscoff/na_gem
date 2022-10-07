@@ -56,7 +56,7 @@ class App
   desc 'Show next actions'
   long_desc "Next actions are actions which contain the next action tag (default @na),
   do not contain @done, and are not in the Archive project."
-  arg_name 'OPTIONAL_QUERY'
+  arg_name 'QUERY', optional: true
   command %i[next show] do |c|
     c.example 'na next', desc: 'display the next actions from any todo files in the current directory'
     c.example 'na next -d 3', desc: 'display the next actions from the current directory, traversing 3 levels deep'
@@ -322,7 +322,7 @@ class App
   Use <, >, and = for numeric comparisons, and *=, ^=, and $= for text comparisons.
   Date comparisons use natural language (`na tagged "due<=today"`) and
   are detected automatically.'
-  arg_name 'TAG [VALUE]'
+  arg_name 'TAG[=VALUE]'
   command %i[tagged] do |c|
     c.example 'na tagged maybe', desc: 'Show all actions tagged @maybe'
     c.example 'na tagged -d 3 "feature, idea"', desc: 'Show all actions tagged @feature AND @idea, recurse 3 levels'
@@ -391,7 +391,7 @@ class App
   end
 
   desc 'Create a new todo file in the current directory'
-  arg_name '[PROJECT]'
+  arg_name 'PROJECT', optional: true
   command %i[init create] do |c|
     c.example 'na init', desc: 'Generate a new todo file, prompting for project name'
     c.example 'na init warpspeed', desc: 'Generate a new todo for a project called warpspeed'
@@ -459,13 +459,35 @@ class App
     end
   end
 
+  desc 'Show list of known todo files'
+  long_desc 'Arguments will be interpreted as a query against which the
+  list of todos will be fuzzy matched. Separate directories with
+  /, :, or a space, e.g. `na todos code/marked`'
+  arg_name 'QUERY', optional: true
+  command %i[todos] do |c|
+    c.action do |_global_options, _options, args|
+      if args.count.positive?
+        tokens = []
+        args.each do |arg|
+          m = arg.match(/^(?<req>\+)?(?<tok>.*?)$/)
+          tokens.push({
+                        token: m['tok'],
+                        required: !m['req'].nil?
+                      })
+        end
+      end
+
+      NA.list_todos(query: tokens)
+    end
+  end
+
   desc 'Show or install prompt hooks for the current shell'
   long_desc 'Installing the prompt hook allows you to automatically
   list next actions when you cd into a directory'
   command %i[prompt] do |c|
     c.desc 'Output the prompt hook for the current shell to STDOUT. Pass an argument to
             specify a shell (zsh, bash, fish)'
-    c.arg_name '[SHELL]'
+    c.arg_name 'SHELL', optional: true
     c.command %i[show] do |s|
       s.action do |_global_options, _options, args|
         shell = if args.count.positive?
@@ -486,7 +508,7 @@ class App
     end
 
     c.desc 'Install the hook for the current shell to the appropriate startup file.'
-    c.arg_name '[SHELL]'
+    c.arg_name 'SHELL', optional: true
     c.command %i[install] do |s|
       s.action do |_global_options, _options, args|
         shell = if args.count.positive?

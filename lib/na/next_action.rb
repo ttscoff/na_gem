@@ -5,13 +5,27 @@ module NA
   class << self
     attr_accessor :verbose, :extension, :na_tag
 
-    def notify(msg, exit_code: false)
+    ##
+    ## Output to STDERR
+    ##
+    ## @param      msg        [String] The message
+    ## @param      exit_code  [Number] The exit code, no exit if false
+    ##
+    def notify(msg, exit_code: false, debug: false)
+      return if debug && !@verbose
+
       $stderr.puts NA::Color.template("{x}#{msg}{x}")
       if exit_code && exit_code.is_a?(Number)
         Process.exit exit_code
       end
     end
 
+    ##
+    ## Create a new todo file
+    ##
+    ## @param      target    [String] The target path
+    ## @param      basename  [String] The project base name
+    ##
     def create_todo(target, basename)
       File.open(target, 'w') do |f|
         content = <<~ENDCONTENT
@@ -32,12 +46,24 @@ module NA
       notify("{y}Created {bw}#{target}")
     end
 
+    ##
+    ## Use the *nix `find` command to locate files matching NA.extension
+    ##
+    ## @param      depth  [Number] The depth at which to search
+    ##
     def find_files(depth: 1)
       files = `find . -name "*.#{NA.extension}" -maxdepth #{depth}`.strip.split("\n")
       files.each { |f| save_working_dir(File.expand_path(f)) }
       files
     end
 
+    ##
+    ## Select from multiple files
+    ##
+    ## @note If `gum` or `fzf` are available, they'll be used (in that order)
+    ##
+    ## @param      files  [Array] The files
+    ##
     def select_file(files)
       if TTY::Which.exist?('gum')
         args = [
@@ -63,12 +89,22 @@ module NA
       end
     end
 
+    ##
+    ## Add an action to a todo file
+    ##
+    ## @param      file     [String] The target file
+    ## @param      project  [String] The project name
+    ## @param      action   [String] The action
+    ## @param      note     [String] The note
+    ##
     def add_action(file, project, action, note = nil)
       content = IO.read(file)
+      # Insert the target project at the top if it doesn't exist
       unless content =~ /^[ \t]*#{project}:/i
         content = "#{project.cap_first}:\n#{content}"
       end
 
+      # Insert the action at the top of the target project
       content.sub!(/^([ \t]*)#{project}:(.*?)$/i) do
         m = Regexp.last_match
         note = note.nil? ? '' : "\n#{m[1]}\t\t#{note.join('').strip}"
@@ -80,6 +116,14 @@ module NA
       notify("{by}Task added to {bw}#{file}")
     end
 
+    ##
+    ## Pretty print a list of actions
+    ##
+    ## @param      actions  [Array] The actions
+    ## @param      depth    [Number] The depth
+    ## @param      files    [Array] The files actions originally came from
+    ## @param      regexes  [Array] The regexes used to gather actions
+    ##
     def output_actions(actions, depth, files: nil, regexes: [])
       return if files.nil?
 
@@ -99,11 +143,23 @@ module NA
                    '%parent%action'
                  end
 
-      files.map { |f| notify("{dw}#{f}") } if files && @verbose
+      files.map { |f| notify("{dw}#{f}", debug: true) } if files
 
       puts(actions.map { |action| action.pretty(template: { output: template }, regexes: regexes) })
     end
 
+    ##
+    ## Read a todo file and create a list of actions
+    ##
+    ## @param      depth       [Number] The directory depth to search for files
+    ## @param      query       [Hash] The project query
+    ## @param      tag         [Hash] Tags to search for
+    ## @param      search      [String] A search string
+    ## @param      negate      [Boolean] Invert results
+    ## @param      regex       [Boolean] Interpret as regular expression
+    ## @param      project     [String] The project
+    ## @param      require_na  [Boolean] Require @na tag
+    ##
     def parse_actions(depth: 1, query: nil, tag: nil, search: nil, negate: false, regex: false, project: nil, require_na: true)
       actions = []
       required = []
@@ -220,6 +276,9 @@ module NA
       end
     end
 
+    ##
+    ## Remove entries from cache database that no longer exist
+    ##
     def weed_cache_file
       db_dir = File.expand_path('~/.local/share/na')
       db_file = 'tdlist.txt'
@@ -229,6 +288,24 @@ module NA
         dirs.delete_if { |f| !File.exist?(f) }
         File.open(file, 'w') { |f| f.puts dirs.join("\n") }
       end
+    end
+
+    def list_todos(query: [])
+      if query
+        dirs = match_working_dir(query)
+      else
+        file = database_path
+        content = File.exist?(file) ? IO.read(file).strip : ''
+        notify('{br}Database empty', exit_code: 1) if content.empty?
+
+        dirs = content.split(/\n/)
+      end
+
+      dirs.map! do |dir|
+        "{xg}#{dir.sub(/^#{ENV['HOME']}/, '~').sub(%r{/([^/]+)\.#{NA.extension}$}, '/{xbw}\1{x}')}"
+      end
+
+      puts NA::Color.template(dirs.join("\n"))
     end
 
     private
@@ -302,30 +379,26 @@ module NA
     ##                       between characters
     ##
     def match_working_dir(search, distance: 1)
-      search = search.map { |t| t[:token] }.join('')
+      search = search.map { |t| t[:token] }.join('/')
       optional = [search]
       required = [search]
 
-      # search&.each do |t|
-      #   # Make "search" into "s.{0,1}e.{0,1}a.{0,1}r.{0,1}c.{0,1}h"
-      #   new_rx = t[:token].to_s.split('').join(".{0,#{distance}}")
-
-      #   optional.push(new_rx)
-      #   required.push(new_rx) if t[:required]
-      # end
-
-      match_dir(optional, required)
-    end
-
-    def match_dir(optional, required)
       file = database_path
       notify('{r}No na database found', exit_code: 1) unless File.exist?(file)
 
       dirs = IO.read(file).split("\n")
+
+      NA.notify("{bw}Directory regex: {x}#{required.map(&:dir_to_rx)}", debug: true)
+
       dirs.delete_if { |d| !d.dir_matches(any: optional, all: required) }
       dirs.sort.uniq
     end
 
+    ##
+    ## Save a todo file path to the database
+    ##
+    ## @param      todo_file  The todo file path
+    ##
     def save_working_dir(todo_file)
       file = database_path
       content = File.exist?(file) ? IO.read(file) : ''
@@ -335,6 +408,12 @@ module NA
       File.open(file, 'w') { |f| f.puts dirs.join("\n") }
     end
 
+    ##
+    ## macOS open command
+    ##
+    ## @param      file  The file
+    ## @param      app   The application
+    ##
     def darwin_open(file, app: nil)
       if app
         `open -a "#{app}" #{Shellwords.escape(file)}`
@@ -343,10 +422,20 @@ module NA
       end
     end
 
+    ##
+    ## Windows open command
+    ##
+    ## @param      file  The file
+    ##
     def win_open(file)
       `start #{Shellwords.escape(file)}`
     end
 
+    ##
+    ## Linux open command
+    ##
+    ## @param      file  The file
+    ##
     def linux_open(file)
       if TTY::Which.exist?('xdg-open')
         `xdg-open #{Shellwords.escape(file)}`

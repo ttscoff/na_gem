@@ -51,37 +51,7 @@ If found, it will try to locate an `Inbox:` project, or create one if it doesn't
 ### Usage
 
 ```
-NAME
-    na - Add and list next actions for the current project
-
-SYNOPSIS
-    na [global options] command [command options] [arguments...]
-
-VERSION
-    1.1.19
-
-GLOBAL OPTIONS
-    -a, --[no-]add          - Add a next action (deprecated, for backwards compatibility)
-    -d, --depth=DEPTH       - Recurse to depth (default: 1)
-    --[no-]debug            - Display verbose output
-    --ext=EXT               - File extension to consider a todo file (default: taskpaper)
-    --help                  - Show this message
-    -n, --note              - Prompt for additional notes (deprecated, for backwards compatibility)
-    -p, --priority=PRIORITY - Set a priority 0-5 (deprecated, for backwards compatibility) (default: none)
-    -r, --[no-]recurse      - Recurse 3 directories deep (deprecated, for backwards compatability)
-    -t, --na_tag=TAG        - Tag to consider a next action (default: na)
-    --version               - Display the program version
-
-COMMANDS
-    add          - Add a new next action
-    edit         - Open a todo file in the default editor
-    find, grep   - Find actions matching a search pattern
-    help         - Shows a list of commands or help for one command
-    init, create - Create a new todo file in the current directory
-    initconfig   - Initialize the config file using current global options
-    next, show   - Show next actions
-    prompt       - Show or install prompt hooks for the current shell
-    tagged       - Find actions matching a tag
+@cli(bundle exec bin/na help)
 ```
 
 #### Commands
@@ -93,60 +63,13 @@ Example: `na add This feature @idea I have`
 If you run the `add` command with no arguments, you'll be asked for input on the command line.
 
 ```
-NAME
-    add - Add a new next action
-
-SYNOPSIS
-
-    na [global options] add [command options] ACTION
-
-DESCRIPTION
-    Provides an easy way to store todos while you work. Add quick reminders and (if you set up Prompt Hooks)   they'll automatically display next time you enter the directory.   If multiple todo files are found in the current directory, a menu will allow you to pick to which   file the action gets added. 
-
-COMMAND OPTIONS
-    -d, --depth=DEPTH   - Search for files X directories deep (default: 1)
-    -f, --file=PATH     - Specify the file to which the task should be added (default: none)
-    -n, --note          - Prompt for additional notes
-    -p, --priority=PRIO - Add a priority level 1-5 (default: 0)
-    -t, --tag=TAG       - Use a tag other than the default next action tag (default: none)
-    --to=PROJECT        - Add action to specific project (default: Inbox)
-    -x                  - Don't add next action tag to new entry
-
-EXAMPLES
-
-    # Add a new action to the Inbox, including a tag
-    na add "A cool feature I thought of @idea"
-
-    # Add a new action to the Inbox, set its @priority to 4, and prompt for an additional note
-    na add "A bug I need to fix" -p 4 -n
+@cli(bundle exec bin/na help add)
 ```
 
 ##### edit
 
 ```
-NAME
-    edit - Open a todo file in the default editor
-
-SYNOPSIS
-
-    na [global options] edit [command options] 
-
-DESCRIPTION
-    Let the system choose the defualt, (e.g. TaskPaper), or specify a command line utility (e.g. vim).              If more than one todo file is found, a menu is displayed. 
-
-COMMAND OPTIONS
-    -a, --app=EDITOR    - Specify a Mac app (default: none)
-    -d, --depth=DEPTH   - Recurse to depth (default: 1)
-    -e, --editor=EDITOR - Specify an editor CLI (default: none)
-
-EXAMPLES
-
-    # Open the main todo file in the default editor
-    na edit
-
-    # Display a menu of all todo files three levels deep from the
-               current directory, open selection in vim.
-    na edit -d 3 -a vim
+@cli(bundle exec bin/na help edit)
 ```
 
 ##### find
@@ -156,84 +79,25 @@ Example: `na find cool feature idea`
 Unless `--exact` is specified, search is tokenized and combined with AND, so `na find cool feature idea` translates to `cool AND feature AND idea`, matching any string that contains all of the words. To make a token required and others optional, add a `+` before it (e.g. `cool +feature idea` is `(cool OR idea) AND feature`). Wildcards allowed (`*` and `?`), use `--regex` to interpret the search as a regular expression. Use `-v` to invert the results (display non-matching actions only).
 
 ```
-NAME
-    find - Find actions matching a search pattern
-
-SYNOPSIS
-
-    na [global options] find [command options] PATTERN
-
-DESCRIPTION
-    Search tokens are separated by spaces. Actions matching all tokens in the pattern will be shown   (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe` 
-
-COMMAND OPTIONS
-    -d, --depth=DEPTH                      - Recurse to depth (default: none)
-    -e, --regex                            - Interpret search pattern as regular expression
-    --in=TODO_PATH                         - Show actions from a specific todo file in history (default: none)
-    -o, --or                               - Combine search tokens with OR, displaying actions matching ANY of the terms
-    --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
-    -v, --invert                           - Show actions not matching search pattern
-    -x, --exact                            - Match pattern exactly
-
-EXAMPLES
-
-    # Find all actions containing feature, idea, and swift
-    na find feature idea swift
-
-    # Find all actions containing the exact text "feature idea"
-    na find -x feature idea
+@cli(bundle exec bin/na help find)
 ```
 
 ##### init, create
 
 ```
-NAME
-    init - Create a new todo file in the current directory
-
-SYNOPSIS
-
-    na [global options] init [PROJECT]
-
-EXAMPLES
-
-    # Generate a new todo file, prompting for project name
-    na init
-
-    # Generate a new todo for a project called warpspeed
-    na init warpspeed
+@cli(bundle exec bin/na help init)
 ```
 
 ##### next, show
 
-Examples: 
+Examples:
 
 - `na show` (list all next actions in the current directory)
 - `na show -d 3` (list all next actions in the current directory and look for additional files 3 levels deep from there)
 - `na show marked2` (show next actions from another directory you've previously used na on)
 
 ```
-NAME
-    next - Show next actions
-
-SYNOPSIS
-
-    na [global options] next [command options] OPTIONAL_QUERY
-
-COMMAND OPTIONS
-    -d, --depth=DEPTH                      - Recurse to depth (default: 2)
-    --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
-    -t, --tag=TAG                          - Alternate tag to search for (default: none)
-
-EXAMPLES
-
-    # display the next actions from any todo files in the current directory
-    na next
-
-    # display the next actions from the current directory, traversing 3 levels deep
-    na next -d 3
-
-    # display next actions for a project you visited in the past
-    na next marked
+@cli(bundle exec bin/na help next)
 ```
 
 ##### tagged
@@ -243,39 +107,7 @@ Example: `na tagged feature +maybe`.
 Separate multiple tags with spaces or commas. By default tags are combined with AND, so actions matching all of the tags listed will be displayed. Use `+` to make a tag required and `!` to negate a tag (only display if the action does _not_ contain the tag). When `+` and/or `!` are used, undecorated tokens become optional matches. Use `-v` to invert the search and display all actions that _don't_ match.
 
 ```
-NAME
-    tagged - Find actions matching a tag
-
-SYNOPSIS
-
-    na [global options] tagged [command options] TAG [VALUE]
-
-DESCRIPTION
-    Finds actions with tags matching the arguments. An action is shown if it              contains all of the tags listed. Add a + before a tag to make it required              and others optional. You can specify values using TAG=VALUE pairs.              Use <, >, and = for numeric comparisons, and *=, ^=, and $= for text comparisons.              Date comparisons use natural language (`na tagged "due<=today"`) and              are detected automatically. 
-
-COMMAND OPTIONS
-    -d, --depth=DEPTH                      - Recurse to depth (default: 1)
-    --in=TODO_PATH                         - Show actions from a specific todo file in history (default: none)
-    -o, --or                               - Combine tags with OR, displaying actions matching ANY of the tags
-    --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
-    -v, --invert                           - Show actions not matching tags
-
-EXAMPLES
-
-    # Show all actions tagged @maybe
-    na tagged maybe
-
-    # Show all actions tagged @feature AND @idea, recurse 3 levels
-    na tagged -d 3 "feature, idea"
-
-    # Show all actions tagged @feature OR @idea
-    na tagged --or "feature, idea"
-
-    # Show actions with @priority(4) or @priority(5)
-    na tagged "priority>=4"
-
-    # Show actions with a due date coming up in the next 2 days
-    na tagged "due<in 2 days"
+@cli(bundle exec bin/na help show)
 ```
 
 ### Configuration

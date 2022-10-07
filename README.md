@@ -59,7 +59,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.1.19
+    1.1.21
 
 GLOBAL OPTIONS
     -a, --[no-]add          - Add a next action (deprecated, for backwards compatibility)
@@ -83,6 +83,7 @@ COMMANDS
     next, show   - Show next actions
     prompt       - Show or install prompt hooks for the current shell
     tagged       - Find actions matching a tag
+    todos        - Show list of known todo files
 ```
 
 #### Commands
@@ -102,7 +103,7 @@ SYNOPSIS
     na [global options] add [command options] ACTION
 
 DESCRIPTION
-    Provides an easy way to store todos while you work. Add quick reminders and (if you set up Prompt Hooks)   they'll automatically display next time you enter the directory.   If multiple todo files are found in the current directory, a menu will allow you to pick to which   file the action gets added. 
+    Provides an easy way to store todos while you work. Add quick   reminders and (if you set up Prompt Hooks) they'll automatically display   next time you enter the directory.   If multiple todo files are found in the current directory, a menu will   allow you to pick to which file the action gets added. 
 
 COMMAND OPTIONS
     -d, --depth=DEPTH   - Search for files X directories deep (default: 1)
@@ -218,7 +219,10 @@ NAME
 
 SYNOPSIS
 
-    na [global options] next [command options] OPTIONAL_QUERY
+    na [global options] next [command options] [QUERY]
+
+DESCRIPTION
+    Next actions are actions which contain the next action tag (default @na),   do not contain @done, and are not in the Archive project. 
 
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: 2)
@@ -245,38 +249,30 @@ Separate multiple tags with spaces or commas. By default tags are combined with 
 
 ```
 NAME
-    tagged - Find actions matching a tag
+    next - Show next actions
 
 SYNOPSIS
 
-    na [global options] tagged [command options] TAG [VALUE]
+    na [global options] next [command options] [QUERY]
 
 DESCRIPTION
-    Finds actions with tags matching the arguments. An action is shown if it              contains all of the tags listed. Add a + before a tag to make it required              and others optional. You can specify values using TAG=VALUE pairs.              Use <, >, and = for numeric comparisons, and *=, ^=, and $= for text comparisons.              Date comparisons use natural language (`na tagged "due<=today"`) and              are detected automatically. 
+    Next actions are actions which contain the next action tag (default @na),   do not contain @done, and are not in the Archive project. 
 
 COMMAND OPTIONS
-    -d, --depth=DEPTH                      - Recurse to depth (default: 1)
-    --in=TODO_PATH                         - Show actions from a specific todo file in history (default: none)
-    -o, --or                               - Combine tags with OR, displaying actions matching ANY of the tags
+    -d, --depth=DEPTH                      - Recurse to depth (default: 2)
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
-    -v, --invert                           - Show actions not matching tags
+    -t, --tag=TAG                          - Alternate tag to search for (default: none)
 
 EXAMPLES
 
-    # Show all actions tagged @maybe
-    na tagged maybe
+    # display the next actions from any todo files in the current directory
+    na next
 
-    # Show all actions tagged @feature AND @idea, recurse 3 levels
-    na tagged -d 3 "feature, idea"
+    # display the next actions from the current directory, traversing 3 levels deep
+    na next -d 3
 
-    # Show all actions tagged @feature OR @idea
-    na tagged --or "feature, idea"
-
-    # Show actions with @priority(4) or @priority(5)
-    na tagged "priority>=4"
-
-    # Show actions with a due date coming up in the next 2 days
-    na tagged "due<in 2 days"
+    # display next actions for a project you visited in the past
+    na next marked
 ```
 
 ### Configuration
