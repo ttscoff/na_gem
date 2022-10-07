@@ -322,8 +322,10 @@ class App
   arg_name 'TAG [VALUE]'
   command %i[tagged] do |c|
     c.example 'na tagged maybe', desc: 'Show all actions tagged @maybe'
-    c.example 'na tagged -d 3 feature idea', desc: 'Show all actions tagged @feature and @idea, recurse 3 levels'
-    c.example 'na tagged priority>=4', desc: 'Show actions with @priority(4) or @priority(5)'
+    c.example 'na tagged -d 3 "feature, idea"', desc: 'Show all actions tagged @feature AND @idea, recurse 3 levels'
+    c.example 'na tagged --or "feature, idea"', desc: 'Show all actions tagged @feature OR @idea'
+    c.example 'na tagged "priority>=4"', desc: 'Show actions with @priority(4) or @priority(5)'
+    c.example 'na tagged "due<in 2 days"', desc: 'Show actions with a due date coming up in the next 2 days'
 
     c.desc 'Recurse to depth'
     c.arg_name 'DEPTH'

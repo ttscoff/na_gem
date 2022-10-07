@@ -137,6 +137,11 @@ module NA
       return false if tag_val.nil?
 
       begin
+        if val =~ /^today$/i
+          val = 'today at 12am'
+          tag_val = tag_val.sub(/\d\d:\d\d/, '00:00')
+        end
+
         tag_date = Time.parse(tag_val)
         date = Chronic.parse(val)
 
