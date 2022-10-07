@@ -1,3 +1,13 @@
+### 1.1.19
+
+2022-10-07 03:06
+
+#### IMPROVED
+
+- More help updates
+- Added `--or` flag to `tagged` and `find` to default to OR boolean combination of search terms/tags
+- Special handling for date comparisons to "today"
+
 ### 1.1.18
 
 2022-10-06 17:23
