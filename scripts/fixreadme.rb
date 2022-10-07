@@ -13,6 +13,11 @@ content.gsub!(/<!--VER-->(.*?)<!--END VER-->/, current_ver)
 content.gsub!(/<!--GITHUB-->(.*?)<!--END GITHUB-->/m, '\1')
 content.gsub!(/<!--JEKYLL(.*?)-->/m, '')
 
+content.gsub!(/^@cli\((.*?)\)/) do
+  cmd = Regexp.last_match(1)
+  `#{cmd}`.strip.gsub(/\n{2,}/, "\n\n")
+end
+
 File.open(dest, 'w') { |f| f.puts(content) }
 
 Process.exit 0

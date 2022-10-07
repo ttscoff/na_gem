@@ -59,24 +59,24 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.1.1
+    1.1.19
 
 GLOBAL OPTIONS
     -a, --[no-]add          - Add a next action (deprecated, for backwards compatibility)
     -d, --depth=DEPTH       - Recurse to depth (default: 1)
     --[no-]debug            - Display verbose output
-    --ext=FILE_EXTENSION    - File extension to consider a todo file (default: taskpaper)
+    --ext=EXT               - File extension to consider a todo file (default: taskpaper)
     --help                  - Show this message
-    -n, --[no-]note         - Prompt for additional notes (deprecated, for backwards compatibility)
-    --na_tag=TAG            - Tag to consider a next action (default: na)
+    -n, --note              - Prompt for additional notes (deprecated, for backwards compatibility)
     -p, --priority=PRIORITY - Set a priority 0-5 (deprecated, for backwards compatibility) (default: none)
-    -r, --[no-]recurse      - Recurse 3 directories deep (deprecated, for backwards compatability) (default: enabled)
+    -r, --[no-]recurse      - Recurse 3 directories deep (deprecated, for backwards compatability)
+    -t, --na_tag=TAG        - Tag to consider a next action (default: na)
     --version               - Display the program version
 
 COMMANDS
     add          - Add a new next action
     edit         - Open a todo file in the default editor
-    find         - Find actions matching a search pattern
+    find, grep   - Find actions matching a search pattern
     help         - Shows a list of commands or help for one command
     init, create - Create a new todo file in the current directory
     initconfig   - Initialize the config file using current global options
@@ -99,17 +99,19 @@ NAME
 
 SYNOPSIS
 
-    na [global options] add [command options] TASK
+    na [global options] add [command options] ACTION
 
 DESCRIPTION
     Provides an easy way to store todos while you work. Add quick reminders and (if you set up Prompt Hooks)   they'll automatically display next time you enter the directory.   If multiple todo files are found in the current directory, a menu will allow you to pick to which   file the action gets added. 
 
 COMMAND OPTIONS
-    -f, --file=PATH    - Specify the file to which the task should be added (default: none)
-    -n, --note         - Prompt for additional notes
-    -p, --priority=arg - Add a priority level 1-5 (default: 0)
-    -t, --tag=TAG      - Use a tag other than the default next action tag (default: none)
-    -x                 - Don't add next action tag to new entry
+    -d, --depth=DEPTH   - Search for files X directories deep (default: 1)
+    -f, --file=PATH     - Specify the file to which the task should be added (default: none)
+    -n, --note          - Prompt for additional notes
+    -p, --priority=PRIO - Add a priority level 1-5 (default: 0)
+    -t, --tag=TAG       - Use a tag other than the default next action tag (default: none)
+    --to=PROJECT        - Add action to specific project (default: Inbox)
+    -x                  - Don't add next action tag to new entry
 
 EXAMPLES
 
@@ -163,22 +165,24 @@ SYNOPSIS
     na [global options] find [command options] PATTERN
 
 DESCRIPTION
-    Search tokens are separated by spaces. Actions matching any token in the pattern will be shown   (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe` 
+    Search tokens are separated by spaces. Actions matching all tokens in the pattern will be shown   (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe` 
 
 COMMAND OPTIONS
-    -d, --depth=DEPTH - Recurse to depth (default: 1)
-    -x, --exact       - Match pattern exactly
+    -d, --depth=DEPTH                      - Recurse to depth (default: none)
+    -e, --regex                            - Interpret search pattern as regular expression
+    --in=TODO_PATH                         - Show actions from a specific todo file in history (default: none)
+    -o, --or                               - Combine search tokens with OR, displaying actions matching ANY of the terms
+    --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
+    -v, --invert                           - Show actions not matching search pattern
+    -x, --exact                            - Match pattern exactly
 
 EXAMPLES
 
     # Find all actions containing feature, idea, and swift
-    na find feature +idea +swift
+    na find feature idea swift
 
     # Find all actions containing the exact text "feature idea"
     na find -x feature idea
-
-    # Find all actions 3 directories deep containing either swift or obj-c
-    na find -d 3 swift obj-c
 ```
 
 ##### init, create
@@ -217,16 +221,20 @@ SYNOPSIS
     na [global options] next [command options] OPTIONAL_QUERY
 
 COMMAND OPTIONS
-    -d, --depth=DEPTH - Recurse to depth (default: none)
-    -t, --tag=arg     - Alternate tag to search for (default: na)
+    -d, --depth=DEPTH                      - Recurse to depth (default: 2)
+    --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
+    -t, --tag=TAG                          - Alternate tag to search for (default: none)
 
 EXAMPLES
 
     # display the next actions from any todo files in the current directory
-    doing next
+    na next
 
-    # display the next actions from the current directory and its children, 3 levels deep
-    doing next -d 3
+    # display the next actions from the current directory, traversing 3 levels deep
+    na next -d 3
+
+    # display next actions for a project you visited in the past
+    na next marked
 ```
 
 ##### tagged
@@ -244,18 +252,25 @@ SYNOPSIS
     na [global options] tagged [command options] TAG [VALUE]
 
 DESCRIPTION
-    Finds actions with tags matching the arguments. An action is shown if it   contains any of the tags listed. Add a + before a tag to make it required,   e.g. `na tagged feature +maybe` 
+    Finds actions with tags matching the arguments. An action is shown if it              contains all of the tags listed. Add a + before a tag to make it required              and others optional. You can specify values using TAG=VALUE pairs.              Use <, >, and = for numeric comparisons, and *=, ^=, and $= for text comparisons.              Date comparisons use natural language (`na tagged "due<=today"`) and              are detected automatically. 
 
 COMMAND OPTIONS
-    -d, --depth=DEPTH - Recurse to depth (default: 1)
+    -d, --depth=DEPTH                      - Recurse to depth (default: 1)
+    --in=TODO_PATH                         - Show actions from a specific todo file in history (default: none)
+    -o, --or                               - Combine tags with OR, displaying actions matching ANY of the tags
+    --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
+    -v, --invert                           - Show actions not matching tags
 
 EXAMPLES
 
     # Show all actions tagged @maybe
-    na tagged +maybe
+    na tagged maybe
 
     # Show all actions tagged @feature and @idea, recurse 3 levels
     na tagged -d 3 feature idea
+
+    # Show actions with @priority(4) or @priority(5)
+    na tagged priority>=4
 ```
 
 ### Configuration
