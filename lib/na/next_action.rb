@@ -3,7 +3,7 @@
 # Next Action methods
 module NA
   class << self
-    attr_accessor :verbose, :extension, :na_tag
+    attr_accessor :verbose, :extension, :na_tag, :command_line
 
     ##
     ## Output to STDERR
@@ -15,9 +15,55 @@ module NA
       return if debug && !@verbose
 
       $stderr.puts NA::Color.template("{x}#{msg}{x}")
-      if exit_code && exit_code.is_a?(Number)
+      if exit_code
         Process.exit exit_code
       end
+    end
+
+    ##
+    ## Display and read a Yes/No prompt
+    ##
+    ## @param      prompt   [String] The prompt string
+    ## @param      default  [Boolean] default value if
+    ##                      return is pressed or prompt is
+    ##                      skipped
+    ##
+    ## @return     [Boolean] result
+    ##
+    def yn(prompt, default: true)
+      return default unless $stdout.isatty
+
+      tty_state = `stty -g`
+      system 'stty raw -echo cbreak isig'
+      yn = color_single_options(default ? %w[Y n] : %w[y N])
+      $stdout.syswrite "\e[1;37m#{prompt} #{yn}\e[1;37m? \e[0m"
+      res = $stdin.sysread 1
+      res.chomp!
+      puts
+      system 'stty cooked'
+      system "stty #{tty_state}"
+      res.empty? ? default : res =~ /y/i
+    end
+
+    ##
+    ## Helper function to colorize the Y/N prompt
+    ##
+    ## @param      choices  [Array] The choices with
+    ##                      default capitalized
+    ##
+    ## @return     [String] colorized string
+    ##
+    def color_single_options(choices = %w[y n])
+      out = []
+      choices.each do |choice|
+        case choice
+        when /[A-Z]/
+          out.push(NA::Color.template("{bw}#{choice}{x}"))
+        else
+          out.push(NA::Color.template("{dw}#{choice}{xg}"))
+        end
+      end
+      NA::Color.template("{xg}[#{out.join('/')}{xg}]{x}")
     end
 
     ##
@@ -308,6 +354,50 @@ module NA
       puts NA::Color.template(dirs.join("\n"))
     end
 
+    def save_search(title, search)
+      file = database_path(file: 'saved_searches.yml')
+      searches = load_searches
+      title = title.gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
+
+      if searches.key?(title)
+        res = yn('Overwrite existing definition?', default: true)
+        notify('{r}Cancelled', exit_code: 0) unless res
+
+      end
+
+      searches[title] = search
+      File.open(file, 'w') { |f| f.puts(YAML.dump(searches)) }
+      NA.notify("{y}Search #{title} saved", exit_code: 0)
+    end
+
+    def load_searches
+      file = database_path(file: 'saved_searches.yml')
+      if File.exist?(file)
+        searches = YAML.safe_load(IO.read(file))
+      else
+        searches = {
+          'soon' => 'tagged "due<in 2 days,due>yesterday"',
+          'overdue' => 'tagged "due<now"',
+          'high' => 'tagged "prio>3"',
+          'maybe' => 'tagged "maybe"'
+        }
+        File.open(file, 'w') { |f| f.puts(YAML.dump(searches)) }
+      end
+      searches
+    end
+
+    ##
+    ## Get path to database of known todo files
+    ##
+    ## @return     [String] File path
+    ##
+    def database_path(file: 'tdlist.txt')
+      db_dir = File.expand_path('~/.local/share/na')
+      # Create directory if needed
+      FileUtils.mkdir_p(db_dir) unless File.directory?(db_dir)
+      File.join(db_dir, file)
+    end
+
     private
 
     ##
@@ -354,19 +444,6 @@ module NA
       end
 
       [optional, required, negated]
-    end
-
-    ##
-    ## Get path to database of known todo files
-    ##
-    ## @return     [String] File path
-    ##
-    def database_path
-      db_dir = File.expand_path('~/.local/share/na')
-      # Create directory if needed
-      FileUtils.mkdir_p(db_dir) unless File.directory?(db_dir)
-      db_file = 'tdlist.txt'
-      File.join(db_dir, db_file)
     end
 
     ##

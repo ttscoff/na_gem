@@ -106,7 +106,7 @@ class ::String
   ## @return     [String] Regex string
   ##
   def wildcard_to_rx
-    gsub(/\./, '\\.').gsub(/\*/, '[^ ]*?').gsub(/\?/, '.')
+    gsub(/\./, '\\.').gsub(/\?/, '.').gsub(/\*/, '[^ ]*?')
   end
 
   def cap_first!

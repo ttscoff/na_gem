@@ -127,11 +127,14 @@ module NA
     end
 
     def compare_tag(tag)
-      return false unless @tags.key?(tag[:tag])
+      keys = @tags.keys.delete_if { |k| k !~ Regexp.new(tag[:tag], Regexp::IGNORECASE) }
+      return false if keys.empty?
+
+      key = keys[0]
 
       return true if tag[:comp].nil?
 
-      tag_val = @tags[tag[:tag]]
+      tag_val = @tags[key]
       val = tag[:value]
 
       return false if tag_val.nil?

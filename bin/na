@@ -271,7 +271,16 @@ class App
     c.desc 'Show actions not matching search pattern'
     c.switch %i[v invert], negatable: false
 
+    c.desc 'Save this search for future use'
+    c.arg_name 'TITLE'
+    c.flag %i[save]
+
     c.action do |global_options, options, args|
+      if options[:save]
+        title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
+        NA.save_search(title, "find #{NA.command_line.map { |c| "\"#{c}\"" }.join(' ')}")
+      end
+
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
                 3
               else
@@ -359,7 +368,16 @@ class App
     c.desc 'Show actions not matching tags'
     c.switch %i[v invert], negatable: false
 
+    c.desc 'Save this search for future use'
+    c.arg_name 'TITLE'
+    c.flag %i[save]
+
     c.action do |global_options, options, args|
+      if options[:save]
+        title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
+        NA.save_search(title, "tagged #{NA.command_line.map { |cmd| "\"#{cmd}\"" }.join(' ')}")
+      end
+
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
                 3
               else
@@ -371,9 +389,10 @@ class App
       all_req = args.join(' ') !~ /[+!\-]/ && !options[:or]
       args.join(',').split(/ *, */).each do |arg|
         # TODO: <> comparisons do nothing right now
-        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>*$\^]+)(?:(?<op>[=<>*$\^]+)(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
+
         tags.push({
-                    tag: m['tag'],
+                    tag: m['tag'].wildcard_to_rx,
                     comp: m['op'],
                     value: m['val'],
                     required: all_req || (!m['req'].nil? && m['req'] == '+'),
@@ -387,9 +406,9 @@ class App
         options[:in].split(/ *, */).each do |a|
           m = a.match(/^(?<req>\+)?(?<tok>.*?)$/)
           todo.push({
-                        token: m['tok'],
-                        required: !m['req'].nil?
-                      })
+                      token: m['tok'],
+                      required: !m['req'].nil?
+                    })
         end
       end
 
@@ -545,6 +564,26 @@ class App
     end
   end
 
+  desc 'Execute a saved search'
+  long_desc 'Run without argument to list saved searches'
+  arg_name 'SEARCH_TITLE', optional: true
+  command %i[saved] do |c|
+    c.action do |_global_options, _options, args|
+      searches = NA.load_searches
+      if args.empty?
+        NA.notify("{bg}Saved searches stored in {bw}#{NA.database_path(file: 'saved_searches.yml')}")
+        NA.notify(searches.map { |k, v| "{y}#{k}: {w}#{v}" }.join("\n"), exit_code: 0)
+      else
+        keys = searches.keys.delete_if { |k| k !~ /#{args[0]}/ }
+        NA.notify("{r}Search #{args[0]} not found", exit_code: 1) if keys.empty?
+
+        key = keys[0]
+        cmd = Shellwords.shellsplit(searches[key])
+        exit run(cmd)
+      end
+    end
+  end
+
   pre do |global, _command, _options, _args|
     NA.verbose = global[:debug]
     NA.extension = global[:ext]
@@ -574,6 +613,7 @@ class App
   end
 end
 
+NA.command_line = ARGV
 @command = ARGV[0]
 $first_arg = ARGV[1]
 
