@@ -1,5 +1,6 @@
 require "minitest/autorun"
-require '../lib/na'
+$LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
+require 'na'
 require 'fileutils'
 # Add test libraries you want to use here, e.g. mocha
 # Add helper classes or methods here, too

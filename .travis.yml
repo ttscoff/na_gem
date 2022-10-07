@@ -1,0 +1,11 @@
+---
+language: ruby
+sudo: required
+dist: trusty
+cache: bundler
+rvm:
+  - ruby-3.0.1
+install:
+  - gem install bundler --version '2.2.29'
+  - bundle install
+script: "bundle exec rake test"
