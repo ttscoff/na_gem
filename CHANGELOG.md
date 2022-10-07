@@ -1,3 +1,11 @@
+### 1.1.20
+
+2022-10-07 03:16
+
+#### IMPROVED
+
+- Date comparisons that don't specify a time are automatically adjusted to "noon" to allow direct comparison of days
+
 ### 1.1.19
 
 2022-10-07 03:06
