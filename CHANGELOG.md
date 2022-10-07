@@ -1,3 +1,17 @@
+### 1.1.21
+
+2022-10-07 04:26
+
+#### NEW
+
+- `na todos` will list (and optionally search) known todo files from history
+
+#### IMPROVED
+
+- Fuzzier matching of todo file history
+- Help output fixes
+- Code documentation
+
 ### 1.1.20
 
 2022-10-07 03:16
