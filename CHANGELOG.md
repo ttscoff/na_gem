@@ -1,3 +1,18 @@
+### 1.1.22
+
+2022-10-07 05:58
+
+#### IMPROVED
+
+- Help output and code documentation
+- Allow wildcards (* and ?) when matching todo history
+- Allow multiple todo queries separated by comma
+
+#### FIXED
+
+- Remove file extension when matching todo history
+- Todo history query failed on exact match
+
 ### 1.1.21
 
 2022-10-07 04:26

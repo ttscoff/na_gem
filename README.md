@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.1.21
+The current version of `na` is 1.1.22
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -171,7 +171,7 @@ DESCRIPTION
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
     -e, --regex                            - Interpret search pattern as regular expression
-    --in=TODO_PATH                         - Show actions from a specific todo file in history (default: none)
+    --in=TODO_PATH                         - Show actions from a specific todo file in history. May use wildcards (* and ?) (default: none)
     -o, --or                               - Combine search tokens with OR, displaying actions matching ANY of the terms
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     -v, --invert                           - Show actions not matching search pattern
@@ -222,7 +222,7 @@ SYNOPSIS
     na [global options] next [command options] [QUERY]
 
 DESCRIPTION
-    Next actions are actions which contain the next action tag (default @na),   do not contain @done, and are not in the Archive project. 
+    Next actions are actions which contain the next action tag (default @na),   do not contain @done, and are not in the Archive project.   Arguments will target a todo file from history, whether it's in the current   directory or not. Todo file queries can include path components separated by /   or :, and may use wildcards (`*` to match any text, `?` to match a single character). Multiple queries allowed (separate arguments or separated by comma). 
 
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: 2)
@@ -256,7 +256,7 @@ SYNOPSIS
     na [global options] next [command options] [QUERY]
 
 DESCRIPTION
-    Next actions are actions which contain the next action tag (default @na),   do not contain @done, and are not in the Archive project. 
+    Next actions are actions which contain the next action tag (default @na),   do not contain @done, and are not in the Archive project.   Arguments will target a todo file from history, whether it's in the current   directory or not. Todo file queries can include path components separated by /   or :, and may use wildcards (`*` to match any text, `?` to match a single character). Multiple queries allowed (separate arguments or separated by comma). 
 
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: 2)
