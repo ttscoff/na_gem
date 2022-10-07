@@ -1,3 +1,15 @@
+### 1.1.23
+
+2022-10-07 10:02
+
+#### NEW
+
+- Saved searches. Add `--save TITLE` to `tagged` or `find` commands to save the parameters for use with `na saved TITLE`
+
+#### FIXED
+
+- Restore wildcard capability of tag searches
+
 ### 1.1.22
 
 2022-10-07 05:58
