@@ -302,16 +302,17 @@ module NA
     ##                       between characters
     ##
     def match_working_dir(search, distance: 1)
-      optional = []
-      required = []
+      search = search.map { |t| t[:token] }.join('')
+      optional = [search]
+      required = [search]
 
-      search&.each do |t|
-        # Make "search" into "s.{0,1}e.{0,1}a.{0,1}r.{0,1}c.{0,1}h"
-        new_rx = t[:token].to_s.split('').join(".{0,#{distance}}")
+      # search&.each do |t|
+      #   # Make "search" into "s.{0,1}e.{0,1}a.{0,1}r.{0,1}c.{0,1}h"
+      #   new_rx = t[:token].to_s.split('').join(".{0,#{distance}}")
 
-        optional.push(new_rx)
-        required.push(new_rx) if t[:required]
-      end
+      #   optional.push(new_rx)
+      #   required.push(new_rx) if t[:required]
+      # end
 
       match_dir(optional, required)
     end

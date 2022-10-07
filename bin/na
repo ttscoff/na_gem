@@ -54,6 +54,8 @@ class App
   switch %i[debug]
 
   desc 'Show next actions'
+  long_desc "Next actions are actions which contain the next action tag (default @na),
+  do not contain @done, and are not in the Archive project."
   arg_name 'OPTIONAL_QUERY'
   command %i[next show] do |c|
     c.example 'na next', desc: 'display the next actions from any todo files in the current directory'
@@ -114,11 +116,12 @@ class App
   end
 
   desc 'Add a new next action'
-  long_desc 'Provides an easy way to store todos while you work. Add quick reminders and (if you set up Prompt Hooks)
-  they\'ll automatically display next time you enter the directory.
+  long_desc 'Provides an easy way to store todos while you work. Add quick
+  reminders and (if you set up Prompt Hooks) they\'ll automatically display
+  next time you enter the directory.
 
-  If multiple todo files are found in the current directory, a menu will allow you to pick to which
-  file the action gets added.'
+  If multiple todo files are found in the current directory, a menu will
+  allow you to pick to which file the action gets added.'
   arg_name 'ACTION'
   command :add do |c|
     c.example 'na add "A cool feature I thought of @idea"', desc: 'Add a new action to the Inbox, including a tag'
@@ -314,11 +317,11 @@ class App
 
   desc 'Find actions matching a tag'
   long_desc 'Finds actions with tags matching the arguments. An action is shown if it
-             contains all of the tags listed. Add a + before a tag to make it required
-             and others optional. You can specify values using TAG=VALUE pairs.
-             Use <, >, and = for numeric comparisons, and *=, ^=, and $= for text comparisons.
-             Date comparisons use natural language (`na tagged "due<=today"`) and
-             are detected automatically.'
+  contains all of the tags listed. Add a + before a tag to make it required
+  and others optional. You can specify values using TAG=VALUE pairs.
+  Use <, >, and = for numeric comparisons, and *=, ^=, and $= for text comparisons.
+  Date comparisons use natural language (`na tagged "due<=today"`) and
+  are detected automatically.'
   arg_name 'TAG [VALUE]'
   command %i[tagged] do |c|
     c.example 'na tagged maybe', desc: 'Show all actions tagged @maybe'

@@ -55,11 +55,13 @@ class ::String
     scan(/\e\[[\d;]+m/).join('').gsub(/\e\[0m/, '')
   end
 
-  def dir_to_rx
-    "#{split(%r{[/:]}).join('.*?/.*?')}[^/]+$"
+  def dir_to_rx(distance: 2)
+    "#{split(%r{[/:]}).map { |comp| comp.split('').join(".{0,#{distance}}") }.join('.*?/.*?')}[^/]+$"
   end
 
   def dir_matches(any: [], all: [])
+    $stderr.puts all.map(&:dir_to_rx) if NA.verbose
+
     matches_any(any.map(&:dir_to_rx)) && matches_all(all.map(&:dir_to_rx))
   end
 
