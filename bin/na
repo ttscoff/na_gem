@@ -54,8 +54,12 @@ class App
   switch %i[debug]
 
   desc 'Show next actions'
-  long_desc "Next actions are actions which contain the next action tag (default @na),
-  do not contain @done, and are not in the Archive project."
+  long_desc 'Next actions are actions which contain the next action tag (default @na),
+  do not contain @done, and are not in the Archive project.
+
+  Arguments will target a todo file from history, whether it\'s in the current
+  directory or not. Todo file queries can include path components separated by /
+  or :, and may use wildcards (`*` to match any text, `?` to match a single character).'
   arg_name 'QUERY', optional: true
   command %i[next show] do |c|
     c.example 'na next', desc: 'display the next actions from any todo files in the current directory'
@@ -251,7 +255,7 @@ class App
     c.arg_name 'DEPTH'
     c.flag %i[d depth], type: :integer, must_match: /^\d+$/
 
-    c.desc 'Show actions from a specific todo file in history'
+    c.desc 'Show actions from a specific todo file in history. May use wildcards (* and ?)'
     c.arg_name 'TODO_PATH'
     c.flag %i[in]
 
@@ -335,7 +339,7 @@ class App
     c.default_value 1
     c.flag %i[d depth], type: :integer, must_match: /^\d+$/
 
-    c.desc 'Show actions from a specific todo file in history'
+    c.desc 'Show actions from a specific todo file in history. May use wildcards (* and ?)'
     c.arg_name 'TODO_PATH'
     c.flag %i[in]
 

@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 
+# String helpers
 class ::String
+  ##
+  ## Determine indentation level of line
+  ##
+  ## @return     [Number] number of indents detected
+  ##
   def indent_level
     prefix = match(/(^[ \t]+)/)
     return 0 if prefix.nil?
@@ -11,7 +17,13 @@ class ::String
   ##
   ## Colorize @tags with ANSI escapes
   ##
-  ## @param      color  [String] color (see #Color)
+  ## @param      color       [String] color (see #Color)
+  ## @param      value       [String] The value color
+  ##                         template
+  ## @param      parens      [String] The parens color
+  ##                         template
+  ## @param      last_color  [String] Color to restore after
+  ##                         tag highlight
   ##
   ## @return     [String] string with @tags highlighted
   ##
@@ -23,6 +35,16 @@ class ::String
          "\\1#{tag_color}\\2#{paren_color}\\3#{value_color}\\4#{paren_color}\\5#{last_color}")
   end
 
+  ##
+  ## Highlight search results
+  ##
+  ## @param      regexes     [Array] The regexes for the
+  ##                         search
+  ## @param      color       [String] The highlight color
+  ##                         template
+  ## @param      last_color  [String] Color to restore after
+  ##                         highlight
+  ##
   def highlight_search(regexes, color: '{y}', last_color: '{xg}')
     string = dup
     color = NA::Color.template(color)
@@ -42,12 +64,13 @@ class ::String
 
   # Returns the last escape sequence from a string.
   #
-  # Actually returns all escape codes, with the assumption
-  # that the result of inserting them will generate the
-  # same color as was set at the end of the string.
-  # Because you can send modifiers like dark and bold
-  # separate from color codes, only using the last code
-  # may not render the same style.
+  # @note       Actually returns all escape codes, with the
+  #             assumption that the result of inserting them
+  #             will generate the same color as was set at
+  #             the end of the string. Because you can send
+  #             modifiers like dark and bold separate from
+  #             color codes, only using the last code may
+  #             not render the same style.
   #
   # @return     [String]  All escape codes in string
   #
@@ -55,8 +78,18 @@ class ::String
     scan(/\e\[[\d;]+m/).join('').gsub(/\e\[0m/, '')
   end
 
+  ##
+  ## Convert a directory path to a regular expression
+  ##
+  ## @note       Splits at / or :, adds variable distance
+  ##             between characters, joins segments with
+  ##             slashes and requires that last segment
+  ##             match last segment of target path
+  ##
+  ## @param      distance  The distance
+  ##
   def dir_to_rx(distance: 2)
-    "#{split(%r{[/:]}).map { |comp| comp.split('').join(".{0,#{distance}}") }.join('.*?/.*?')}[^/]+$"
+    "#{split(%r{[/:]}).map { |comp| comp.split('').join(".{0,#{distance}}").gsub(/\*/, '[^ ]*?') }.join('.*?/.*?')}[^/]+$"
   end
 
   def dir_matches(any: [], all: [])
@@ -67,6 +100,11 @@ class ::String
     matches_any(any) && matches_all(all) && matches_none(none)
   end
 
+  ##
+  ## Convert wildcard characters to regular expressions
+  ##
+  ## @return     [String] Regex string
+  ##
   def wildcard_to_rx
     gsub(/\./, '\\.').gsub(/\*/, '[^ ]*?').gsub(/\?/, '.')
   end
@@ -75,6 +113,12 @@ class ::String
     replace cap_first
   end
 
+  ##
+  ## Capitalize first character, leaving other
+  ## capitalization in place
+  ##
+  ## @return     [String] capitalized string
+  ##
   def cap_first
     sub(/^([a-z])(.*)$/) do
       m = Regexp.last_match
