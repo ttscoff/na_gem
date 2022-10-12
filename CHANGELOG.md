@@ -1,3 +1,11 @@
+### 1.1.25
+
+2022-10-12 08:37
+
+#### FIXED
+
+- Unable to search for next action tag with `find` or `tagged`
+
 ### 1.1.24
 
 2022-10-12 08:27
