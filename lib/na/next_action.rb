@@ -144,7 +144,7 @@ module NA
     ## @param      note     [String] The note
     ##
     def add_action(file, project, action, note = nil)
-      content = IO.read(file)
+      content = file.read_file
       # Insert the target project at the top if it doesn't exist
       unless content =~ /^[ \t]*#{project}:/i
         content = "#{project.cap_first}:\n#{content}"
@@ -255,7 +255,7 @@ module NA
 
       files.each do |file|
         save_working_dir(File.expand_path(file))
-        content = IO.read(file)
+        content = file.read_file
         indent_level = 0
         parent = []
         content.split("\n").each do |line|
@@ -330,7 +330,7 @@ module NA
       db_file = 'tdlist.txt'
       file = File.join(db_dir, db_file)
       if File.exist?(file)
-        dirs = IO.read(file).split("\n")
+        dirs = file.read_file.split("\n")
         dirs.delete_if { |f| !File.exist?(f) }
         File.open(file, 'w') { |f| f.puts dirs.join("\n") }
       end
@@ -341,7 +341,7 @@ module NA
         dirs = match_working_dir(query)
       else
         file = database_path
-        content = File.exist?(file) ? IO.read(file).strip : ''
+        content = File.exist?(file) ? file.read_file.strip : ''
         notify('{br}Database empty', exit_code: 1) if content.empty?
 
         dirs = content.split(/\n/)
@@ -373,7 +373,7 @@ module NA
     def load_searches
       file = database_path(file: 'saved_searches.yml')
       if File.exist?(file)
-        searches = YAML.safe_load(IO.read(file))
+        searches = YAML.safe_load(file.read_file)
       else
         searches = {
           'soon' => 'tagged "due<in 2 days,due>yesterday"',
@@ -459,7 +459,7 @@ module NA
       file = database_path
       notify('{r}No na database found', exit_code: 1) unless File.exist?(file)
 
-      dirs = IO.read(file).split("\n")
+      dirs = file.read_file.split("\n")
 
       optional = search.map { |t| t[:token] }
       required = search.filter { |s| s[:required] }.map { |t| t[:token] }
@@ -478,7 +478,7 @@ module NA
     ##
     def save_working_dir(todo_file)
       file = database_path
-      content = File.exist?(file) ? IO.read(file) : ''
+      content = File.exist?(file) ? file.read_file : ''
       dirs = content.split(/\n/)
       dirs.push(File.expand_path(todo_file))
       dirs.sort!.uniq!
