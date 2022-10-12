@@ -1,3 +1,11 @@
+### 1.1.24
+
+2022-10-12 08:27
+
+#### FIXED
+
+- Force utf-8 encoding when reading files, should fix invalid byte sequence errors
+
 ### 1.1.23
 
 2022-10-07 10:02
