@@ -276,7 +276,7 @@ module NA
           elsif line =~ /^[ \t]*- / && line !~ / @done/
             next if require_na && line !~ /@#{NA.na_tag}\b/
 
-            action = line.sub(/^[ \t]*- /, '').sub(/ @#{NA.na_tag}\b/, '')
+            action = line.sub(/^[ \t]*- /, '')
             new_action = NA::Action.new(file, File.basename(file, ".#{NA.extension}"), parent.dup, action)
 
             has_search = !optional.empty? || !required.empty? || !negated.empty?

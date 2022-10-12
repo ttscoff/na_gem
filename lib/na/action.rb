@@ -58,7 +58,7 @@ module NA
       file_tpl = "#{template[:file]}#{file} {x}"
       filename = NA::Color.template(file_tpl)
 
-      action = NA::Color.template("#{template[:action]}#{@action}{x}")
+      action = NA::Color.template("#{template[:action]}#{@action.sub(/ @#{NA.na_tag}\b/, '')}{x}")
       action = action.highlight_tags(color: template[:tags],
                                      parens: template[:value_parens],
                                      value: template[:values],
