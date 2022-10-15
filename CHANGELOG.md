@@ -1,3 +1,12 @@
+### 1.1.26
+
+2022-10-15 10:36
+
+#### IMPROVED
+
+- A parenthetical at the end of an action will be interpreted as a note. If --note is additionally supplied, entered note is concatenated to parenthetical note.
+- Allow multi-line notes
+
 ### 1.1.25
 
 2022-10-12 08:37
