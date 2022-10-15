@@ -153,7 +153,8 @@ module NA
       # Insert the action at the top of the target project
       content.sub!(/^([ \t]*)#{project}:(.*?)$/i) do
         m = Regexp.last_match
-        note = note.nil? ? '' : "\n#{m[1]}\t\t#{note.join('').strip}"
+        indent = "\n#{m[1]}\t\t"
+        note = note.nil? ? '' : "#{indent}#{note.join(indent).strip}"
         "#{m[1]}#{project.cap_first}:#{m[2]}\n#{m[1]}\t- #{action}#{note}"
       end
 
