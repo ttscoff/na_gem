@@ -340,7 +340,7 @@ module NA
 
     def list_todos(query: [])
       if query
-        dirs = match_working_dir(query)
+        dirs = match_working_dir(query, distance: 2, require_last: false)
       else
         file = database_path
         content = File.exist?(file) ? file.read_file.strip : ''
