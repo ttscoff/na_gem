@@ -387,6 +387,40 @@ module NA
       searches
     end
 
+    def delete_search(strings = nil)
+      NA.notify('{r}Name search required', exit_code: 1) if strings.nil? || strings.empty?
+
+      file = database_path(file: 'saved_searches.yml')
+      NA.notify('{r}No search definitions file found', exit_code: 1) unless File.exist?(file)
+
+      searches = YAML.safe_load(file.read_file)
+      keys = searches.keys.delete_if { |k| k !~ /(#{strings.join('|')})/ }
+
+      res = yn(NA::Color.template(%({y}Remove #{keys.count > 1 ? 'searches' : 'search'} {bw}"#{keys.join(', ')}"{x})),
+               default: false)
+
+      NA.notify('{r}Cancelled', exit_code: 1) unless res
+
+      searches.delete_if { |k| keys.include?(k) }
+
+      File.open(file, 'w') { |f| f.puts(YAML.dump(searches)) }
+
+      NA.notify("{y}Deleted {bw}#{keys.count}{xy} #{keys.count > 1 ? 'searches' : 'search'}", exit_code: 0)
+    end
+
+    def edit_searches
+      file = database_path(file: 'saved_searches.yml')
+      searches = load_searches
+
+      NA.notify('{r}No search definitions found', exit_code: 1) unless searches.count.positive?
+
+      editor = ENV['EDITOR']
+      NA.notify('{r}No $EDITOR defined', exit_code: 1) unless editor && TTY::Which.exist?(editor)
+
+      system %(#{editor} "#{file}")
+      NA.notify("Opened #{file} in #{editor}", exit_code: 0)
+    end
+
     ##
     ## Get path to database of known todo files
     ##

@@ -401,7 +401,6 @@ class App
 
       all_req = args.join(' ') !~ /[+!\-]/ && !options[:or]
       args.join(',').split(/ *, */).each do |arg|
-        # TODO: <> comparisons do nothing right now
         m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
 
         tags.push({
@@ -484,13 +483,15 @@ class App
     c.arg_name 'EDITOR'
     c.flag %i[a app]
 
-    c.action do |global_options, options, _args|
+    c.action do |global_options, options, args|
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
                 3
               else
                 options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
               end
       files = NA.find_files(depth: depth)
+      files.delete_if { |f| f !~ /.*?(#{args.join('|')}).*?.#{NA.extension}/ } if args.count.positive?
+
       file = if files.count > 1
                NA.select_file(files)
              else
@@ -581,12 +582,30 @@ class App
   long_desc 'Run without argument to list saved searches'
   arg_name 'SEARCH_TITLE', optional: true
   command %i[saved] do |c|
-    c.action do |_global_options, _options, args|
+    c.example 'na saved overdue', description: 'perform the search named "overdue"'
+    c.example 'na saved over', description: 'perform the search named "overdue", assuming no other searches match "over"'
+    c.example 'na saved', description: 'list available searches'
+
+    c.desc 'Open the saved search file in $EDITOR'
+    c.switch %i[e edit]
+
+    c.desc 'Delete the specified search definition'
+    c.switch %i[d delete]
+
+    c.action do |_global_options, options, args|
+      if options[:edit]
+        NA.edit_searches
+      end
+
       searches = NA.load_searches
       if args.empty?
         NA.notify("{bg}Saved searches stored in {bw}#{NA.database_path(file: 'saved_searches.yml')}")
         NA.notify(searches.map { |k, v| "{y}#{k}: {w}#{v}" }.join("\n"), exit_code: 0)
       else
+        if options[:delete]
+          NA.delete_search(args)
+        end
+
         keys = searches.keys.delete_if { |k| k !~ /#{args[0]}/ }
         NA.notify("{r}Search #{args[0]} not found", exit_code: 1) if keys.empty?
 
