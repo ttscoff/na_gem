@@ -95,13 +95,16 @@ class App
               end
 
       if args.count.positive?
+        all_req = false
+
         tokens = []
         args.each do |arg|
           arg.split(/ *, */).each do |a|
-            m = a.match(/^(?<req>\+)?(?<tok>.*?)$/)
+            m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
             tokens.push({
                           token: m['tok'],
-                          required: !m['req'].nil?
+                          required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                          negate: !m['req'].nil? && m['req'] =~ /[!\-]/
                         })
           end
         end
@@ -146,7 +149,11 @@ class App
     c.desc 'Add action to specific project'
     c.arg_name 'PROJECT'
     c.default_value 'Inbox'
-    c.flag %i[to]
+    c.flag %i[to project proj]
+
+    c.desc 'Add to a known todo file, partial matches allowed'
+    c.arg_name 'TODO_FILE'
+    c.flag %i[in todo]
 
     c.desc 'Use a tag other than the default next action tag'
     c.arg_name 'TAG'
@@ -183,7 +190,7 @@ class App
         action = "#{action.gsub(/@priority\(\d+\)/, '')} @priority(#{options[:priority]})"
       end
 
-      note_rx = /^(.+)\((.*?)\)$/
+      note_rx = /^(.+) \((.*?)\)$/
       split_note = if action =~ note_rx
                      n = Regexp.last_match(2)
                      action.sub!(note_rx, '\1').strip!
@@ -229,6 +236,34 @@ class App
             Process.exit 1
           end
         end
+      elsif options[:todo]
+        todo = []
+        options[:todo].split(/ *, */).each do |a|
+          m = a.match(/^(?<req>\+)?(?<tok>.*?)$/)
+          todo.push({
+                      token: m['tok'],
+                      required: !m['req'].nil?
+                    })
+        end
+        dirs = NA.match_working_dir(todo)
+        if dirs.count.positive?
+          target = dirs[0]
+        else
+          todo = "#{options[:todo].sub(/#{NA.extension}$/, '')}.#{NA.extension}"
+          target = File.expand_path(todo)
+          unless File.exist?(target)
+
+            res = NA.yn(NA::Color.template("{by}Specified file not found, create #{todo}"), default: true)
+            if res
+              basename = File.basename(target, ".#{NA.extension}")
+              NA.create_todo(target, basename)
+            else
+              NA.notify('{r}Cancelled{x}', exit_code: 1)
+
+            end
+          end
+
+        end
       else
         files = NA.find_files(depth: options[:depth])
         if files.count.zero?
@@ -243,12 +278,12 @@ class App
         end
         target = files.count > 1 ? NA.select_file(files) : files[0]
         unless files.count.positive? && File.exist?(target)
-          puts NA::Color.template('{r}Cancelled{x}')
-          Process.exit 1
+          NA.notify('{r}Cancelled{x}', exit_code: 1)
+
         end
       end
 
-      NA.add_action(target, options[:to], action, note)
+      NA.add_action(target, options[:project], action, note)
     end
   end
 

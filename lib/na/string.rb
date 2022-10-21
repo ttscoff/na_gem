@@ -94,14 +94,18 @@ class ::String
   ##             slashes and requires that last segment
   ##             match last segment of target path
   ##
-  ## @param      distance  The distance
+  ## @param      distance      The distance allowed between characters
+  ## @param      require_last  Require match to be last element in path
   ##
-  def dir_to_rx(distance: 2)
-    "#{split(%r{[/:]}).map { |comp| comp.split('').join(".{0,#{distance}}").gsub(/\*/, '[^ ]*?') }.join('.*?/.*?')}[^/]*?$"
+  def dir_to_rx(distance: 1, require_last: true)
+    "#{split(%r{[/:]}).map { |comp| comp.split('').join(".{0,#{distance}}").gsub(/\*/, '[^ ]*?') }.join('.*?/.*?')}#{require_last ? '[^/]*?$' : ''}"
   end
 
-  def dir_matches(any: [], all: [])
-    matches_any(any.map(&:dir_to_rx)) && matches_all(all.map(&:dir_to_rx))
+  def dir_matches(any: [], all: [], none: [], require_last: true, distance: 1)
+    any_rx = any.map { |q| q.dir_to_rx(distance: distance, require_last: require_last) }
+    all_rx = all.map { |q| q.dir_to_rx(distance: distance, require_last: require_last) }
+    none_rx = none.map { |q| q.dir_to_rx(distance: distance, require_last: false) }
+    matches_any(any_rx) && matches_all(all_rx) && matches_none(none_rx)
   end
 
   def matches(any: [], all: [], none: [])

@@ -89,6 +89,7 @@ module NA
         ENDCONTENT
         f.puts(content)
       end
+      save_working_dir(target)
       notify("{y}Created {bw}#{target}")
     end
 
@@ -433,6 +434,49 @@ module NA
       File.join(db_dir, file)
     end
 
+    ##
+    ## Find a matching path using semi-fuzzy matching.
+    ## Search tokens can include ! and + to negate or make
+    ## required.
+    ##
+    ## @param      search        [Array] search tokens to
+    ##                           match
+    ## @param      distance      [Integer] allowed distance
+    ##                           between characters
+    ## @param      require_last  [Boolean] require regex to
+    ##                           match last element of path
+    ##
+    ## @return     [Array] array of matching directories/todo files
+    ##
+    def match_working_dir(search, distance: 1, require_last: true)
+      file = database_path
+      notify('{r}No na database found', exit_code: 1) unless File.exist?(file)
+
+      dirs = file.read_file.split("\n")
+
+      optional = search.map { |t| t[:token] }
+      required = search.filter { |s| s[:required] }.map { |t| t[:token] }
+      negated = search.filter { |s| s[:negate] }.map { |t| t[:token] }
+
+      NA.notify("{bw}Optional directory regex: {x}#{optional.map(&:dir_to_rx)}", debug: true)
+      NA.notify("{bw}Required directory regex: {x}#{required.map(&:dir_to_rx)}", debug: true)
+      NA.notify("{bw}Negated directory regex: {x}#{negated.map { |t| t.dir_to_rx(distance: 1, require_last: false) }}", debug: true)
+
+      if require_last
+        dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required, none: negated) }
+      else
+        dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required, none: negated, distance: 2, require_last: false) }
+      end
+
+      dirs = dirs.sort.uniq
+      if dirs.empty? && require_last
+        NA.notify("{y}No matches, loosening search", debug: true)
+        match_working_dir(search, distance: 2, require_last: false)
+      else
+        dirs
+      end
+    end
+
     private
 
     ##
@@ -479,31 +523,6 @@ module NA
       end
 
       [optional, required, negated]
-    end
-
-    ##
-    ## Find a matching path using semi-fuzzy matching.
-    ## Search tokens can include ! and + to negate or make
-    ## required.
-    ##
-    ## @param      search    [Array] search tokens to match
-    ## @param      distance  [Integer] allowed distance
-    ##                       between characters
-    ##
-    def match_working_dir(search, distance: 1)
-      file = database_path
-      notify('{r}No na database found', exit_code: 1) unless File.exist?(file)
-
-      dirs = file.read_file.split("\n")
-
-      optional = search.map { |t| t[:token] }
-      required = search.filter { |s| s[:required] }.map { |t| t[:token] }
-
-      NA.notify("{bw}Optional directory regex: {x}#{optional.map(&:dir_to_rx)}", debug: true)
-      NA.notify("{bw}Required directory regex: {x}#{required.map(&:dir_to_rx)}", debug: true)
-
-      dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required) }
-      dirs.sort.uniq
     end
 
     ##
