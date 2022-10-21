@@ -299,8 +299,11 @@ class App
               desc: 'Find "A bug..." action, add @waiting, add/update @priority(4), and prompt for an additional note'
     c.example 'na update --archive My cool action', desc: 'Add @done to "My cool action" and immediately move to Archive'
 
-    c.desc 'Prompt for additional notes'
+    c.desc 'Prompt for additional notes. Input will be appended to any existing note.'
     c.switch %i[n note], negatable: false
+
+    c.desc 'Overwrite note instead of appending'
+    c.switch %i[o overwrite], negatable: false
 
     c.desc 'Add/change a priority level 1-5'
     c.arg_name 'PRIO'
@@ -335,6 +338,12 @@ class App
     c.desc 'Search for files X directories deep'
     c.arg_name 'DEPTH'
     c.flag %i[d depth], must_match: /^[1-9]$/, type: :integer, default_value: 1
+
+    c.desc 'Interpret search pattern as regular expression'
+    c.switch %i[e regex], negatable: false
+
+    c.desc 'Match pattern exactly'
+    c.switch %i[x exact], negatable: false
 
     c.action do |_global_options, options, args|
       reader = TTY::Reader.new
@@ -433,7 +442,8 @@ class App
                        remove_tag: remove_tags,
                        finish: options[:finish],
                        project: options[:project],
-                       note: note)
+                       note: note,
+                       overwrite: options[:overwrite])
     end
   end
 

@@ -154,10 +154,31 @@ module NA
       NA.notify('{r}No matching actions found', exit_code: 1) unless actions.count.positive?
       return [projects, actions] if actions.count == 1
 
-      res = choose_from(actions.map { |action| "#{action.line} % #{action.parent.join('/')} : #{action.action}" },
-                        prompt: 'Make a selection: ', multiple: true, sorted: true)
+      options = actions.map { |action| "#{action.line} % #{action.parent.join('/')} : #{action.action}" }
+      res = if TTY::Which.exist?('fzf')
+              choose_from(options, prompt: 'Make a selection: ', multiple: true, sorted: true)
+            elsif TTY::Which.exist?('gum')
+              args = [
+                '--cursor.foreground="151"',
+                '--item.foreground=""',
+                '--no-limit'
+              ]
+              `echo #{Shellwords.escape(options.join("\n"))}|#{TTY::Which.which('gum')} choose #{args.join(' ')}`.strip
+            else
+              reader = TTY::Reader.new
+              puts
+              options.each.with_index do |f, i|
+                puts NA::Color.template(format("{bw}%<idx> 2d{xw}) {y}%<action>s{x}\n", idx: i + 1, action: f))
+              end
+              result = reader.read_line(NA::Color.template('{bw}Use which file? {x}')).strip
+              if result && result.to_i.positive?
+                options[result.to_i - 1]
+              else
+                nil
+              end
+            end
 
-      NA.notify('{r}Cancelled', exit_code: 1) unless res
+      NA.notify('{r}Cancelled', exit_code: 1) unless res && res.length.positive?
 
       selected = []
       res.split(/\n/).each do |result|
@@ -223,7 +244,16 @@ module NA
       new_project
     end
 
-    def update_action(target, search, priority: 0, add_tag: [], remove_tag: [], finish: false, project: nil, note: [])
+    def update_action(target,
+                      search,
+                      priority: 0,
+                      add_tag: [],
+                      remove_tag: [],
+                      finish: false,
+                      project: nil,
+                      note: [],
+                      overwrite: false)
+
       projects = find_projects(target)
 
       target_proj = nil
@@ -246,7 +276,6 @@ module NA
 
       actions.sort_by(&:line).reverse.each do |action|
         string = action.action
-        orig_action = string.dup
 
         if priority&.positive?
           string.gsub!(/@priority\(\d+\)/, '').strip!
@@ -264,25 +293,24 @@ module NA
           string.strip!
         end
 
-        if finish
-          string.gsub!(/@done(\(.*?\))?/, '')
-          string.strip!
-          string += " @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})"
-        end
+        string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})" if finish && string !~ /@done/
 
         contents.slice!(action.line, action.note.count + 1)
 
         projects = shift_index_after(projects, action.line, action.note.count + 1)
 
-        action_proj = projects.select { |proj| proj.project =~ /^#{action.parent.join(':')}$/ }.first
-        if target_proj
-          target_proj = projects.select { |proj| proj.project =~ /^#{target_proj.project}$/ }.first
-        else
-          target_proj = action_proj
-        end
+        target_proj = if target_proj
+                        projects.select { |proj| proj.project =~ /^#{target_proj.project}$/ }.first
+                      else
+                        projects.select { |proj| proj.project =~ /^#{action.parent.join(':')}$/ }.first
+                      end
 
         indent = "\t" * target_proj.indent
-        note = action.note if note.empty?
+        note = if note.empty?
+                 action.note
+               else
+                 overwrite ? note : action.note.concat(note)
+               end
         note = note.empty? ? '' : "\n#{indent}\t\t#{note.join("\n#{indent}\t\t").strip}"
         contents.insert(target_proj.line, "#{indent}\t- #{string}#{note}")
       end

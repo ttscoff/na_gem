@@ -128,15 +128,19 @@ To perform a string comparison, you can use `*=` (contains), `^=` (starts with),
 
 ##### update
 
-Example: `na update -a Search text`
+Example: `na update --in na --archive my cool action`
 
-This command will perform actions (tag, untag, complete, archive, add note, etc.) on existing actions by matching your search text. Arguments will be interpreted as search tokens similar to `na find`.
+The above will locate a todo file matching "na" in todo history, find any action matching "my cool action", add a dated @done tag and move it to the Archive project, creating it if needed. If multiple actions are matched, a menu is presented (multi-select if fzf is available).
+
+This command will perform actions (tag, untag, complete, archive, add note, etc.) on existing actions by matching your search text. Arguments will be interpreted as search tokens similar to `na find`. You can use `--exact` and `--regex`, as well as wildcards in the search string.
 
 You can specify a particular todo file using `--file PATH` or any todo from history using `--in QUERY`.
 
-If more than one file is matched, a menu will be presented. You can only act on one file. If multiple actions match the search, a menu will be presented. This may become a multi-select menu in the future, but for now only a single action can be updated.
+If more than one file is matched, a menu will be presented. You can only act on one file. If multiple actions match the search within that file, a menu will be presented. You can select one action to update with return, or use tab to mark multiple tasks to which the action will be applied.
 
 Any time an update action is carried out, a backup of the file before modification will be made in the same directory with a `~` appended to the file extension (e.g. "marked.taskpaper" is backed up to "marked.taskpaper~"). Only one undo step is available, but if something goes wrong (and this feature is still experimental, so be wary), you can just copy the "~" file back to the original.
+
+You can specify a new project for an action with `--proj PROJECT_PATH`. A project path is hierarchical, with each level separated by a colon or slash. If the project path provided roughly matches an existing project, e.g. "mark:bug" would match "Marked:Bugs", then that project will be used. If no match is found, na will offer to generate a new project/hierarchy for the path provided. Strings will be exact but the first letter will be uppercased.
 
 ```
 @cli(bundle exec bin/na help update)
