@@ -2,9 +2,9 @@
 
 module NA
   class Action < Hash
-    attr_reader :file, :project, :parent, :action, :tags
+    attr_reader :file, :project, :parent, :action, :tags, :line, :note
 
-    def initialize(file, project, parent, action)
+    def initialize(file, project, parent, action, idx, note = [])
       super()
 
       @file = file
@@ -12,10 +12,12 @@ module NA
       @parent = parent
       @action = action
       @tags = scan_tags
+      @line = idx
+      @note = note
     end
 
     def to_s
-      "(#{@file}) #{@project}:#{@parent.join('>')} | #{@action}"
+      "(#{@file}:#{@line}) #{@project}:#{@parent.join('>')} | #{@action}"
     end
 
     def inspect

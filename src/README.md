@@ -126,6 +126,22 @@ To perform a string comparison, you can use `*=` (contains), `^=` (starts with),
 @cli(bundle exec bin/na help show)
 ```
 
+##### update
+
+Example: `na update -a Search text`
+
+This command will perform actions (tag, untag, complete, archive, add note, etc.) on existing actions by matching your search text. Arguments will be interpreted as search tokens similar to `na find`.
+
+You can specify a particular todo file using `--file PATH` or any todo from history using `--in QUERY`.
+
+If more than one file is matched, a menu will be presented. You can only act on one file. If multiple actions match the search, a menu will be presented. This may become a multi-select menu in the future, but for now only a single action can be updated.
+
+Any time an update action is carried out, a backup of the file before modification will be made in the same directory with a `~` appended to the file extension (e.g. "marked.taskpaper" is backed up to "marked.taskpaper~"). Only one undo step is available, but if something goes wrong (and this feature is still experimental, so be wary), you can just copy the "~" file back to the original.
+
+```
+@cli(bundle exec bin/na help update)
+```
+
 ### Configuration
 
 Global options such as todo extension and default next action tag can be stored permanently by using the `na initconfig` command. Run na with the global options you'd like to set, and add `initconfig` at the end of the command. A file will be written to `~/.na.rc`. You can edit this manually, or just update it using the `initconfig --force` command to overwrite it with new settings.

@@ -136,6 +136,162 @@ module NA
       end
     end
 
+    def shift_index_after(projects, idx, length = 1)
+      projects.map do |proj|
+        proj.line = proj.line > idx ? proj.line - length : proj.line
+        proj
+      end
+    end
+
+    def find_projects(target)
+      _, _, projects = parse_actions(require_na: false, file_path: target)
+      projects
+    end
+
+    def find_actions(target, search)
+      _, actions, projects = parse_actions(search: search, require_na: false, file_path: target)
+
+      NA.notify('{r}No matching actions found', exit_code: 1) unless actions.count.positive?
+      return [projects, actions] if actions.count == 1
+
+      res = choose_from(actions.map { |action| "#{action.line} % #{action.parent.join('/')} : #{action.action}" },
+                        prompt: 'Make a selection: ', multiple: true, sorted: true)
+
+      NA.notify('{r}Cancelled', exit_code: 1) unless res
+
+      selected = []
+      res.split(/\n/).each do |result|
+        idx = result.match(/^(\d+)(?= % )/)[1]
+        action = actions.select { |a| a.line == idx.to_i }.first
+        selected.push(action)
+      end
+      [projects, selected]
+    end
+
+    def insert_project(target, project)
+      path = project.split(%r{[:/]})
+      _, _, projects = parse_actions(file_path: target)
+      built = []
+      last_match = nil
+      final_match = nil
+      new_path = []
+      matches = nil
+      path.each_with_index do |part, i|
+        built.push(part)
+        matches = projects.select { |proj| proj.project =~ /^#{built.join(':')}/i }
+        if matches.count.zero?
+          final_match = last_match
+          new_path = path.slice(i, path.count - i)
+          break
+        else
+          last_match = matches.last
+        end
+      end
+
+      content = target.read_file
+      if final_match.nil?
+        indent = 0
+        input = []
+        new_path.each do |part|
+          input.push("#{"\t" * indent}#{part.cap_first}:")
+          indent += 1
+        end
+
+        if new_path.join('') =~ /Archive/i
+          content = "#{content.strip}\n#{input.join("\n")}"
+        else
+          content = "#{input.join("\n")}\n#{content}"
+        end
+
+        new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, input.count - 1)
+      else
+        line = final_match.line + 1
+        indent = final_match.indent + 1
+        input = []
+        new_path.each do |part|
+          input.push("#{"\t" * indent}#{part.cap_first}:")
+          indent += 1
+        end
+        content = content.split("\n").insert(line, input.join("\n")).join("\n")
+        new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, line + input.count - 1)
+      end
+
+      File.open(target, 'w') do |f|
+        f.puts content
+      end
+
+      new_project
+    end
+
+    def update_action(target, search, priority: 0, add_tag: [], remove_tag: [], finish: false, project: nil, note: [])
+      projects = find_projects(target)
+
+      target_proj = nil
+
+      if project
+        target_proj = projects.select { |pr| pr.project =~ /#{project.gsub(/:/, '.*?:.*?')}/i }.first
+        if target_proj.nil?
+          res = NA.yn(NA::Color.template("{y}Project {bw}#{project}{xy} doesn't exist, add it"), default: true)
+          if res
+            target_proj = insert_project(target, project)
+          else
+            NA.notify('{x}Cancelled', exit_code: 1)
+          end
+        end
+      end
+
+      projects, actions = find_actions(target, search)
+
+      contents = target.read_file.split(/\n/)
+
+      actions.sort_by(&:line).reverse.each do |action|
+        string = action.action
+        orig_action = string.dup
+
+        if priority&.positive?
+          string.gsub!(/@priority\(\d+\)/, '').strip!
+          string += " @priority(#{priority})"
+        end
+
+        add_tag.each do |tag|
+          string.gsub!(/@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
+          string.strip!
+          string += " @#{tag}"
+        end
+
+        remove_tag.each do |tag|
+          string.gsub!(/@#{tag}(\(.*?\))?/, '')
+          string.strip!
+        end
+
+        if finish
+          string.gsub!(/@done(\(.*?\))?/, '')
+          string.strip!
+          string += " @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})"
+        end
+
+        contents.slice!(action.line, action.note.count + 1)
+
+        projects = shift_index_after(projects, action.line, action.note.count + 1)
+
+        action_proj = projects.select { |proj| proj.project =~ /^#{action.parent.join(':')}$/ }.first
+        if target_proj
+          target_proj = projects.select { |proj| proj.project =~ /^#{target_proj.project}$/ }.first
+        else
+          target_proj = action_proj
+        end
+
+        indent = "\t" * target_proj.indent
+        note = action.note if note.empty?
+        note = note.empty? ? '' : "\n#{indent}\t\t#{note.join("\n#{indent}\t\t").strip}"
+        contents.insert(target_proj.line, "#{indent}\t- #{string}#{note}")
+      end
+      backup_file(target)
+      File.open(target, 'w') { |f| f.puts contents.join("\n") }
+
+      notify("{by}Task updated in {bw}#{target}")
+    end
+
     ##
     ## Add an action to a todo file
     ##
@@ -199,16 +355,19 @@ module NA
     ##
     ## Read a todo file and create a list of actions
     ##
-    ## @param      depth       [Number] The directory depth to search for files
-    ## @param      query       [Hash] The project query
+    ## @param      depth       [Number] The directory depth
+    ##                         to search for files
+    ## @param      query       [Hash] The todo file query
     ## @param      tag         [Hash] Tags to search for
     ## @param      search      [String] A search string
     ## @param      negate      [Boolean] Invert results
-    ## @param      regex       [Boolean] Interpret as regular expression
+    ## @param      regex       [Boolean] Interpret as
+    ##                         regular expression
     ## @param      project     [String] The project
     ## @param      require_na  [Boolean] Require @na tag
+    ## @param      file        [String] file path to parse
     ##
-    def parse_actions(depth: 1, query: nil, tag: nil, search: nil, negate: false, regex: false, project: nil, require_na: true)
+    def parse_actions(depth: 1, query: nil, tag: nil, search: nil, negate: false, regex: false, project: nil, require_na: true, file_path: nil)
       actions = []
       required = []
       optional = []
@@ -216,6 +375,7 @@ module NA
       required_tag = []
       optional_tag = []
       negated_tag = []
+      projects = []
 
       tag&.each do |t|
         unless t[:tag].nil?
@@ -249,7 +409,9 @@ module NA
         end
       end
 
-      files = if query.nil?
+      files = if !file_path.nil?
+                [file_path]
+              elsif query.nil?
                 find_files(depth: depth)
               else
                 match_working_dir(query)
@@ -260,8 +422,10 @@ module NA
         content = file.read_file
         indent_level = 0
         parent = []
-        content.split("\n").each do |line|
+        in_action = false
+        content.split("\n").each.with_index do |line, idx|
           if line =~ /([ \t]*)([^\-]+.*?): *(@\S+ *)*$/
+            in_action = false
             proj = Regexp.last_match(2)
             indent = line.indent_level
 
@@ -274,14 +438,18 @@ module NA
               parent.push(proj)
             end
 
+            projects.push(NA::Project.new(parent.join(':'), indent, idx + 1))
+
             indent_level = indent
-          elsif line =~ /^[ \t]*- / && line !~ / @done/
+          elsif line =~ /^[ \t]*- /
+            in_action = false
             next if require_na && line !~ /@#{NA.na_tag}\b/
 
             action = line.sub(/^[ \t]*- /, '')
-            new_action = NA::Action.new(file, File.basename(file, ".#{NA.extension}"), parent.dup, action)
+            new_action = NA::Action.new(file, File.basename(file, ".#{NA.extension}"), parent.dup, action, idx)
 
             has_search = !optional.empty? || !required.empty? || !negated.empty?
+
             next if has_search && !new_action.search_match?(any: optional,
                                                             all: required,
                                                             none: negated)
@@ -297,10 +465,14 @@ module NA
                                                        none: negated_tag)
 
             actions.push(new_action)
+            in_action = true
+          else
+            actions[-1].note.push(line.strip) if actions.count.positive? && in_action
           end
         end
       end
-      [files, actions]
+
+      [files, actions, projects]
     end
 
     def edit_file(file: nil, app: nil)
@@ -435,6 +607,15 @@ module NA
     end
 
     ##
+    ## Create a backup file
+    ##
+    ## @param      target [String] The file to back up
+    ##
+    def backup_file(target)
+      FileUtils.cp(target, "#{target}~")
+    end
+
+    ##
     ## Find a matching path using semi-fuzzy matching.
     ## Search tokens can include ! and + to negate or make
     ## required.
@@ -458,9 +639,9 @@ module NA
       required = search.filter { |s| s[:required] }.map { |t| t[:token] }
       negated = search.filter { |s| s[:negate] }.map { |t| t[:token] }
 
-      NA.notify("{bw}Optional directory regex: {x}#{optional.map(&:dir_to_rx)}", debug: true)
-      NA.notify("{bw}Required directory regex: {x}#{required.map(&:dir_to_rx)}", debug: true)
-      NA.notify("{bw}Negated directory regex: {x}#{negated.map { |t| t.dir_to_rx(distance: 1, require_last: false) }}", debug: true)
+      NA.notify("{dw}Optional directory regex: {x}#{optional.map(&:dir_to_rx)}", debug: true)
+      NA.notify("{dw}Required directory regex: {x}#{required.map(&:dir_to_rx)}", debug: true)
+      NA.notify("{dw}Negated directory regex: {x}#{negated.map { |t| t.dir_to_rx(distance: 1, require_last: false) }}", debug: true)
 
       if require_last
         dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required, none: negated) }
