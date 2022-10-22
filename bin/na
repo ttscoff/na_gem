@@ -78,6 +78,9 @@ class App
     c.arg_name 'PROJECT[/SUBPROJECT]'
     c.flag %i[proj project]
 
+    c.desc 'Include @done actions'
+    c.switch %i[done]
+
     c.action do |global_options, options, args|
       if global_options[:add]
         cmd = ['add']
@@ -115,6 +118,7 @@ class App
 
       tag = [{ tag: tag, value: nil }, { tag: 'done', value: nil, negate: true}]
       files, actions, = NA.parse_actions(depth: depth,
+                                         done: options[:done],
                                          query: tokens,
                                          tag: tag,
                                          project: options[:project],
@@ -513,6 +517,9 @@ class App
     c.arg_name 'PROJECT[/SUBPROJECT]'
     c.flag %i[proj project]
 
+    c.desc 'Include @done actions'
+    c.switch %i[done]
+
     c.desc 'Show actions not matching search pattern'
     c.switch %i[v invert], negatable: false
 
@@ -563,6 +570,7 @@ class App
       end
 
       files, actions, = NA.parse_actions(depth: depth,
+                                         done: options[:done],
                                          query: todo,
                                          search: tokens,
                                          negate: options[:invert],
@@ -609,6 +617,9 @@ class App
     c.desc 'Show actions from a specific project'
     c.arg_name 'PROJECT[/SUBPROJECT]'
     c.flag %i[proj project]
+
+    c.desc 'Include @done actions'
+    c.switch %i[done]
 
     c.desc 'Show actions not matching tags'
     c.switch %i[v invert], negatable: false
@@ -661,6 +672,7 @@ class App
       end
 
       files, actions, = NA.parse_actions(depth: depth,
+                                         done: options[:done],
                                          query: todo,
                                          tag: tags,
                                          negate: options[:invert],

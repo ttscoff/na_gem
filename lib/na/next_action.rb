@@ -404,7 +404,7 @@ module NA
     ## @param      require_na  [Boolean] Require @na tag
     ## @param      file        [String] file path to parse
     ##
-    def parse_actions(depth: 1, query: nil, tag: nil, search: nil, negate: false, regex: false, project: nil, require_na: true, file_path: nil)
+    def parse_actions(depth: 1, done: false, query: nil, tag: nil, search: nil, negate: false, regex: false, project: nil, require_na: true, file_path: nil)
       actions = []
       required = []
       optional = []
@@ -482,7 +482,7 @@ module NA
             in_action = false
             # search_for_done = false
             # optional_tag.each { |t| search_for_done = true if t[:tag] =~ /done/ }
-            # next if line =~ /@done/ && !search_for_done
+            next if line =~ /@done/ && !done
 
             next if require_na && line !~ /@#{NA.na_tag}\b/
 
