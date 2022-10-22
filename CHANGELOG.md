@@ -1,11 +1,15 @@
 ### 1.2.1
 
-2022-10-22 04:15
+2022-10-22 10:18
 
 #### NEW
 
 - Added `--done` tag to next/find/tagged to include @done actions in the output
 - Use `na changes` to view the changelog and see recent changes
+
+#### IMPROVED
+
+- You can run `na SAVED_SEARCH` using any saved search (same as running `na saved SAVED_SEARCH` but niftier)
 
 ### 1.2.0
 
