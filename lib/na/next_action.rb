@@ -152,11 +152,11 @@ module NA
       projects
     end
 
-    def find_actions(target, search, tagged = nil)
+    def find_actions(target, search, tagged = nil, all: false)
       _, actions, projects = parse_actions(search: search, require_na: false, file_path: target, tag: tagged)
 
       NA.notify('{r}No matching actions found', exit_code: 1) unless actions.count.positive?
-      return [projects, actions] if actions.count == 1
+      return [projects, actions] if actions.count == 1 || all
 
       options = actions.map { |action| "#{action.line} % #{action.parent.join('/')} : #{action.action}" }
       res = if TTY::Which.exist?('fzf')
@@ -276,7 +276,7 @@ module NA
         end
       end
 
-      projects, actions = find_actions(target, search, tagged)
+      projects, actions = find_actions(target, search, tagged, all: all)
 
       contents = target.read_file.split(/\n/)
 
@@ -312,6 +312,7 @@ module NA
                       end
 
         indent = "\t" * target_proj.indent
+        note = note.split("\n") unless note.is_a?(Array)
         note = if note.empty?
                  action.note
                else

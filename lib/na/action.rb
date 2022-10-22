@@ -43,14 +43,10 @@ module NA
       }
       template = default_template.merge(template)
 
-      if @parent != ['Inbox']
-        parents = @parent.map do |par|
-          NA::Color.template("#{template[:parent]}#{par}")
-        end.join(NA::Color.template(template[:parent_divider]))
-        parents = "{dc}[{x}#{parents}{dc}]{x} "
-      else
-        parents = ''
-      end
+      parents = @parent.map do |par|
+        NA::Color.template("#{template[:parent]}#{par}")
+      end.join(NA::Color.template(template[:parent_divider]))
+      parents = "{dc}[{x}#{parents}{dc}]{x} "
 
       project = NA::Color.template("#{template[:project]}#{@project}{x} ")
 
