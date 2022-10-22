@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.1.26
+The current version of `na` is 1.2.0
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -59,7 +59,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.1.26
+    1.2.0
 
 GLOBAL OPTIONS
     -a, --[no-]add          - Add a next action (deprecated, for backwards compatibility)
@@ -81,10 +81,12 @@ COMMANDS
     init, create - Create a new todo file in the current directory
     initconfig   - Initialize the config file using current global options
     next, show   - Show next actions
+    projects     - Show list of projects for a file
     prompt       - Show or install prompt hooks for the current shell
     saved        - Execute a saved search
     tagged       - Find actions matching a tag
     todos        - Show list of known todo files
+    update       - Update an existing action
 ```
 
 #### Commands
@@ -107,13 +109,14 @@ DESCRIPTION
     Provides an easy way to store todos while you work. Add quick   reminders and (if you set up Prompt Hooks) they'll automatically display   next time you enter the directory.   If multiple todo files are found in the current directory, a menu will   allow you to pick to which file the action gets added. 
 
 COMMAND OPTIONS
-    -d, --depth=DEPTH   - Search for files X directories deep (default: 1)
-    -f, --file=PATH     - Specify the file to which the task should be added (default: none)
-    -n, --note          - Prompt for additional notes
-    -p, --priority=PRIO - Add a priority level 1-5 (default: 0)
-    -t, --tag=TAG       - Use a tag other than the default next action tag (default: none)
-    --to=PROJECT        - Add action to specific project (default: Inbox)
-    -x                  - Don't add next action tag to new entry
+    -d, --depth=DEPTH               - Search for files X directories deep (default: 1)
+    -f, --file=PATH                 - Specify the file to which the task should be added (default: none)
+    --in, --todo=TODO_FILE          - Add to a known todo file, partial matches allowed (default: none)
+    -n, --note                      - Prompt for additional notes
+    -p, --priority=PRIO             - Add a priority level 1-5 (default: 0)
+    -t, --tag=TAG                   - Use a tag other than the default next action tag (default: none)
+    --to, --project, --proj=PROJECT - Add action to specific project (default: Inbox)
+    -x                              - Don't add next action tag to new entry
 
 EXAMPLES
 
@@ -246,11 +249,67 @@ EXAMPLES
     na next marked
 ```
 
+##### projects
+
+List all projects in a file. If arguments are provided, they're used to match a todo file from history, otherwise the todo file(s) in the current directory will be used.
+
+```
+NAME
+    projects - Show list of projects for a file
+
+SYNOPSIS
+
+    na [global options] projects [command options] [QUERY]
+
+DESCRIPTION
+    Arguments will be interpreted as a query for a known todo file,   fuzzy matched. Separate directories with /, :, or a space, e.g. `na projects code/marked` 
+
+COMMAND OPTIONS
+    -d, --depth=DEPTH - Search for files X directories deep (default: 1)
+    -p, --paths       - Output projects as paths instead of hierarchy
+```
+
+##### saved
+
+The saved command runs saved searches. To save a search, add `--save SEARCH_NAME` to a `find` or `tagged` command. The arguments provided on the command line will be saved to a search file (`/.local/share/na/saved_searches.yml`), with the search named with the SEARCH_NAME parameter. You can then run the search again with `na saved SEARCH_NAME`. Repeating the SEARCH_NAME with a new `find/tagged` command will overwrite the previous definition.
+
+Search names can be partially matched when calling them, so if you have a search named "overdue," you can match it with `na saved over` (shortest match will be used).
+
+Run `na saved` without an argument to list your saved searches.
+
+```
+NAME
+    saved - Execute a saved search
+
+SYNOPSIS
+
+    na [global options] saved [command options] [SEARCH_TITLE]
+
+DESCRIPTION
+    Run without argument to list saved searches 
+
+COMMAND OPTIONS
+    -d, --[no-]delete - Delete the specified search definition
+    -e, --[no-]edit   - Open the saved search file in $EDITOR
+
+EXAMPLES
+
+    na saved overdue
+
+    na saved over
+
+    na saved
+```
+
 ##### tagged
 
 Example: `na tagged feature +maybe`.
 
 Separate multiple tags/value comparisons with commas. By default tags are combined with AND, so actions matching all of the tags listed will be displayed. Use `+` to make a tag required and `!` to negate a tag (only display if the action does _not_ contain the tag). When `+` and/or `!` are used, undecorated tokens become optional matches. Use `-v` to invert the search and display all actions that _don't_ match.
+
+You can also perform value comparisons on tags. A value in a TaskPaper tag is added by including it in parenthesis after the tag, e.g. `@due(2022-10-10 05:00)`. You can perform numeric comparisons with `<`, `>`, `<=`, `>=`, `==`, and `!=`. If comparing to a date, you can use natural language, e.g. `na tagged "due<today"`.
+
+To perform a string comparison, you can use `*=` (contains), `^=` (starts with), `$=` (ends with), or `=` (matches). E.g. `na tagged "note*=video"`.
 
 ```
 NAME
@@ -278,6 +337,81 @@ EXAMPLES
 
     # display next actions for a project you visited in the past
     na next marked
+```
+
+##### todos
+
+List all known todo files from history.
+
+```
+NAME
+    todos - Show list of known todo files
+
+SYNOPSIS
+
+    na [global options] todos [QUERY]
+
+DESCRIPTION
+    Arguments will be interpreted as a query against which the   list of todos will be fuzzy matched. Separate directories with   /, :, or a space, e.g. `na todos code/marked`
+```
+
+##### update
+
+Example: `na update --in na --archive my cool action`
+
+The above will locate a todo file matching "na" in todo history, find any action matching "my cool action", add a dated @done tag and move it to the Archive project, creating it if needed. If multiple actions are matched, a menu is presented (multi-select if fzf is available).
+
+This command will perform actions (tag, untag, complete, archive, add note, etc.) on existing actions by matching your search text. Arguments will be interpreted as search tokens similar to `na find`. You can use `--exact` and `--regex`, as well as wildcards in the search string. You can also use `--tagged TAG_QUERY` in addition to or instead of a search query.
+
+You can specify a particular todo file using `--file PATH` or any todo from history using `--in QUERY`.
+
+If more than one file is matched, a menu will be presented, multiple selections allowed. If multiple actions match the search within the selected file(s), a menu will be presented. If you have fzf installed, you can select one action to update with return, or use tab to mark multiple tasks to which the action will be applied. With gum you can use j, k, and x to mark multiple actions. Use the `--all` switch to force operation on all matched tasks, skipping the menu.
+
+Any time an update action is carried out, a backup of the file before modification will be made in the same directory with a `~` appended to the file extension (e.g. "marked.taskpaper" is backed up to "marked.taskpaper~"). Only one undo step is available, but if something goes wrong (and this feature is still experimental, so be wary), you can just copy the "~" file back to the original.
+
+You can specify a new project for an action (moving it) with `--proj PROJECT_PATH`. A project path is hierarchical, with each level separated by a colon or slash. If the project path provided roughly matches an existing project, e.g. "mark:bug" would match "Marked:Bugs", then that project will be used. If no match is found, na will offer to generate a new project/hierarchy for the path provided. Strings will be exact but the first letter will be uppercased.
+
+See the help output for a list of available actions.
+
+```
+NAME
+    update - Update an existing action
+
+SYNOPSIS
+
+    na [global options] update [command options] ACTION
+
+DESCRIPTION
+    Provides an easy way to complete, prioritize, and tag existing actions.   If multiple todo files are found in the current directory, a menu will   allow you to pick which file to act on. 
+
+COMMAND OPTIONS
+    -a, --archive                   - Add a @done tag to action and move to Archive
+    --all                           - Act on all matches immediately (no menu)
+    -d, --depth=DEPTH               - Search for files X directories deep (default: 1)
+    --delete                        - Delete an action
+    -e, --regex                     - Interpret search pattern as regular expression
+    -f, --finish, --done            - Add a @done tag to action
+    --file=PATH                     - Specify the file to search for the task (default: none)
+    --in, --todo=TODO_FILE          - Use a known todo file, partial matches allowed (default: none)
+    -n, --note                      - Prompt for additional notes. Input will be appended to any existing note.
+    -o, --overwrite                 - Overwrite note instead of appending
+    -p, --priority=PRIO             - Add/change a priority level 1-5 (default: 0)
+    -r, --remove=TAG                - Remove a tag to the action (may be used more than once, default: none)
+    -t, --tag=TAG                   - Add a tag to the action, @tag(values) allowed (may be used more than once, default: none)
+    --tagged=TAG                    - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
+    --to, --project, --proj=PROJECT - Move action to specific project (default: none)
+    -x, --exact                     - Match pattern exactly
+
+EXAMPLES
+
+    # Find "An existing task" action and remove the @na tag from it
+    na update --remove na "An existing task"
+
+    # Find "A bug..." action, add @waiting, add/update @priority(4), and prompt for an additional note
+    na update --tag waiting "A bug I need to fix" -p 4 -n
+
+    # Add @done to "My cool action" and immediately move to Archive
+    na update --archive My cool action
 ```
 
 ### Configuration
@@ -318,11 +452,11 @@ You can add a prompt command to your shell to have na automatically list your ne
 
 After installing a hook, you'll need to close your terminal and start a new session to initialize the new commands.
 
-
 ### Misc
 
-If you have [gum][] installed, na will use it for command line input when adding tasks and notes.
+If you have [gum][] installed, na will use it for command line input when adding tasks and notes. If you have [fzf][] installed, it will be used for menus, falling back to gum if available.
 
+[fzf]: https://github.com/junegunn/fzf
 [gum]: https://github.com/charmbracelet/gum
 [donate]: http://brettterpstra.com/donate/
 [github]: https://github.com/ttscoff/na_gem/

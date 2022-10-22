@@ -1,3 +1,44 @@
+### 1.2.0
+
+2022-10-22 01:32
+
+#### CHANGED
+
+- `na add --to` now specifies a project, `--in` specifies a todo file
+- Prefer fzf over gum when available
+
+#### NEW
+
+- `--edit` and `--delete` for saved searches (`na saved`)
+- `na add --todo FILE` will match any known todo file when adding an action
+- `na add --project PROJ` will match any existing project when adding an action
+- `na update [options] search string` will update an existing task, moving it between projects, adding and removing tags, marking finished, setting priority, adding/replacing notes, or archiving it
+- `--tagged TAG` flag for `na update` searches by tag/value
+- `na projects` will list all projects in a todo file, optional argument to query known todos
+- `--delete` switch for `na update`
+
+#### IMPROVED
+
+- Include arguments with `na edit` to narrow down which file to edit (partial matching)
+- Improved handling of todo file search arguments for `na next`
+- If todo file search returns zero results, loosen search
+- When using !negations in todo matching, allow the negation to match any part of the path, not just last element
+- Full token matching when using `na todos QUERY`
+- Offer gum and readline fallbacks for fzf menu with `na update`
+- `--overwrite` option when adding a note using `na update` (defaults to append)
+- Allow multiple file selections for `na update`
+- Display "Inbox" as a parent
+- Ignore @done actions in next and tagged (unless specifically included) but allow them to appear in `na find`
+
+#### FIXED
+
+- `na add --priority` being interpreted as note
+- Immediately save created todo files to history
+- Multi-line note handling
+- Project regex
+- Error when an action contains a left curly brace
+- Don't show @done tasks unless specifically searched for
+
 ### 1.1.26
 
 2022-10-15 10:36

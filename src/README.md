@@ -100,6 +100,14 @@ Examples:
 @cli(bundle exec bin/na help next)
 ```
 
+##### projects
+
+List all projects in a file. If arguments are provided, they're used to match a todo file from history, otherwise the todo file(s) in the current directory will be used.
+
+```
+@cli(bundle exec bin/na help projects)
+```
+
 ##### saved
 
 The saved command runs saved searches. To save a search, add `--save SEARCH_NAME` to a `find` or `tagged` command. The arguments provided on the command line will be saved to a search file (`/.local/share/na/saved_searches.yml`), with the search named with the SEARCH_NAME parameter. You can then run the search again with `na saved SEARCH_NAME`. Repeating the SEARCH_NAME with a new `find/tagged` command will overwrite the previous definition.
@@ -126,21 +134,31 @@ To perform a string comparison, you can use `*=` (contains), `^=` (starts with),
 @cli(bundle exec bin/na help show)
 ```
 
+##### todos
+
+List all known todo files from history.
+
+```
+@cli(bundle exec bin/na help todos)
+```
+
 ##### update
 
 Example: `na update --in na --archive my cool action`
 
 The above will locate a todo file matching "na" in todo history, find any action matching "my cool action", add a dated @done tag and move it to the Archive project, creating it if needed. If multiple actions are matched, a menu is presented (multi-select if fzf is available).
 
-This command will perform actions (tag, untag, complete, archive, add note, etc.) on existing actions by matching your search text. Arguments will be interpreted as search tokens similar to `na find`. You can use `--exact` and `--regex`, as well as wildcards in the search string.
+This command will perform actions (tag, untag, complete, archive, add note, etc.) on existing actions by matching your search text. Arguments will be interpreted as search tokens similar to `na find`. You can use `--exact` and `--regex`, as well as wildcards in the search string. You can also use `--tagged TAG_QUERY` in addition to or instead of a search query.
 
 You can specify a particular todo file using `--file PATH` or any todo from history using `--in QUERY`.
 
-If more than one file is matched, a menu will be presented. You can only act on one file. If multiple actions match the search within that file, a menu will be presented. You can select one action to update with return, or use tab to mark multiple tasks to which the action will be applied.
+If more than one file is matched, a menu will be presented, multiple selections allowed. If multiple actions match the search within the selected file(s), a menu will be presented. If you have fzf installed, you can select one action to update with return, or use tab to mark multiple tasks to which the action will be applied. With gum you can use j, k, and x to mark multiple actions. Use the `--all` switch to force operation on all matched tasks, skipping the menu.
 
 Any time an update action is carried out, a backup of the file before modification will be made in the same directory with a `~` appended to the file extension (e.g. "marked.taskpaper" is backed up to "marked.taskpaper~"). Only one undo step is available, but if something goes wrong (and this feature is still experimental, so be wary), you can just copy the "~" file back to the original.
 
-You can specify a new project for an action with `--proj PROJECT_PATH`. A project path is hierarchical, with each level separated by a colon or slash. If the project path provided roughly matches an existing project, e.g. "mark:bug" would match "Marked:Bugs", then that project will be used. If no match is found, na will offer to generate a new project/hierarchy for the path provided. Strings will be exact but the first letter will be uppercased.
+You can specify a new project for an action (moving it) with `--proj PROJECT_PATH`. A project path is hierarchical, with each level separated by a colon or slash. If the project path provided roughly matches an existing project, e.g. "mark:bug" would match "Marked:Bugs", then that project will be used. If no match is found, na will offer to generate a new project/hierarchy for the path provided. Strings will be exact but the first letter will be uppercased.
+
+See the help output for a list of available actions.
 
 ```
 @cli(bundle exec bin/na help update)
@@ -184,11 +202,11 @@ You can add a prompt command to your shell to have na automatically list your ne
 
 After installing a hook, you'll need to close your terminal and start a new session to initialize the new commands.
 
-
 ### Misc
 
-If you have [gum][] installed, na will use it for command line input when adding tasks and notes.
+If you have [gum][] installed, na will use it for command line input when adding tasks and notes. If you have [fzf][] installed, it will be used for menus, falling back to gum if available.
 
+[fzf]: https://github.com/junegunn/fzf
 [gum]: https://github.com/charmbracelet/gum
 [donate]: http://brettterpstra.com/donate/
 [github]: https://github.com/ttscoff/na_gem/
