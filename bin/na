@@ -339,6 +339,13 @@ class App
     c.arg_name 'DEPTH'
     c.flag %i[d depth], must_match: /^[1-9]$/, type: :integer, default_value: 1
 
+    c.desc 'Match actions containing tag. Allows value comparisons'
+    c.arg_name 'TAG'
+    c.flag %i[tagged], multiple: true
+
+    c.desc 'Act on all matches immediately (no menu)'
+    c.switch %i[all], negatable: false
+
     c.desc 'Interpret search pattern as regular expression'
     c.switch %i[e regex], negatable: false
 
@@ -349,35 +356,56 @@ class App
       reader = TTY::Reader.new
       action = if args.count.positive?
                  args.join(' ').strip
-               elsif TTY::Which.exist?('gum')
-                 `gum input --placeholder "Enter a task to search for" --char-limit=500 --width=#{TTY::Screen.columns}`.strip
-               else
+               elsif TTY::Which.exist?('gum') && options[:tagged].empty?
+                 options = [
+                   %(--placeholder "Enter a task to search for"),
+                   '--char-limit=500',
+                   "--width=#{TTY::Screen.columns}"
+                 ]
+                 `gum input #{options.join(' ')}`.strip
+               elsif options[:tagged].empty?
                  puts NA::Color.template('{bm}Enter search string:{x}')
                  reader.read_line(NA::Color.template('{by}> {bw}')).strip
                end
 
-      tokens = nil
-      if options[:exact]
-        tokens = action
-      elsif options[:regex]
-        tokens = Regexp.new(action, Regexp::IGNORECASE)
-      else
-        tokens = []
-        all_req = action !~ /[+!\-]/ && !options[:or]
+      if action
+        tokens = nil
+        if options[:exact]
+          tokens = action
+        elsif options[:regex]
+          tokens = Regexp.new(action, Regexp::IGNORECASE)
+        else
+          tokens = []
+          all_req = action !~ /[+!\-]/ && !options[:or]
 
-        action.split(/ /).each do |arg|
-          m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
-          tokens.push({
-                        token: m['tok'],
-                        required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                        negate: !m['req'].nil? && m['req'] =~ /[!\-]/
-                      })
+          action.split(/ /).each do |arg|
+            m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
+            tokens.push({
+                          token: m['tok'],
+                          required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                          negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                        })
+          end
         end
       end
 
-      if action.nil? || action.empty?
+      if (action.nil? || action.empty?) && options[:tagged].empty?
         puts 'Empty input, cancelled'
         Process.exit 1
+      end
+
+      all_req = options[:tagged].join(' ') !~ /[+!\-]/ && !options[:or]
+      tags = []
+      options[:tagged].join(',').split(/ *, */).each do |arg|
+        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
+
+        tags.push({
+                    tag: m['tag'].wildcard_to_rx,
+                    comp: m['op'],
+                    value: m['val'],
+                    required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                    negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                  })
       end
 
       priority = options[:priority].to_i if options[:priority]&.to_i&.positive?
@@ -399,9 +427,10 @@ class App
       note = line_note.nil? || line_note.empty? ? [] : line_note
 
       if options[:file]
-        target = File.expand_path(options[:file])
-        NA.notify('{r}File not found', exit_code: 1) unless File.exist?(target)
+        file = File.expand_path(options[:file])
+        NA.notify('{r}File not found', exit_code: 1) unless File.exist?(file)
 
+        targets = [file]
       elsif options[:todo]
         todo = []
         options[:todo].split(/ *, */).each do |a|
@@ -414,36 +443,40 @@ class App
         dirs = NA.match_working_dir(todo)
 
         if dirs.count == 1
-          target = dirs[0]
+          targets = [dirs[0]]
         elsif dirs.count.positive?
-          target = NA.select_file(dirs)
-          NA.notify('{r}Cancelled', exit_code: 1) unless target&.length.positive?
+          targets = NA.select_file(dirs, multiple: true)
+          NA.notify('{r}Cancelled', exit_code: 1) unless targets&.count.positive?
         else
-          NA.notify('{r}Todo not found', exit_code: 1) unless File.exist?(target)
+          NA.notify('{r}Todo not found', exit_code: 1) unless targets&.count.positive?
 
         end
       else
         files = NA.find_files(depth: options[:depth])
         NA.notify('{r}No todo file found', exit_code: 1) if files.count.zero?
 
-        target = files.count > 1 ? NA.select_file(files) : files[0]
-        NA.notify('{r}Cancelled{x}', exit_code: 1) unless files.count.positive? && File.exist?(target)
+        targets = files.count > 1 ? NA.select_file(files, multiple: true) : [files[0]]
+        NA.notify('{r}Cancelled{x}', exit_code: 1) unless files.count.positive?
 
       end
 
       options[:finish] = true if options[:archive]
       options[:project] = "Archive" if options[:archive]
 
-      NA.notify('{r}No search terms provided', exit_code: 1) if tokens.nil?
+      NA.notify('{r}No search terms provided', exit_code: 1) if tokens.nil? && options[:tagged].empty?
 
-      NA.update_action(target, tokens,
-                       priority: priority,
-                       add_tag: add_tags,
-                       remove_tag: remove_tags,
-                       finish: options[:finish],
-                       project: options[:project],
-                       note: note,
-                       overwrite: options[:overwrite])
+      targets.each do |target|
+        NA.update_action(target, tokens,
+                         priority: priority,
+                         add_tag: add_tags,
+                         remove_tag: remove_tags,
+                         finish: options[:finish],
+                         project: options[:project],
+                         note: note,
+                         overwrite: options[:overwrite],
+                         tagged: tags,
+                         all: options[:all])
+      end
     end
   end
 

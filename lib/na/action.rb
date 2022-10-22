@@ -10,7 +10,7 @@ module NA
       @file = file
       @project = project
       @parent = parent
-      @action = action
+      @action = action.gsub(/\{/, '\\{')
       @tags = scan_tags
       @line = idx
       @note = note
@@ -69,7 +69,7 @@ module NA
       NA::Color.template(template[:output].gsub(/%filename/, filename)
                           .gsub(/%project/, project)
                           .gsub(/%parents?/, parents)
-                          .gsub(/%action/, action.highlight_search(regexes)))
+                          .gsub(/%action/, action.highlight_search(regexes))).gsub(/\\\{/, '{')
     end
 
     def tags_match?(any: [], all: [], none: [])

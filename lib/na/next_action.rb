@@ -107,24 +107,28 @@ module NA
     ##
     ## Select from multiple files
     ##
-    ## @note If `gum` or `fzf` are available, they'll be used (in that order)
+    ## @note       If `gum` or `fzf` are available, they'll
+    ##             be used (in that order)
     ##
-    ## @param      files  [Array] The files
+    ## @param      files     [Array] The files
+    ## @param      multiple  [Boolean] allow multiple selections
     ##
-    def select_file(files)
+    def select_file(files, multiple: false)
       if TTY::Which.exist?('gum')
         args = [
           '--cursor.foreground="151"',
           '--item.foreground=""'
         ]
-        `echo #{Shellwords.escape(files.join("\n"))}|#{TTY::Which.which('gum')} choose #{args.join(' ')}`.strip
+        args.push('--no-limit') if multiple
+        res = `echo #{Shellwords.escape(files.join("\n"))}|#{TTY::Which.which('gum')} choose #{args.join(' ')}`
+        multiple ? res.split("\n") : res.strip
       elsif TTY::Which.exist?('fzf')
-        res = choose_from(files, prompt: 'Use which file?')
+        res = choose_from(files, prompt: 'Use which file?', multiple: multiple)
         unless res
           notify('{r}No file selected, cancelled', exit_code: 1)
         end
 
-        res.strip
+        multiple ? res.split("\n") : res.strip
       else
         reader = TTY::Reader.new
         puts
@@ -148,8 +152,8 @@ module NA
       projects
     end
 
-    def find_actions(target, search)
-      _, actions, projects = parse_actions(search: search, require_na: false, file_path: target)
+    def find_actions(target, search, tagged = nil)
+      _, actions, projects = parse_actions(search: search, require_na: false, file_path: target, tag: tagged)
 
       NA.notify('{r}No matching actions found', exit_code: 1) unless actions.count.positive?
       return [projects, actions] if actions.count == 1
@@ -252,7 +256,9 @@ module NA
                       finish: false,
                       project: nil,
                       note: [],
-                      overwrite: false)
+                      overwrite: false,
+                      tagged: nil,
+                      all: false)
 
       projects = find_projects(target)
 
@@ -270,7 +276,7 @@ module NA
         end
       end
 
-      projects, actions = find_actions(target, search)
+      projects, actions = find_actions(target, search, tagged)
 
       contents = target.read_file.split(/\n/)
 
@@ -386,7 +392,7 @@ module NA
     ## @param      depth       [Number] The directory depth
     ##                         to search for files
     ## @param      query       [Hash] The todo file query
-    ## @param      tag         [Hash] Tags to search for
+    ## @param      tag         [Array] Tags to search for
     ## @param      search      [String] A search string
     ## @param      negate      [Boolean] Invert results
     ## @param      regex       [Boolean] Interpret as
@@ -471,6 +477,10 @@ module NA
             indent_level = indent
           elsif line =~ /^[ \t]*- /
             in_action = false
+            search_for_done = false
+            optional_tag.each { |t| search_for_done = true if t[:tag] =~ /done/ }
+            next if line =~ /@done/ && !search_for_done
+
             next if require_na && line !~ /@#{NA.na_tag}\b/
 
             action = line.sub(/^[ \t]*- /, '')
