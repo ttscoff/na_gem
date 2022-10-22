@@ -114,20 +114,20 @@ module NA
     ## @param      multiple  [Boolean] allow multiple selections
     ##
     def select_file(files, multiple: false)
-      if TTY::Which.exist?('gum')
+      if TTY::Which.exist?('fzf')
+        res = choose_from(files, prompt: 'Use which file?', multiple: multiple)
+        unless res
+          notify('{r}No file selected, cancelled', exit_code: 1)
+        end
+
+        multiple ? res.split("\n") : res.strip
+      elsif TTY::Which.exist?('gum')
         args = [
           '--cursor.foreground="151"',
           '--item.foreground=""'
         ]
         args.push('--no-limit') if multiple
         res = `echo #{Shellwords.escape(files.join("\n"))}|#{TTY::Which.which('gum')} choose #{args.join(' ')}`
-        multiple ? res.split("\n") : res.strip
-      elsif TTY::Which.exist?('fzf')
-        res = choose_from(files, prompt: 'Use which file?', multiple: multiple)
-        unless res
-          notify('{r}No file selected, cancelled', exit_code: 1)
-        end
-
         multiple ? res.split("\n") : res.strip
       else
         reader = TTY::Reader.new
@@ -546,6 +546,29 @@ module NA
         dirs = file.read_file.split("\n")
         dirs.delete_if { |f| !File.exist?(f) }
         File.open(file, 'w') { |f| f.puts dirs.join("\n") }
+      end
+    end
+
+    def list_projects(query: [], file_path: nil, depth: 1, paths: true)
+      files = if !file_path.nil?
+                [file_path]
+              elsif query.nil?
+                find_files(depth: depth)
+              else
+                match_working_dir(query)
+              end
+      target = files.count > 1 ? NA.select_file(files) : files[0]
+      projects = find_projects(target)
+      projects.each do |proj|
+        parts = proj.project.split(/:/)
+        output = if paths
+                   "{bg}#{parts.join('{bw}/{bg}')}{x}"
+                 else
+                   parts.fill("{bw}—{bg}", 0..-2)
+                   "{bg}#{parts.join(' ')}{x}"
+                 end
+
+        puts NA::Color.template(output)
       end
     end
 
