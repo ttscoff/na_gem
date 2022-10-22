@@ -862,6 +862,24 @@ class App
     end
   end
 
+  desc 'Display the changelog'
+  command %i[changes changelog] do |c|
+    c.action do |_, _, _|
+      changelog = File.expand_path(File.join(File.dirname(__FILE__), '..', 'CHANGELOG.md'))
+      pagers = [
+        'mdless',
+        'mdcat',
+        'bat',
+        ENV['PAGER'],
+        'less -FXr',
+        ENV['GIT_PAGER'],
+        'more -r'
+      ]
+      pager = pagers.find { |cmd| TTY::Which.exist?(cmd.split.first) }
+      system %(#{pager} "#{changelog}")
+    end
+  end
+
   desc 'Execute a saved search'
   long_desc 'Run without argument to list saved searches'
   arg_name 'SEARCH_TITLE', optional: true

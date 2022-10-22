@@ -1,3 +1,11 @@
+### 1.2.1
+
+2022-10-22 04:07
+
+#### NEW
+
+- Added `--done` tag to next/find/tagged to include @done actions in the output
+
 ### 1.2.0
 
 2022-10-22 01:32

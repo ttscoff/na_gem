@@ -31,4 +31,5 @@ spec = Gem::Specification.new do |s|
   s.add_runtime_dependency('tty-screen', '~> 0.8', '>= 0.8.1')
   s.add_runtime_dependency('tty-which', '~> 0.5', '>= 0.5.0')
   s.add_runtime_dependency('chronic', '~> 0.10', '>= 0.10.2')
+  s.add_runtime_dependency('mdless', '~> 1.0', '>= 1.0.32')
 end

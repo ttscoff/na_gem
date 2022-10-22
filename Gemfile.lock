@@ -4,6 +4,7 @@ PATH
     na (1.2.1)
       chronic (~> 0.10, >= 0.10.2)
       gli (~> 2.21.0)
+      mdless (~> 1.0, >= 1.0.32)
       tty-reader (~> 0.9, >= 0.9.0)
       tty-screen (~> 0.8, >= 0.8.1)
       tty-which (~> 0.5, >= 0.5.0)
@@ -13,6 +14,7 @@ GEM
   specs:
     chronic (0.10.2)
     gli (2.21.0)
+    mdless (1.0.32)
     minitest (5.16.3)
     rake (0.9.6)
     rdoc (4.3.0)
