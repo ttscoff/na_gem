@@ -935,8 +935,8 @@ class App
   on_error do |exception|
     case exception
     when GLI::UnknownCommand
-      cmd = ['add']
-      cmd.concat(ARGV.unshift($first_arg)) if ARGV.count.positive?
+      cmd = ['saved']
+      cmd.concat(ARGV.unshift($first_arg))
 
       exit run(cmd)
     when SystemExit

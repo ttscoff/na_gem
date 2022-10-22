@@ -1,10 +1,11 @@
 ### 1.2.1
 
-2022-10-22 04:07
+2022-10-22 04:15
 
 #### NEW
 
 - Added `--done` tag to next/find/tagged to include @done actions in the output
+- Use `na changes` to view the changelog and see recent changes
 
 ### 1.2.0
 
