@@ -113,12 +113,12 @@ class App
       NA.na_tag = options[:tag] unless options[:tag].nil?
       require_na = true
 
-      tag = [{ tag: tag, value: nil }]
-      files, actions, projects = NA.parse_actions(depth: depth,
-                                        query: tokens,
-                                        tag: tag,
-                                        project: options[:project],
-                                        require_na: require_na)
+      tag = [{ tag: tag, value: nil }, { tag: 'done', value: nil, negate: true}]
+      files, actions, = NA.parse_actions(depth: depth,
+                                         query: tokens,
+                                         tag: tag,
+                                         project: options[:project],
+                                         require_na: require_na)
 
       NA.output_actions(actions, depth, files: files)
     end
@@ -331,6 +331,9 @@ class App
     c.desc 'Add a @done tag to action and move to Archive'
     c.switch %i[a archive], negatable: false
 
+    c.desc 'Delete an action'
+    c.switch %i[delete], negatable: false
+
     c.desc 'Specify the file to search for the task'
     c.arg_name 'PATH'
     c.flag %i[file]
@@ -446,9 +449,9 @@ class App
           targets = [dirs[0]]
         elsif dirs.count.positive?
           targets = NA.select_file(dirs, multiple: true)
-          NA.notify('{r}Cancelled', exit_code: 1) unless targets&.count.positive?
+          NA.notify('{r}Cancelled', exit_code: 1) unless targets && targets.count.positive?
         else
-          NA.notify('{r}Todo not found', exit_code: 1) unless targets&.count.positive?
+          NA.notify('{r}Todo not found', exit_code: 1) unless targets && targets.count.positive?
 
         end
       else
@@ -461,7 +464,7 @@ class App
       end
 
       options[:finish] = true if options[:archive]
-      options[:project] = "Archive" if options[:archive]
+      options[:project] = 'Archive' if options[:archive]
 
       NA.notify('{r}No search terms provided', exit_code: 1) if tokens.nil? && options[:tagged].empty?
 
@@ -472,6 +475,7 @@ class App
                          remove_tag: remove_tags,
                          finish: options[:finish],
                          project: options[:project],
+                         delete: options[:delete],
                          note: note,
                          overwrite: options[:overwrite],
                          tagged: tags,
@@ -519,7 +523,7 @@ class App
     c.action do |global_options, options, args|
       if options[:save]
         title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
-        NA.save_search(title, "find #{NA.command_line.map { |c| "\"#{c}\"" }.join(' ')}")
+        NA.save_search(title, "find #{NA.command_line.map { |cmd| "\"#{cmd}\"" }.join(' ')}")
       end
 
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
@@ -552,24 +556,24 @@ class App
         options[:in].split(/ *, */).each do |a|
           m = a.match(/^(?<req>\+)?(?<tok>.*?)$/)
           todo.push({
-                        token: m['tok'],
-                        required: !m['req'].nil?
-                      })
+                      token: m['tok'],
+                      required: !m['req'].nil?
+                    })
         end
       end
 
-      files, actions, projects = NA.parse_actions(depth: depth,
-                                        query: todo,
-                                        search: tokens,
-                                        negate: options[:invert],
-                                        regex: options[:regex],
-                                        project: options[:project],
-                                        require_na: false)
-      if tokens.is_a?(Array)
-        regexes = tokens.delete_if { |token| token[:negate] }.map { |token| token[:token] }
-      else
-        regexes = [tokens]
-      end
+      files, actions, = NA.parse_actions(depth: depth,
+                                         query: todo,
+                                         search: tokens,
+                                         negate: options[:invert],
+                                         regex: options[:regex],
+                                         project: options[:project],
+                                         require_na: false)
+      regexes = if tokens.is_a?(Array)
+                  tokens.delete_if { |token| token[:negate] }.map { |token| token[:token] }
+                else
+                  [tokens]
+                end
 
       NA.output_actions(actions, depth, files: files, regexes: regexes)
     end
@@ -640,6 +644,10 @@ class App
                   })
       end
 
+      search_for_done = false
+      tags.each { |tag| search_for_done = true if tag[:tag] =~ /done/ }
+      tags.push({ tag: 'done', value: nil, negate: true}) unless search_for_done
+
       todo = nil
       if options[:in]
         todo = []
@@ -652,12 +660,12 @@ class App
         end
       end
 
-      files, actions, projects = NA.parse_actions(depth: depth,
-                                        query: todo,
-                                        tag: tags,
-                                        negate: options[:invert],
-                                        project: options[:project],
-                                        require_na: false)
+      files, actions, = NA.parse_actions(depth: depth,
+                                         query: todo,
+                                         tag: tags,
+                                         negate: options[:invert],
+                                         project: options[:project],
+                                         require_na: false)
       regexes = tags.delete_if { |token| token[:negate] }.map { |token| token[:token] }
       NA.output_actions(actions, depth, files: files, regexes: regexes)
     end

@@ -255,6 +255,7 @@ module NA
                       remove_tag: [],
                       finish: false,
                       project: nil,
+                      delete: false,
                       note: [],
                       overwrite: false,
                       tagged: nil,
@@ -302,6 +303,7 @@ module NA
         string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})" if finish && string !~ /@done/
 
         contents.slice!(action.line, action.note.count + 1)
+        next if delete
 
         projects = shift_index_after(projects, action.line, action.note.count + 1)
 
@@ -478,9 +480,9 @@ module NA
             indent_level = indent
           elsif line =~ /^[ \t]*- /
             in_action = false
-            search_for_done = false
-            optional_tag.each { |t| search_for_done = true if t[:tag] =~ /done/ }
-            next if line =~ /@done/ && !search_for_done
+            # search_for_done = false
+            # optional_tag.each { |t| search_for_done = true if t[:tag] =~ /done/ }
+            # next if line =~ /@done/ && !search_for_done
 
             next if require_na && line !~ /@#{NA.na_tag}\b/
 
