@@ -1,3 +1,25 @@
+### 1.2.2
+
+2022-10-25 14:30
+
+#### CHANGED
+
+- `na update --done` now means "include @done actions in search"
+- `na next --in QUERY` now searches for a known todo file (formerly required arguments, now both work)
+
+#### NEW
+
+- `--at [start|end]` switch for `add` and `update` to determine
+- Global `--file PATH` flag to specify a single global todo file,
+- `--add_at [start|end]` global flag that can be added to config to make permanent
+- `--finish` switch for `na add` to immediately mark an action as @done
+- `--cwd_as [project|tag]` global flag when using a global `--file` to determine if the current working directory (last element) is added as an @tag or parent project
+
+#### IMPROVED
+
+- Refactor `na add` to use improved task update code
+- Confirm target file before requesting task when running `na
+
 ### 1.2.1
 
 2022-10-22 10:18
