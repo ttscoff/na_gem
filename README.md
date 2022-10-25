@@ -29,6 +29,8 @@ If you're using Homebrew, you have the option to install via [brew-gem](https://
 
 If you don't have Ruby/RubyGems, you can install them pretty easily with Homebrew, rvm, or asdf. I can't swear this tool is worth the time, but there _are_ a lot of great gems available...
 
+
+
 ### Features
 
 You can list next actions in files in the current directory by typing `na`. By default, `na` looks for `*.taskpaper` files and extracts items tagged `@na` and not `@done`. All of these can be changed in the configuration.
@@ -47,6 +49,10 @@ You can also quickly add todo items from the command line with the `add` subcomm
 
 If found, it will try to locate an `Inbox:` project, or create one if it doesn't exist. Any arguments after `add` will be combined to create a new task in TaskPaper format. They will automatically be assigned as next actions (tagged `@na`) and will show up when `na` lists the tasks for the project.
 
+#### Updating todos
+
+You can mark todos as complete, delete them, add and remove tags, change priority, and even move them between projects with the `na update` command.
+
 ### Usage
 
 ```
@@ -57,13 +63,16 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.1
+    1.2.2
 
 GLOBAL OPTIONS
     -a, --[no-]add          - Add a next action (deprecated, for backwards compatibility)
+    --add_at=POSITION       - Add all new/moved entries at [s]tart or [e]nd of target project (default: end)
+    --cwd_as=TYPE           - Use current working directory as [p]roject, [t]ag, or [n]one (default: none)
     -d, --depth=DEPTH       - Recurse to depth (default: 1)
-    --[no-]debug            - Display verbose output
+    --[no-]debug            - Display verbose output (default: enabled)
     --ext=EXT               - File extension to consider a todo file (default: taskpaper)
+    -f, --file=PATH         - Use a single file as global todo, use --initconfig to make permanent (default: none)
     --help                  - Show this message
     -n, --note              - Prompt for additional notes (deprecated, for backwards compatibility)
     -p, --priority=PRIORITY - Set a priority 0-5 (deprecated, for backwards compatibility) (default: none)
@@ -108,8 +117,10 @@ DESCRIPTION
     Provides an easy way to store todos while you work. Add quick   reminders and (if you set up Prompt Hooks) they'll automatically display   next time you enter the directory.   If multiple todo files are found in the current directory, a menu will   allow you to pick to which file the action gets added. 
 
 COMMAND OPTIONS
+    --at=POSITION                   - Add task at [s]tart or [e]nd of target project (default: none)
     -d, --depth=DEPTH               - Search for files X directories deep (default: 1)
     -f, --file=PATH                 - Specify the file to which the task should be added (default: none)
+    --finish, --done                - Mark task as @done with date
     --in, --todo=TODO_FILE          - Add to a known todo file, partial matches allowed (default: none)
     -n, --note                      - Prompt for additional notes
     -p, --priority=PRIO             - Add a priority level 1-5 (default: 0)
@@ -233,8 +244,9 @@ DESCRIPTION
     Next actions are actions which contain the next action tag (default @na),   do not contain @done, and are not in the Archive project.   Arguments will target a todo file from history, whether it's in the current   directory or not. Todo file queries can include path components separated by /   or :, and may use wildcards (`*` to match any text, `?` to match a single character). Multiple queries allowed (separate arguments or separated by comma). 
 
 COMMAND OPTIONS
-    -d, --depth=DEPTH                      - Recurse to depth (default: 2)
+    -d, --depth=DEPTH                      - Recurse to depth (default: none)
     --[no-]done                            - Include @done actions
+    --in, --todo=TODO_FILE                 - Display matches from a known todo file (may be used more than once, default: none)
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     -t, --tag=TAG                          - Alternate tag to search for (default: none)
 
@@ -324,8 +336,9 @@ DESCRIPTION
     Next actions are actions which contain the next action tag (default @na),   do not contain @done, and are not in the Archive project.   Arguments will target a todo file from history, whether it's in the current   directory or not. Todo file queries can include path components separated by /   or :, and may use wildcards (`*` to match any text, `?` to match a single character). Multiple queries allowed (separate arguments or separated by comma). 
 
 COMMAND OPTIONS
-    -d, --depth=DEPTH                      - Recurse to depth (default: 2)
+    -d, --depth=DEPTH                      - Recurse to depth (default: none)
     --[no-]done                            - Include @done actions
+    --in, --todo=TODO_FILE                 - Display matches from a known todo file (may be used more than once, default: none)
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     -t, --tag=TAG                          - Alternate tag to search for (default: none)
 
@@ -389,10 +402,12 @@ DESCRIPTION
 COMMAND OPTIONS
     -a, --archive                   - Add a @done tag to action and move to Archive
     --all                           - Act on all matches immediately (no menu)
+    --at=POSITION                   - When moving task, add at [s]tart or [e]nd of target project (default: none)
     -d, --depth=DEPTH               - Search for files X directories deep (default: 1)
     --delete                        - Delete an action
+    --[no-]done                     - Include @done actions
     -e, --regex                     - Interpret search pattern as regular expression
-    -f, --finish, --done            - Add a @done tag to action
+    -f, --finish                    - Add a @done tag to action
     --file=PATH                     - Specify the file to search for the task (default: none)
     --in, --todo=TODO_FILE          - Use a known todo file, partial matches allowed (default: none)
     -n, --note                      - Prompt for additional notes. Input will be appended to any existing note.
@@ -441,6 +456,16 @@ Note that I created a new YAML dictionary inside of the `:next:` command, and ad
 
 > **WARNING** Don't touch most of the settings at the top of the auto-generated file. Setting any of them to true will alter the way na interprets the commands you're running. Most of those options are there for backwards compatibility with the bash version of this tool and will eventually be removed.
 
+
+#### Working with a single global file
+
+na is designed to work with one or more TaskPaper files in each project directory, but if you prefer to use a single global TaskPaper file, you can add `--file PATH` as a global option and specify a single file. This will bypass the detection of any files in the current directory. Make it permanent by including the `--file` flag when running `initconfig`.
+
+When using a global file, you can additionally include `--cwd_as TYPE` to determine whether the current working directory is used as a tag or a project (default is neither). If you add `--cwd_as tag` to the global options (before the command), the last element of the current working directory will be appended as an @tag (e.g. if you're in ~/Code/project/doing, the action would be tagged @doing). If you use `--cwd_as project` the action will be put into a project with the same name as the current directory (e.g. `Doing:` from the previous example).
+
+#### Add tasks at the end of a project
+
+By default, tasks are added at the top of the target project (Inbox, etc.). If you prefer new tasks to go at the bottom by default, include `--add_at end` as a global option when running `initconfig`.
 
 ### Prompt Hooks
 
