@@ -10,7 +10,7 @@
 #### NEW
 
 - `--at [start|end]` switch for `add` and `update` to determine
-- Global `--file PATH` flag to specify a single global todo file,
+- Global `--file PATH` flag to specify a single global todo file
 - `--add_at [start|end]` global flag that can be added to config to make permanent
 - `--finish` switch for `na add` to immediately mark an action as @done
 - `--cwd_as [project|tag]` global flag when using a global `--file` to determine if the current working directory (last element) is added as an @tag or parent project
