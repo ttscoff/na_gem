@@ -14,7 +14,7 @@ module NA
     ## @param      debug      [Boolean] only display message if running :verbose
     ##
     def notify(msg, exit_code: false, debug: false)
-      return if debug && !@verbose
+      return if debug && NA.verbose
 
       $stderr.puts NA::Color.template("{x}#{msg}{x}")
       Process.exit exit_code if exit_code
@@ -751,7 +751,7 @@ module NA
     ## @param      target [String] The file to back up
     ##
     def backup_file(target)
-      FileUtils.cp(target, "#{target}~")
+      FileUtils.cp(target, ".#{target}~")
     end
 
     ##
