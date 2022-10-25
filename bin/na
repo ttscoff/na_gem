@@ -39,6 +39,10 @@ class App
   arg_name 'PRIORITY'
   flag %i[p priority]
 
+  desc 'Use a single file as global todo, use --initconfig to make permanent'
+  arg_name 'PATH'
+  flag %i[f file]
+
   desc 'Prompt for additional notes (deprecated, for backwards compatibility)'
   switch %i[n note], negatable: false
 
@@ -155,6 +159,11 @@ class App
     c.default_value 'Inbox'
     c.flag %i[to project proj]
 
+    c.desc 'Add task at [s]tart or [e]nd of target project'
+    c.arg_name 'POSITION'
+    c.default_value 'start'
+    c.flag %i[at], must_match: /^[sbea].*?$/i
+
     c.desc 'Add to a known todo file, partial matches allowed'
     c.arg_name 'TODO_FILE'
     c.flag %i[in todo]
@@ -170,64 +179,31 @@ class App
     c.arg_name 'PATH'
     c.flag %i[f file]
 
+    c.desc 'Mark task as @done with date'
+    c.switch %i[finish done], negatable: false
+
     c.desc 'Search for files X directories deep'
     c.arg_name 'DEPTH'
     c.flag %i[d depth], must_match: /^[1-9]$/, type: :integer, default_value: 1
 
     c.action do |_global_options, options, args|
       reader = TTY::Reader.new
-      action = if args.count.positive?
-                 args.join(' ').strip
-               elsif TTY::Which.exist?('gum')
-                 `gum input --placeholder "Enter a task" --char-limit=500 --width=#{TTY::Screen.columns}`.strip
-               else
-                 puts NA::Color.template('{bm}Enter task:{x}')
-                 reader.read_line(NA::Color.template('{by}> {bw}')).strip
-               end
+      append = options[:position] =~ /^[ae]/i
 
-      if action.nil? || action.empty?
-        puts 'Empty input, cancelled'
-        Process.exit 1
-      end
-
-      if options[:priority]&.to_i&.positive?
-        action = "#{action.gsub(/@priority\(\d+\)/, '')} @priority(#{options[:priority]})"
-      end
-
-      note_rx = /^(.+) \((.*?)\)$/
-      split_note = if action =~ note_rx
-                     n = Regexp.last_match(2)
-                     action.sub!(note_rx, '\1').strip!
-                     n
-                   end
-
-      na_tag = NA.na_tag
-      if options[:x]
-        na_tag = ''
-      else
-        na_tag = options[:tag] unless options[:tag].nil?
-        na_tag = " @#{na_tag}"
-      end
-
-      action = "#{action.gsub(/#{na_tag}\b/, '')}#{na_tag}"
-
-      line_note = if options[:note]
-                    if TTY::Which.exist?('gum')
-                      args = ['--placeholder "Enter a note, CTRL-d to save"']
-                      args << '--char-limit 0'
-                      args << '--width $(tput cols)'
-                      `gum write #{args.join(' ')}`.strip.split("\n")
-                    else
-                      puts NA::Color.template('{bm}Enter a note, {bw}CTRL-d{bm} to end editing{bw}')
-                      reader.read_multiline
-                    end
-                  end
-
-      note = split_note.nil? ? [] : [split_note]
-      note.concat(line_note) unless line_note.nil?
-      note = nil if note.empty?
-
-      if options[:file]
+      if NA.global_file
+        target = File.expand_path(NA.global_file)
+        unless File.exist?(target)
+          print NA::Color.template('{by}Specified file not found, create it? {w}(y/{g}N{w}){x} ')
+          res = reader.read_char
+          if res =~ /y/i
+            basename = File.basename(target, ".#{NA.extension}")
+            NA.create_todo(target, basename)
+          else
+            puts NA::Color.template('{r}Cancelled{x}')
+            Process.exit 1
+          end
+        end
+      elsif options[:file]
         target = File.expand_path(options[:file])
         unless File.exist?(target)
           print NA::Color.template('{by}Specified file not found, create it? {w}(y/{g}N{w}){x} ')
@@ -287,7 +263,58 @@ class App
         end
       end
 
-      NA.add_action(target, options[:project], action, note)
+      action = if args.count.positive?
+                 args.join(' ').strip
+               elsif TTY::Which.exist?('gum')
+                 `gum input --placeholder "Enter a task" --char-limit=500 --width=#{TTY::Screen.columns}`.strip
+               else
+                 puts NA::Color.template('{bm}Enter task:{x}')
+                 reader.read_line(NA::Color.template('{by}> {bw}')).strip
+               end
+
+      if action.nil? || action.empty?
+        puts 'Empty input, cancelled'
+        Process.exit 1
+      end
+
+      if options[:priority]&.to_i&.positive?
+        action = "#{action.gsub(/@priority\(\d+\)/, '')} @priority(#{options[:priority]})"
+      end
+
+      note_rx = /^(.+) \((.*?)\)$/
+      split_note = if action =~ note_rx
+                     n = Regexp.last_match(2)
+                     action.sub!(note_rx, '\1').strip!
+                     n
+                   end
+
+      na_tag = NA.na_tag
+      if options[:x]
+        na_tag = ''
+      else
+        na_tag = options[:tag] unless options[:tag].nil?
+        na_tag = " @#{na_tag}"
+      end
+
+      action = "#{action.gsub(/#{na_tag}\b/, '')}#{na_tag}"
+
+      line_note = if options[:note]
+                    if TTY::Which.exist?('gum')
+                      args = ['--placeholder "Enter a note, CTRL-d to save"']
+                      args << '--char-limit 0'
+                      args << '--width $(tput cols)'
+                      `gum write #{args.join(' ')}`.strip.split("\n")
+                    else
+                      puts NA::Color.template('{bm}Enter a note, {bw}CTRL-d{bm} to end editing{bw}')
+                      reader.read_multiline
+                    end
+                  end
+
+      note = split_note.nil? ? [] : [split_note]
+      note.concat(line_note) unless line_note.nil?
+      note = [] if note.empty?
+
+      NA.add_action(target, options[:project], action, note, finish: options[:finish], append: append)
     end
   end
 
@@ -312,6 +339,11 @@ class App
     c.desc 'Add/change a priority level 1-5'
     c.arg_name 'PRIO'
     c.flag %i[p priority], must_match: /[1-5]/, type: :integer, default_value: 0
+
+    c.desc 'When moving task, add at [s]tart or [e]nd of target project'
+    c.arg_name 'POSITION'
+    c.default_value 'start'
+    c.flag %i[at], must_match: /^[sbea].*?$/i
 
     c.desc 'Move action to specific project'
     c.arg_name 'PROJECT'
@@ -361,6 +393,7 @@ class App
 
     c.action do |_global_options, options, args|
       reader = TTY::Reader.new
+      append = options[:position] =~ /^[ae]/i
       action = if args.count.positive?
                  args.join(' ').strip
                elsif TTY::Which.exist?('gum') && options[:tagged].empty?
@@ -483,7 +516,8 @@ class App
                          note: note,
                          overwrite: options[:overwrite],
                          tagged: tags,
-                         all: options[:all])
+                         all: options[:all],
+                         append: append)
       end
     end
   end
@@ -922,6 +956,7 @@ class App
     NA.verbose = global[:debug]
     NA.extension = global[:ext]
     NA.na_tag = global[:na_tag]
+    NA.global_file = global[:file]
     NA.weed_cache_file
     true
   end
