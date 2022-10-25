@@ -313,6 +313,8 @@ module NA
         end
         note = note.empty? ? '' : "\n#{indent}\t\t#{note.join("\n#{indent}\t\t").strip}"
 
+        string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})" if finish && string !~ /(?<=\A| )@done/
+
         if append
           this_idx = 0
           projects.each_with_index do |proj, idx|

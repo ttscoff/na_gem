@@ -194,9 +194,13 @@ Note that I created a new YAML dictionary inside of the `:next:` command, and ad
 > **WARNING** Don't touch most of the settings at the top of the auto-generated file. Setting any of them to true will alter the way na interprets the commands you're running. Most of those options are there for backwards compatibility with the bash version of this tool and will eventually be removed.
 <!--JEKYLL{:.warn}-->
 
+#### Working with a single global file
+
 na is designed to work with one or more TaskPaper files in each project directory, but if you prefer to use a single global TaskPaper file, you can add `--file PATH` as a global option and specify a single file. This will bypass the detection of any files in the current directory. Make it permanent by including the `--file` flag when running `initconfig`.
 
-By default, tasks are added at the top of the target project (Inbox, etc.). If you prefer new tasks to go at the bottom by default, include `--at end` when running `initconfig`.
+#### Add tasks at the end of a project
+
+By default, tasks are added at the top of the target project (Inbox, etc.). If you prefer new tasks to go at the bottom by default, include `--add_at end` as a global option when running `initconfig`.
 
 ### Prompt Hooks
 
