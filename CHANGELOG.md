@@ -1,3 +1,11 @@
+### 1.2.3
+
+2022-10-25 17:05
+
+#### CHANGED
+
+- Add a preceding dot to backup files created when updating to make backups hidden from notetaking apps and the like.
+
 ### 1.2.2
 
 2022-10-25 14:30
