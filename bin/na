@@ -43,6 +43,10 @@ class App
   arg_name 'PATH'
   flag %i[f file]
 
+  desc 'Use current working directory as [p]roject, [t]ag, or [n]one'
+  arg_name 'TYPE'
+  flag %i[cwd_as], must_match: /^[ptn].*?$/i, default_value: 'none'
+
   desc 'Add all new/moved entries at [s]tart or [e]nd of target project'
   arg_name 'POSITION'
   flag %i[add_at], default_value: 'start'
@@ -477,6 +481,14 @@ class App
 
       note = line_note.nil? || line_note.empty? ? [] : line_note
 
+      target_proj = if options[:project]
+                      options[:project]
+                    elsif NA.cwd_is == :project
+                      NA.cwd
+                    else
+                      nil
+                    end
+
       if options[:file]
         file = File.expand_path(options[:file])
         NA.notify('{r}File not found', exit_code: 1) unless File.exist?(file)
@@ -522,7 +534,7 @@ class App
                          add_tag: add_tags,
                          remove_tag: remove_tags,
                          finish: options[:finish],
-                         project: options[:project],
+                         project: target_proj,
                          delete: options[:delete],
                          note: note,
                          overwrite: options[:overwrite],
@@ -969,6 +981,12 @@ class App
     NA.extension = global[:ext]
     NA.na_tag = global[:na_tag]
     NA.global_file = global[:file]
+    NA.cwd = File.basename(ENV['PWD'])
+    NA.cwd_is = if global[:cwd_as] =~ /^n/
+                  :none
+                else
+                  global[:cwd_as] =~ /^p/ ? :project : :tag
+                end
     NA.weed_cache_file
     true
   end

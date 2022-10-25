@@ -3,21 +3,22 @@
 # Next Action methods
 module NA
   class << self
-    attr_accessor :verbose, :extension, :na_tag, :command_line, :globals, :global_file
+    attr_accessor :verbose, :extension, :na_tag, :command_line, :globals, :global_file, :cwd_is, :cwd
 
     ##
     ## Output to STDERR
     ##
     ## @param      msg        [String] The message
-    ## @param      exit_code  [Number] The exit code, no exit if false
+    ## @param      exit_code  [Number] The exit code, no
+    ##                        exit if false
+    ## @param      debug      [Boolean] only display message if running :verbose
     ##
     def notify(msg, exit_code: false, debug: false)
       return if debug && !@verbose
 
       $stderr.puts NA::Color.template("{x}#{msg}{x}")
-      if exit_code
-        Process.exit exit_code
-      end
+      Process.exit exit_code if exit_code
+
     end
 
     ##
@@ -254,6 +255,32 @@ module NA
       new_project
     end
 
+    def process_action(action, priority: 0, finish: false, add_tag: [], remove_tag: [], note: [])
+      string = action.action
+
+      if priority&.positive?
+        string.gsub!(/(?<=\A| )@priority\(\d+\)/, '').strip!
+        string += " @priority(#{priority})"
+      end
+
+      add_tag.each do |tag|
+        string.gsub!(/(?<=\A| )@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
+        string.strip!
+        string += " @#{tag}"
+      end
+
+      remove_tag.each do |tag|
+        string.gsub!(/(?<=\A| )@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
+        string.strip!
+      end
+
+      string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})" if finish && string !~ /(?<=\A| )@done/
+
+      action.action = string
+
+      action
+    end
+
     def update_action(target,
                       search,
                       add: nil,
@@ -289,7 +316,8 @@ module NA
       contents = target.read_file.split(/\n/)
 
       if add.is_a?(Action)
-        action = add
+        action = process_action(add, priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
+
         projects = find_projects(target)
 
         target_proj = if target_proj
@@ -300,21 +328,13 @@ module NA
 
         indent = "\t" * target_proj.indent
         note = note.split("\n") unless note.is_a?(Array)
-
         note = if note.empty?
                  action.note
                else
                  overwrite ? note : action.note.concat(note)
                end
 
-        string = action.action
-        if priority&.positive?
-          string.gsub!(/(?<=\A| )@priority\(\d+\)/, '').strip!
-          string += " @priority(#{priority})"
-        end
         note = note.empty? ? '' : "\n#{indent}\t\t#{note.join("\n#{indent}\t\t").strip}"
-
-        string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})" if finish && string !~ /(?<=\A| )@done/
 
         if append
           this_idx = 0
@@ -334,37 +354,19 @@ module NA
           target_line = target_proj.line
         end
 
-        contents.insert(target_line, "#{indent}\t- #{string}#{note}")
+        contents.insert(target_line, "#{indent}\t- #{action.action}#{note}")
       else
         projects, actions = find_actions(target, search, tagged, done: done, all: all)
 
         return if actions.nil?
 
         actions.sort_by(&:line).reverse.each do |action|
-          string = action.action
-
-          if priority&.positive?
-            string.gsub!(/(?<=\A| )@priority\(\d+\)/, '').strip!
-            string += " @priority(#{priority})"
-          end
-
-          add_tag.each do |tag|
-            string.gsub!(/(?<=\A| )@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
-            string.strip!
-            string += " @#{tag}"
-          end
-
-          remove_tag.each do |tag|
-            string.gsub!(/(?<=\A| )@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
-            string.strip!
-          end
-
-          string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})" if finish && string !~ /(?<=\A| )@done/
-
           contents.slice!(action.line, action.note.count + 1)
           next if delete
 
           projects = shift_index_after(projects, action.line, action.note.count + 1)
+
+          action = process_action(action, priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
 
           target_proj = if target_proj
                           projects.select { |proj| proj.project =~ /^#{target_proj.project}$/ }.first
@@ -392,7 +394,7 @@ module NA
             target_line = target_proj.line
           end
 
-          contents.insert(target_line, "#{indent}\t- #{string}#{note}")
+          contents.insert(target_line, "#{indent}\t- #{action.action}#{note}")
         end
       end
       backup_file(target)
@@ -412,9 +414,19 @@ module NA
     def add_action(file, project, action, note = [], priority: 0, finish: false, append: false)
       parent = project.split(%r{[:/]})
 
+      if NA.global_file
+        puts NA.global_file
+        if NA.cwd_is == :tag
+          add_tag = [NA.cwd]
+        else
+          project = NA.cwd
+        end
+        puts [add_tag, project]
+      end
+
       action = Action.new(file, project, parent, action, nil, note)
 
-      update_action(file, nil, add: action, project: project, priority: priority, finish: finish, append: append)
+      update_action(file, nil, add: action, project: project, add_tag: add_tag, priority: priority, finish: finish, append: append)
     end
 
     ##

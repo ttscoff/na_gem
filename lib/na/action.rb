@@ -2,7 +2,9 @@
 
 module NA
   class Action < Hash
-    attr_reader :file, :project, :parent, :action, :tags, :line, :note
+    attr_reader :file, :project, :parent, :tags, :line, :note
+
+    attr_accessor :action
 
     def initialize(file, project, parent, action, idx, note = [])
       super()

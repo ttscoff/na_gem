@@ -198,6 +198,8 @@ Note that I created a new YAML dictionary inside of the `:next:` command, and ad
 
 na is designed to work with one or more TaskPaper files in each project directory, but if you prefer to use a single global TaskPaper file, you can add `--file PATH` as a global option and specify a single file. This will bypass the detection of any files in the current directory. Make it permanent by including the `--file` flag when running `initconfig`.
 
+When using a global file, you can additionally include `--cwd_as TYPE` to determine whether the current working directory is used as a tag or a project (default is neither). If you add `--cwd_as tag` to the global options (before the command), the last element of the current working directory will be appended as an @tag (e.g. if you're in ~/Code/project/doing, the action would be tagged @doing). If you use `--cwd_as project` the action will be put into a project with the same name as the current directory (e.g. `Doing:` from the previous example).
+
 #### Add tasks at the end of a project
 
 By default, tasks are added at the top of the target project (Inbox, etc.). If you prefer new tasks to go at the bottom by default, include `--add_at end` as a global option when running `initconfig`.
