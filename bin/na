@@ -43,6 +43,10 @@ class App
   arg_name 'PATH'
   flag %i[f file]
 
+  desc 'Add all new/moved entries at [s]tart or [e]nd of target project'
+  arg_name 'POSITION'
+  flag %i[add_at], default_value: 'start'
+
   desc 'Prompt for additional notes (deprecated, for backwards compatibility)'
   switch %i[n note], negatable: false
 
@@ -161,7 +165,6 @@ class App
 
     c.desc 'Add task at [s]tart or [e]nd of target project'
     c.arg_name 'POSITION'
-    c.default_value 'start'
     c.flag %i[at], must_match: /^[sbea].*?$/i
 
     c.desc 'Add to a known todo file, partial matches allowed'
@@ -186,9 +189,9 @@ class App
     c.arg_name 'DEPTH'
     c.flag %i[d depth], must_match: /^[1-9]$/, type: :integer, default_value: 1
 
-    c.action do |_global_options, options, args|
+    c.action do |global_options, options, args|
       reader = TTY::Reader.new
-      append = options[:position] =~ /^[ae]/i
+      append = options[:position] ? options[:position] =~ /^[ae]/i : global_options[:add_at]
 
       if NA.global_file
         target = File.expand_path(NA.global_file)
@@ -342,7 +345,6 @@ class App
 
     c.desc 'When moving task, add at [s]tart or [e]nd of target project'
     c.arg_name 'POSITION'
-    c.default_value 'start'
     c.flag %i[at], must_match: /^[sbea].*?$/i
 
     c.desc 'Move action to specific project'
@@ -393,7 +395,8 @@ class App
 
     c.action do |_global_options, options, args|
       reader = TTY::Reader.new
-      append = options[:position] =~ /^[ae]/i
+      append = options[:position] ? options[:position] =~ /^[ae]/i : global_options[:add_at]
+
       action = if args.count.positive?
                  args.join(' ').strip
                elsif TTY::Which.exist?('gum') && options[:tagged].empty?
