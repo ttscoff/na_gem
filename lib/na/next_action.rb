@@ -154,8 +154,8 @@ module NA
       projects
     end
 
-    def find_actions(target, search, tagged = nil, all: false)
-      _, actions, projects = parse_actions(search: search, require_na: false, file_path: target, tag: tagged)
+    def find_actions(target, search, tagged = nil, all: false, done: false)
+      _, actions, projects = parse_actions(search: search, require_na: false, file_path: target, tag: tagged, done: done)
 
       unless actions.count.positive?
         NA.notify("{r}No matching actions found in {bw}#{File.basename(target, ".#{NA.extension}")}")
@@ -267,6 +267,7 @@ module NA
                       overwrite: false,
                       tagged: nil,
                       all: false,
+                      done: false,
                       append: false)
 
       projects = find_projects(target)
@@ -335,7 +336,7 @@ module NA
 
         contents.insert(target_line, "#{indent}\t- #{string}#{note}")
       else
-        projects, actions = find_actions(target, search, tagged, all: all)
+        projects, actions = find_actions(target, search, tagged, done: done, all: all)
 
         return if actions.nil?
 
@@ -453,6 +454,7 @@ module NA
     ##
     ## @param      depth       [Number] The directory depth
     ##                         to search for files
+    ## @param      done        [Boolean] include @done actions
     ## @param      query       [Hash] The todo file query
     ## @param      tag         [Array] Tags to search for
     ## @param      search      [String] A search string
@@ -461,7 +463,7 @@ module NA
     ##                         regular expression
     ## @param      project     [String] The project
     ## @param      require_na  [Boolean] Require @na tag
-    ## @param      file        [String] file path to parse
+    ## @param      file_path   [String] file path to parse
     ##
     def parse_actions(depth: 1, done: false, query: nil, tag: nil, search: nil, negate: false, regex: false, project: nil, require_na: true, file_path: nil)
       actions = []

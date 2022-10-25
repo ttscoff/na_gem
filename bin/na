@@ -78,6 +78,10 @@ class App
     c.arg_name 'DEPTH'
     c.flag %i[d depth], type: :integer, must_match: /^[1-9]$/
 
+    c.desc 'Display matches from a known todo file'
+    c.arg_name 'TODO_FILE'
+    c.flag %i[in todo], multiple: true
+
     c.desc 'Alternate tag to search for'
     c.arg_name 'TAG'
     c.flag %i[t tag]
@@ -105,6 +109,7 @@ class App
                 options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
               end
 
+      args.concat(options[:in])
       if args.count.positive?
         all_req = false
 
@@ -355,6 +360,9 @@ class App
     c.arg_name 'TODO_FILE'
     c.flag %i[in todo]
 
+    c.desc 'Include @done actions'
+    c.switch %i[done]
+
     c.desc 'Add a tag to the action, @tag(values) allowed'
     c.arg_name 'TAG'
     c.flag %i[t tag], multiple: true
@@ -364,7 +372,7 @@ class App
     c.flag %i[r remove], multiple: true
 
     c.desc 'Add a @done tag to action'
-    c.switch %i[f finish done], negatable: false
+    c.switch %i[f finish], negatable: false
 
     c.desc 'Add a @done tag to action and move to Archive'
     c.switch %i[a archive], negatable: false
@@ -520,6 +528,7 @@ class App
                          overwrite: options[:overwrite],
                          tagged: tags,
                          all: options[:all],
+                         done: options[:done],
                          append: append)
       end
     end
