@@ -20,7 +20,7 @@ module NA
         "@project: #{@project}",
         "@indent: #{@indent}",
         "@line: #{@line}"
-      ].join("\n")
+      ].join(" ")
     end
   end
 end

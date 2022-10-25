@@ -3,7 +3,7 @@
 # Next Action methods
 module NA
   class << self
-    attr_accessor :verbose, :extension, :na_tag, :command_line, :global_file
+    attr_accessor :verbose, :extension, :na_tag, :command_line, :globals, :global_file
 
     ##
     ## Output to STDERR
@@ -157,7 +157,11 @@ module NA
     def find_actions(target, search, tagged = nil, all: false)
       _, actions, projects = parse_actions(search: search, require_na: false, file_path: target, tag: tagged)
 
-      NA.notify('{r}No matching actions found', exit_code: 1) unless actions.count.positive?
+      unless actions.count.positive?
+        NA.notify("{r}No matching actions found in {bw}#{File.basename(target, ".#{NA.extension}")}")
+        return
+      end
+
       return [projects, actions] if actions.count == 1 || all
 
       options = actions.map { |action| "#{action.line} % #{action.parent.join('/')} : #{action.action}" }
@@ -308,13 +312,21 @@ module NA
           string += " @priority(#{priority})"
         end
         note = note.empty? ? '' : "\n#{indent}\t\t#{note.join("\n#{indent}\t\t").strip}"
+
         if append
-          this_idx = projects.index(target_proj)
-          if this_idx == projects.length - 1
-            target_line = contents.count
-          else
-            target_line = projects[this_idx + 1].line - 1
+          this_idx = 0
+          projects.each_with_index do |proj, idx|
+            if proj.line == target_proj.line
+              this_idx = idx
+              break
+            end
           end
+
+          target_line = if this_idx == projects.length - 1
+                          contents.count
+                        else
+                          projects[this_idx + 1].line - 1
+                        end
         else
           target_line = target_proj.line
         end
@@ -322,6 +334,8 @@ module NA
         contents.insert(target_line, "#{indent}\t- #{string}#{note}")
       else
         projects, actions = find_actions(target, search, tagged, all: all)
+
+        return if actions.nil?
 
         actions.sort_by(&:line).reverse.each do |action|
           string = action.action
@@ -394,6 +408,7 @@ module NA
     ##
     def add_action(file, project, action, note = [], priority: 0, finish: false, append: false)
       parent = project.split(%r{[:/]})
+
       action = Action.new(file, project, parent, action, nil, note)
 
       update_action(file, nil, add: action, project: project, priority: priority, finish: finish, append: append)

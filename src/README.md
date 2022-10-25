@@ -48,6 +48,10 @@ You can also quickly add todo items from the command line with the `add` subcomm
 
 If found, it will try to locate an `Inbox:` project, or create one if it doesn't exist. Any arguments after `add` will be combined to create a new task in TaskPaper format. They will automatically be assigned as next actions (tagged `@na`) and will show up when `na` lists the tasks for the project.
 
+#### Updating todos
+
+You can mark todos as complete, delete them, add and remove tags, change priority, and even move them between projects with the `na update` command.
+
 ### Usage
 
 ```
@@ -189,6 +193,10 @@ Note that I created a new YAML dictionary inside of the `:next:` command, and ad
 
 > **WARNING** Don't touch most of the settings at the top of the auto-generated file. Setting any of them to true will alter the way na interprets the commands you're running. Most of those options are there for backwards compatibility with the bash version of this tool and will eventually be removed.
 <!--JEKYLL{:.warn}-->
+
+na is designed to work with one or more TaskPaper files in each project directory, but if you prefer to use a single global TaskPaper file, you can add `--file PATH` as a global option and specify a single file. This will bypass the detection of any files in the current directory. Make it permanent by including the `--file` flag when running `initconfig`.
+
+By default, tasks are added at the top of the target project (Inbox, etc.). If you prefer new tasks to go at the bottom by default, include `--at end` when running `initconfig`.
 
 ### Prompt Hooks
 

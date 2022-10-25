@@ -29,8 +29,6 @@ If you're using Homebrew, you have the option to install via [brew-gem](https://
 
 If you don't have Ruby/RubyGems, you can install them pretty easily with Homebrew, rvm, or asdf. I can't swear this tool is worth the time, but there _are_ a lot of great gems available...
 
-
-
 ### Features
 
 You can list next actions in files in the current directory by typing `na`. By default, `na` looks for `*.taskpaper` files and extracts items tagged `@na` and not `@done`. All of these can be changed in the configuration.

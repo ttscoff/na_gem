@@ -94,7 +94,7 @@ class App
         cmd = ['add']
         cmd.push('--note') if global_options[:note]
         cmd.concat(['--priority', global_options[:priority]]) if global_options[:priority]
-        cmd.push(ARGV.unshift($first_arg)) if ARGV.count > 2
+        cmd.push(ARGV.unshift(NA.command_line[0])) if NA.command_line.count > 1
 
         exit run(cmd)
       end
@@ -191,7 +191,7 @@ class App
 
     c.action do |global_options, options, args|
       reader = TTY::Reader.new
-      append = options[:position] ? options[:position] =~ /^[ae]/i : global_options[:add_at]
+      append = options[:at] ? options[:at] =~ /^[ae]/i : global_options[:add_at] =~ /^[ae]/
 
       if NA.global_file
         target = File.expand_path(NA.global_file)
@@ -393,9 +393,9 @@ class App
     c.desc 'Match pattern exactly'
     c.switch %i[x exact], negatable: false
 
-    c.action do |_global_options, options, args|
+    c.action do |global_options, options, args|
       reader = TTY::Reader.new
-      append = options[:position] ? options[:position] =~ /^[ae]/i : global_options[:add_at]
+      append = options[:at] ? options[:at] =~ /^[ae]/i : global_options[:add_at] =~ /^[ae]/i
 
       action = if args.count.positive?
                  args.join(' ').strip
@@ -965,16 +965,14 @@ class App
   end
 
   post do |global, command, options, args|
-    # Post logic here
-    # Use skips_post before a command to skip this
-    # block on that command only
+    # post actions
   end
 
   on_error do |exception|
     case exception
     when GLI::UnknownCommand
       cmd = ['saved']
-      cmd.concat(ARGV.unshift($first_arg))
+      cmd.concat(ARGV.unshift(NA.command_line[0]))
 
       exit run(cmd)
     when SystemExit
@@ -985,8 +983,9 @@ class App
   end
 end
 
-NA.command_line = ARGV
+NA.command_line = ARGV.dup
+NA.globals = NA.command_line.filter { |arg| arg =~ /^-/ }
+NA.command_line.delete_if { |arg| arg =~ /^-/ }
 @command = ARGV[0]
-$first_arg = ARGV[1]
 
 exit App.run(ARGV)
