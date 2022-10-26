@@ -316,6 +316,7 @@ module NA
       contents = target.read_file.split(/\n/)
 
       if add.is_a?(Action)
+        add_tag ||= []
         action = process_action(add, priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
 
         projects = find_projects(target)
@@ -397,6 +398,7 @@ module NA
           contents.insert(target_line, "#{indent}\t- #{action.action}#{note}")
         end
       end
+
       backup_file(target)
       File.open(target, 'w') { |f| f.puts contents.join("\n") }
 
@@ -751,9 +753,10 @@ module NA
     ## @param      target [String] The file to back up
     ##
     def backup_file(target)
-      backup_file = ".#{File.basename(target)}.bak"
-      dir = File.dirname(target)
-      FileUtils.cp(target, File.join(dir, backup_file))
+      file = ".#{File.basename(target)}.bak"
+      backup = File.join(File.dirname(target), file)
+      FileUtils.cp(target, backup)
+      NA.notify("{dw}Backup file created at #{backup}", debug: true)
     end
 
     ##
