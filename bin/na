@@ -95,6 +95,9 @@ class App
     c.arg_name 'PROJECT[/SUBPROJECT]'
     c.flag %i[proj project]
 
+    c.desc 'Include notes in output'
+    c.switch %i[notes], negatable: true, default_value: false
+
     c.desc 'Include @done actions'
     c.switch %i[done]
 
@@ -142,7 +145,7 @@ class App
                                          project: options[:project],
                                          require_na: require_na)
 
-      NA.output_actions(actions, depth, files: files)
+      NA.output_actions(actions, depth, files: files, notes: options[:notes])
     end
   end
 
@@ -206,9 +209,8 @@ class App
       if NA.global_file
         target = File.expand_path(NA.global_file)
         unless File.exist?(target)
-          print NA::Color.template('{by}Specified file not found, create it? {w}(y/{g}N{w}){x} ')
-          res = reader.read_char
-          if res =~ /y/i
+          res = NA.yn(NA::Color.template('{by}Specified file not found, create it'), default: true)
+          if res
             basename = File.basename(target, ".#{NA.extension}")
             NA.create_todo(target, basename)
           else
@@ -219,9 +221,8 @@ class App
       elsif options[:file]
         target = File.expand_path(options[:file])
         unless File.exist?(target)
-          print NA::Color.template('{by}Specified file not found, create it? {w}(y/{g}N{w}){x} ')
-          res = reader.read_char
-          if res =~ /y/i
+          res = NA.yn(NA::Color.template('{by}Specified file not found, create it'), default: true)
+          if res
             basename = File.basename(target, ".#{NA.extension}")
             NA.create_todo(target, basename)
           else
@@ -260,9 +261,8 @@ class App
       else
         files = NA.find_files(depth: options[:depth])
         if files.count.zero?
-          print NA::Color.template('{by}No todo file found, create one? {w}(y/{g}N{w}){x} ')
-          res = reader.read_char
-          if res =~ /y/i
+          res = NA.yn(NA::Color.template('{by}No todo file found, create one'), default: true)
+          if res
             basename = File.expand_path('.').split('/').last
             target = "#{basename}.#{NA.extension}"
             NA.create_todo(target, basename)
@@ -278,9 +278,9 @@ class App
 
       action = if args.count.positive?
                  args.join(' ').strip
-               elsif TTY::Which.exist?('gum')
+               elsif $stdin.isatty && TTY::Which.exist?('gum')
                  `gum input --placeholder "Enter a task" --char-limit=500 --width=#{TTY::Screen.columns}`.strip
-               else
+               elsif $stdin.isatty
                  puts NA::Color.template('{bm}Enter task:{x}')
                  reader.read_line(NA::Color.template('{by}> {bw}')).strip
                end
@@ -313,7 +313,7 @@ class App
 
       stdin_note = NA.stdin ? NA.stdin.split("\n") : []
 
-      line_note = if options[:note]
+      line_note = if options[:note] && $stdin.isatty
                     puts stdin_note unless stdin_note.nil?
                     if TTY::Which.exist?('gum')
                       args = ['--placeholder "Enter additional note, CTRL-d to save"']
@@ -418,14 +418,14 @@ class App
 
       action = if args.count.positive?
                  args.join(' ').strip
-               elsif TTY::Which.exist?('gum') && options[:tagged].empty?
+               elsif $stdin.isatty && TTY::Which.exist?('gum') && options[:tagged].empty?
                  options = [
                    %(--placeholder "Enter a task to search for"),
                    '--char-limit=500',
                    "--width=#{TTY::Screen.columns}"
                  ]
                  `gum input #{options.join(' ')}`.strip
-               elsif options[:tagged].empty?
+               elsif $stdin.isatty && options[:tagged].empty?
                  puts NA::Color.template('{bm}Enter search string:{x}')
                  reader.read_line(NA::Color.template('{by}> {bw}')).strip
                end
@@ -476,7 +476,7 @@ class App
 
       stdin_note = NA.stdin ? NA.stdin.split("\n") : []
 
-      line_note = if options[:note]
+      line_note = if options[:note] && $stdin.isatty
                     puts stdin_note unless stdin_note.nil?
                     if TTY::Which.exist?('gum')
                       args = ['--placeholder "Enter a note, CTRL-d to save"']
@@ -579,6 +579,9 @@ class App
     c.arg_name 'TODO_PATH'
     c.flag %i[in]
 
+    c.desc 'Include notes in output'
+    c.switch %i[notes], negatable: true, default_value: false
+
     c.desc 'Combine search tokens with OR, displaying actions matching ANY of the terms'
     c.switch %i[o or], negatable: false
 
@@ -652,7 +655,7 @@ class App
                   [tokens]
                 end
 
-      NA.output_actions(actions, depth, files: files, regexes: regexes)
+      NA.output_actions(actions, depth, files: files, regexes: regexes, notes: options[:notes])
     end
   end
 
@@ -679,6 +682,9 @@ class App
     c.desc 'Show actions from a specific todo file in history. May use wildcards (* and ?)'
     c.arg_name 'TODO_PATH'
     c.flag %i[in]
+
+    c.desc 'Include notes in output'
+    c.switch %i[notes], negatable: true, default_value: false
 
     c.desc 'Combine tags with OR, displaying actions matching ANY of the tags'
     c.switch %i[o or], negatable: false
@@ -748,7 +754,7 @@ class App
                                          project: options[:project],
                                          require_na: false)
       regexes = tags.delete_if { |token| token[:negate] }.map { |token| token[:token] }
-      NA.output_actions(actions, depth, files: files, regexes: regexes)
+      NA.output_actions(actions, depth, files: files, regexes: regexes, notes: options[:notes])
     end
   end
 
@@ -762,17 +768,17 @@ class App
       reader = TTY::Reader.new
       if args.count.positive?
         project = args.join(' ')
-      else
+      elsif
         project = File.expand_path('.').split('/').last
-        project = reader.read_line(NA::Color.template('{y}Project name {bw}> {x}'), value: project).strip
+        project = reader.read_line(NA::Color.template('{y}Project name {bw}> {x}'), value: project).strip if $stdin.isatty
       end
 
       target = "#{project}.#{NA.extension}"
 
       if File.exist?(target)
-        print NA::Color.template("{r}File {bw}#{target}{r} already exists, overwrite it? {br}y{w}/{bg}N{x} ")
-        res = reader.read_char
-        Process.exit 1 unless res =~ /y/i
+        res = NA.yn(NA::Color.template("{r}File {bw}#{target}{r} already exists, overwrite it"), default: false)
+        Process.exit 1 unless res
+
       end
 
       NA.create_todo(target, project)

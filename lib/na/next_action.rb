@@ -439,7 +439,7 @@ module NA
     ## @param      files    [Array] The files actions originally came from
     ## @param      regexes  [Array] The regexes used to gather actions
     ##
-    def output_actions(actions, depth, files: nil, regexes: [])
+    def output_actions(actions, depth, files: nil, regexes: [], notes: false)
       return if files.nil?
 
       template = if files.count.positive?
@@ -457,10 +457,11 @@ module NA
                  else
                    '%parent%action'
                  end
+      template += '%note' if notes
 
       files.map { |f| notify("{dw}#{f}", debug: true) } if files
 
-      puts(actions.map { |action| action.pretty(template: { output: template }, regexes: regexes) })
+      puts(actions.map { |action| action.pretty(template: { output: template }, regexes: regexes, notes: notes) })
     end
 
     ##
@@ -782,6 +783,8 @@ module NA
       optional = search.map { |t| t[:token] }
       required = search.filter { |s| s[:required] }.map { |t| t[:token] }
       negated = search.filter { |s| s[:negate] }.map { |t| t[:token] }
+
+      optional.push('*') if required.count.zero? && negated.count.positive?
 
       NA.notify("{dw}Optional directory regex: {x}#{optional.map(&:dir_to_rx)}", debug: true)
       NA.notify("{dw}Required directory regex: {x}#{required.map(&:dir_to_rx)}", debug: true)

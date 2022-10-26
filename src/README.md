@@ -78,7 +78,9 @@ If you run the `add` command with no arguments, you'll be asked for input on the
 
 ###### Adding notes
 
-Use the `--note` switch to add a note. If STDIN (piped) input is present when this switch is used, it will be included in the note. A prompt will be displayed for adding additional notes, which will be appended to any STDIN note passed. Press CTRL-d to end editing and save the note. Notes are not displayed by the `next/show` command, but exist in the TaskPaper file for reference.
+Use the `--note` switch to add a note. If STDIN (piped) input is present when this switch is used, it will be included in the note. A prompt will be displayed for adding additional notes, which will be appended to any STDIN note passed. Press CTRL-d to end editing and save the note. 
+
+Notes are not displayed by the `next/tagged/find` commands unless `--notes` is specified.
 
 ```
 @cli(bundle exec bin/na help add)
@@ -192,6 +194,8 @@ You can specify a new project for an action (moving it) with `--proj PROJECT_PAT
 ###### Adding notes
 
 Use the `--note` switch to add a note. If STDIN (piped) input is present when this switch is used, it will be included in the note. A prompt will be displayed for adding additional notes, which will be appended to any STDIN note passed. Press CTRL-d to end editing and save the note.
+
+Notes are not displayed by the `next/tagged/find` commands unless `--notes` is specified.
 
 See the help output for a list of all available actions.
 

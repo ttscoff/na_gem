@@ -2,9 +2,9 @@
 
 module NA
   class Action < Hash
-    attr_reader :file, :project, :parent, :tags, :line, :note
+    attr_reader :file, :project, :parent, :tags, :line
 
-    attr_accessor :action
+    attr_accessor :action, :note
 
     def initialize(file, project, parent, action, idx, note = [])
       super()
@@ -19,7 +19,12 @@ module NA
     end
 
     def to_s
-      "(#{@file}:#{@line}) #{@project}:#{@parent.join('>')} | #{@action}"
+      note = if @note.count.positive?
+               "\n#{@note.join("\n")}"
+             else
+               ''
+             end
+      "(#{@file}:#{@line}) #{@project}:#{@parent.join('>')} | #{@action}#{@note}"
     end
 
     def inspect
@@ -28,10 +33,11 @@ module NA
       @project: #{@project}
       @parent: #{@parent.join('>')}
       @action: #{@action}
+      @note: #{@note}
       EOINSPECT
     end
 
-    def pretty(extension: 'taskpaper', template: {}, regexes: [])
+    def pretty(extension: 'taskpaper', template: {}, regexes: [], notes: false)
       default_template = {
         file: '{xbk}',
         parent: '{c}',
@@ -41,7 +47,8 @@ module NA
         tags: '{m}',
         value_parens: '{m}',
         values: '{y}',
-        output: '%filename%parents| %action'
+        output: '%filename%parents| %action',
+        note: '{dw}'
       }
       template = default_template.merge(template)
 
@@ -58,6 +65,12 @@ module NA
       file_tpl = "#{template[:file]}#{file} {x}"
       filename = NA::Color.template(file_tpl)
 
+      note = if notes && @note.count.positive?
+               NA::Color.template("\n#{@note.map { |l| "  #{template[:note]}• #{l}{x}" }.join("\n")}")
+             else
+               ''
+             end
+
       action = NA::Color.template("#{template[:action]}#{@action.sub(/ @#{NA.na_tag}\b/, '')}{x}")
       action = action.highlight_tags(color: template[:tags],
                                      parens: template[:value_parens],
@@ -67,7 +80,8 @@ module NA
       NA::Color.template(template[:output].gsub(/%filename/, filename)
                           .gsub(/%project/, project)
                           .gsub(/%parents?/, parents)
-                          .gsub(/%action/, action.highlight_search(regexes))).gsub(/\\\{/, '{')
+                          .gsub(/%action/, action.highlight_search(regexes))
+                          .gsub(/%note/, note)).gsub(/\\\{/, '{')
     end
 
     def tags_match?(any: [], all: [], none: [])
