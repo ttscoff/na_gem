@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is <!--VER-->1.2.4<!--END VER-->.
+The current version of `na` is <!--VER-->1.2.5<!--END VER-->.
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
 
@@ -119,6 +119,9 @@ The saved command runs saved searches. To save a search, add `--save SEARCH_NAME
 Search names can be partially matched when calling them, so if you have a search named "overdue," you can match it with `na saved over` (shortest match will be used).
 
 Run `na saved` without an argument to list your saved searches.
+
+> As a shortcut, if `na` is run with one argument that matches the name of a saved search, it will execute that search, so running `na maybe` is the same as running `na saved maybe`.
+<!--JEKYLL{:.tip}-->
 
 ```
 @cli(bundle exec bin/na help saved)
