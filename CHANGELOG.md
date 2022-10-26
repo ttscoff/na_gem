@@ -1,3 +1,26 @@
+### 1.2.6
+
+2022-10-26 10:50
+
+#### NEW
+
+- Pass notes to STDIN using piped input when using the `--note` switch
+- `--notes` switch for next, find, and tagged to include action notes in output
+
+#### IMPROVED
+
+- Update na saved examples and documentation
+- Better handling of unknown commands, affecting `na -a ACTION` and `na SAVED_SEARCH`
+- Additional help documentation and examples
+- Updated documentation
+- If a todo query contains only a negative, display all non-matching todos
+- Don't display readline prompts if not a TTY
+- Prompt hook generator recognizes when a global file is being used and modifies prompt hooks to search for project name or tag based on the value of `--cwd_as`.
+
+#### FIXED
+
+- Debug messages showing when not using --debug
+
 ### 1.2.5
 
 2022-10-26 07:39

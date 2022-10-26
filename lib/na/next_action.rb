@@ -785,6 +785,10 @@ module NA
       negated = search.filter { |s| s[:negate] }.map { |t| t[:token] }
 
       optional.push('*') if required.count.zero? && negated.count.positive?
+      if required == negated
+        required = ['*']
+        optional = ['*']
+      end
 
       NA.notify("{dw}Optional directory regex: {x}#{optional.map(&:dir_to_rx)}", debug: true)
       NA.notify("{dw}Required directory regex: {x}#{required.map(&:dir_to_rx)}", debug: true)

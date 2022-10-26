@@ -233,10 +233,11 @@ class App
       elsif options[:todo]
         todo = []
         options[:todo].split(/ *, */).each do |a|
-          m = a.match(/^(?<req>\+)?(?<tok>.*?)$/)
+          m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
           todo.push({
                       token: m['tok'],
-                      required: !m['req'].nil?
+                      required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                      negate: !m['req'].nil? && m['req'] =~ /[!\-]/
                     })
         end
         dirs = NA.match_working_dir(todo)
@@ -508,10 +509,11 @@ class App
       elsif options[:todo]
         todo = []
         options[:todo].split(/ *, */).each do |a|
-          m = a.match(/^(?<req>\+)?(?<tok>.*?)$/)
+          m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
           todo.push({
                       token: m['tok'],
-                      required: !m['req'].nil?
+                      required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                      negate: !m['req'].nil? && m['req'] =~ /[!\-]/
                     })
         end
         dirs = NA.match_working_dir(todo)
@@ -633,10 +635,11 @@ class App
       if options[:in]
         todo = []
         options[:in].split(/ *, */).each do |a|
-          m = a.match(/^(?<req>\+)?(?<tok>.*?)$/)
+          m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
           todo.push({
                       token: m['tok'],
-                      required: !m['req'].nil?
+                      required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                      negate: !m['req'].nil? && m['req'] =~ /[!\-]/
                     })
         end
       end
@@ -738,10 +741,11 @@ class App
       if options[:in]
         todo = []
         options[:in].split(/ *, */).each do |a|
-          m = a.match(/^(?<req>\+)?(?<tok>.*?)$/)
+          m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
           todo.push({
                       token: m['tok'],
-                      required: !m['req'].nil?
+                      required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                      negate: !m['req'].nil? && m['req'] =~ /[!\-]/
                     })
         end
       end
