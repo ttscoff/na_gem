@@ -751,7 +751,9 @@ module NA
     ## @param      target [String] The file to back up
     ##
     def backup_file(target)
-      FileUtils.cp(target, ".#{target}~")
+      backup_file = ".#{File.basename(target)}.bak"
+      dir = File.dirname(target)
+      FileUtils.cp(target, File.join(dir, backup_file))
     end
 
     ##
