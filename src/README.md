@@ -13,7 +13,7 @@ The current version of `na` is <!--VER-->1.2.5<!--END VER-->.
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
 
-Used with Taskpaper files, it can add new todo items quickly from the command line, automatically tagging them as next actions.
+Used with Taskpaper files, it can add new action items quickly from the command line, automatically tagging them as next actions. It can also mark actions as completed, delete them, archive them, and move them between projects.
 
 It can also auto-display next actions when you enter a project directory, automatically locating any todo files and listing their next actions when you `cd` to the project (optionally recursive). See the [Prompt Hooks](#prompt-hooks) section for details.
 
@@ -52,6 +52,16 @@ If found, it will try to locate an `Inbox:` project, or create one if it doesn't
 
 You can mark todos as complete, delete them, add and remove tags, change priority, and even move them between projects with the `na update` command.
 
+### Terminology
+
+**Todo**: Refers to a todo file, usually a TaskPaper document
+
+**Project**: Refers to a project within the TaskPaper document, specified by an alphanumeric name (spaces allowed) followed by a colon. Projects can be nested by indenting a tab beyond the parent projects indentation.
+
+**Action**: Refers to an individual task, specified by a line starting with a hyphen (`-`)
+
+**Note**: Refers to lines appearing between action lines that start without hyphens. The note is attached to the preceding action regardless of indentation.
+
 ### Usage
 
 ```
@@ -65,6 +75,10 @@ You can mark todos as complete, delete them, add and remove tags, change priorit
 Example: `na add This feature @idea I have`
 
 If you run the `add` command with no arguments, you'll be asked for input on the command line.
+
+###### Adding notes
+
+Use the `--note` switch to add a note. If STDIN (piped) input is present when this switch is used, it will be included in the note. A prompt will be displayed for adding additional notes, which will be appended to any STDIN note passed. Press CTRL-d to end editing and save the note. Notes are not displayed by the `next/show` command, but exist in the TaskPaper file for reference.
 
 ```
 @cli(bundle exec bin/na help add)
@@ -161,11 +175,25 @@ You can specify a particular todo file using `--file PATH` or any todo from hist
 
 If more than one file is matched, a menu will be presented, multiple selections allowed. If multiple actions match the search within the selected file(s), a menu will be presented. If you have fzf installed, you can select one action to update with return, or use tab to mark multiple tasks to which the action will be applied. With gum you can use j, k, and x to mark multiple actions. Use the `--all` switch to force operation on all matched tasks, skipping the menu.
 
-Any time an update action is carried out, a backup of the file before modification will be made in the same directory with a `.` prepended and `.bak` appended (e.g. `marked.taskpaper` is copied to `.marked.taskpaper.bak`). Only one undo step is available, but if something goes wrong (and this feature is still experimental, so be wary), you can just copy the "~" file back to the original.
+Any time an update action is carried out, a backup of the file before modification will be made in the same directory with a `.` prepended and `.bak` appended (e.g. `marked.taskpaper` is copied to `.marked.taskpaper.bak`). Only one undo step is available, but if something goes wrong (and this feature is still experimental, so be wary), you can just copy the ".bak" file back to the original.
+
+###### Marking a task as complete
+
+You can mark an action complete using `--finish`, which will add a dated @done tag to the action. You can also mark it @done and immediately move it to the Archive project using `--archive`.
+
+If you just want the action to stop appearing as a "next action," you can remove the next action tag using `--remove na` (or whatever your next action tag is configured as).
+
+If you want to permanently delete an action, use `--delete` to remove it entirely.
+
+###### Moving between projects
 
 You can specify a new project for an action (moving it) with `--proj PROJECT_PATH`. A project path is hierarchical, with each level separated by a colon or slash. If the project path provided roughly matches an existing project, e.g. "mark:bug" would match "Marked:Bugs", then that project will be used. If no match is found, na will offer to generate a new project/hierarchy for the path provided. Strings will be exact but the first letter will be uppercased.
 
-See the help output for a list of available actions.
+###### Adding notes
+
+Use the `--note` switch to add a note. If STDIN (piped) input is present when this switch is used, it will be included in the note. A prompt will be displayed for adding additional notes, which will be appended to any STDIN note passed. Press CTRL-d to end editing and save the note.
+
+See the help output for a list of all available actions.
 
 ```
 @cli(bundle exec bin/na help update)

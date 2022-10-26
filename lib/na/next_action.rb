@@ -3,7 +3,7 @@
 # Next Action methods
 module NA
   class << self
-    attr_accessor :verbose, :extension, :na_tag, :command_line, :globals, :global_file, :cwd_is, :cwd
+    attr_accessor :verbose, :extension, :na_tag, :command_line, :globals, :global_file, :cwd_is, :cwd, :stdin
 
     ##
     ## Output to STDERR
