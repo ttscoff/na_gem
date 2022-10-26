@@ -7,22 +7,59 @@ module NA
       def prompt_hook(shell)
         case shell
         when :zsh
+          cmd = if NA.global_file
+                  case NA.cwd_is
+                  when :project
+                    'na next --proj $(basename "$PWD")'
+                  when :tag
+                    'na tagged $(basename "$PWD")'
+                  else
+                    NA.notify('When using a global file, a prompt hook requires `--cwd_as [tag|project]`', exit_code: 1)
+                  end
+                else
+                  'na next'
+                end
           <<~EOHOOK
             # zsh prompt hook for na
-            chpwd() { na next }
+            chpwd() { #{cmd} }
           EOHOOK
         when :fish
+          cmd = if NA.global_file
+                  case NA.cwd_is
+                  when :project
+                    'na next --proj (basename "$PWD")'
+                  when :tag
+                    'na tagged (basename "$PWD")'
+                  else
+                    NA.notify('When using a global file, a prompt hook requires `--cwd_as [tag|project]`', exit_code: 1)
+                  end
+                else
+                  'na next'
+                end
           <<~EOHOOK
             # Fish Prompt Command
             function __should_na --on-variable PWD
-              test -s (basename $PWD)".#{NA.extension}" && na next
+              test -s (basename $PWD)".#{NA.extension}" && #{cmd}
             end
           EOHOOK
         when :bash
+          cmd = if NA.global_file
+                  case NA.cwd_is
+                  when :project
+                    'na next --proj $(basename "$PWD")'
+                  when :tag
+                    'na tagged $(basename "$PWD")'
+                  else
+                    NA.notify('When using a global file, a prompt hook requires `--cwd_as [tag|project]`', exit_code: 1)
+                  end
+                else
+                  'na next'
+                end
+
           <<~EOHOOK
             # Bash PROMPT_COMMAND for na
             last_command_was_cd() {
-              [[ $(history 1|sed -e "s/^[ ]*[0-9]*[ ]*//") =~ ^((cd|z|j|jump|g|f|pushd|popd|exit)([ ]|$)) ]] && na next
+              [[ $(history 1|sed -e "s/^[ ]*[0-9]*[ ]*//") =~ ^((cd|z|j|jump|g|f|pushd|popd|exit)([ ]|$)) ]] && #{cmd}
             }
             if [[ -z "$PROMPT_COMMAND" ]]; then
               PROMPT_COMMAND="eval 'last_command_was_cd'"
@@ -46,7 +83,7 @@ module NA
       def show_prompt_hook(shell)
         file = prompt_file(shell)
 
-        $stderr.puts NA::Color.template("{bw}# Add this to {y}#{file}{x}")
+        NA.notify("{bw}# Add this to {y}#{file}{x}")
         puts prompt_hook(shell)
       end
 
@@ -54,8 +91,8 @@ module NA
         file = prompt_file(shell)
 
         File.open(File.expand_path(file), 'a') { |f| f.puts prompt_hook(shell) }
-        $stderr.puts NA::Color.template("{y}Added {bw}#{shell}{xy} prompt hook to {bw}#{file}{xy}.{x}")
-        $stderr.puts NA::Color.template("{y}You may need to close the current terminal and open a new one to enable the script.{x}")
+        NA.notify("{y}Added {bw}#{shell}{xy} prompt hook to {bw}#{file}{xy}.{x}")
+        NA.notify("{y}You may need to close the current terminal and open a new one to enable the script.{x}")
       end
     end
   end

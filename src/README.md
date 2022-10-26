@@ -116,6 +116,8 @@ Examples:
 - `na next -d 3` (list all next actions in the current directory and look for additional files 3 levels deep from there)
 - `na next marked2` (show next actions from another directory you've previously used na on)
 
+To see all next actions across all known todos, use `na next "*"`. You can combine multiple arguments to see actions across multiple todos, e.g. `na next marked nvultra`.
+
 ```
 @cli(bundle exec bin/na help next)
 ```
