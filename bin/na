@@ -64,7 +64,7 @@ class App
   flag %i[d depth], type: :integer, must_match: /^[1-9]$/
 
   desc 'Display verbose output'
-  switch %i[debug]
+  switch %i[debug], default_value: false
 
   desc 'Show next actions'
   long_desc 'Next actions are actions which contain the next action tag (default @na),
@@ -1005,6 +1005,7 @@ class App
                   global[:cwd_as] =~ /^p/ ? :project : :tag
                 end
     NA.weed_cache_file
+    NA.notify("{dw}{ globals: #{NA.globals}, command_line: #{NA.command_line}, @command: #{@command}}", debug: true)
     true
   end
 
@@ -1053,6 +1054,5 @@ ARGV.each do |arg|
   end
 end
 @command = NA.command_line[0]
-NA.notify("{dw}{ globals: #{NA.globals}, command_line: #{NA.command_line}, @command: #{@command}}", debug: true)
 
 exit App.run(ARGV)
