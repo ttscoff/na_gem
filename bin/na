@@ -249,13 +249,10 @@ class App
           unless File.exist?(target)
 
             res = NA.yn(NA::Color.template("{by}Specified file not found, create #{todo}"), default: true)
-            if res
-              basename = File.basename(target, ".#{NA.extension}")
-              NA.create_todo(target, basename)
-            else
-              NA.notify('{r}Cancelled{x}', exit_code: 1)
+            NA.notify('{r}Cancelled{x}', exit_code: 1) unless res
 
-            end
+            basename = File.basename(target, ".#{NA.extension}")
+            NA.create_todo(target, basename)
           end
 
         end
@@ -271,10 +268,8 @@ class App
           end
         end
         target = files.count > 1 ? NA.select_file(files) : files[0]
-        unless files.count.positive? && File.exist?(target)
-          NA.notify('{r}Cancelled{x}', exit_code: 1)
+        NA.notify('{r}Cancelled{x}', exit_code: 1) unless files.count.positive? && File.exist?(target)
 
-        end
       end
 
       action = if args.count.positive?
@@ -1009,7 +1004,7 @@ class App
                   global[:cwd_as] =~ /^p/ ? :project : :tag
                 end
     NA.weed_cache_file
-    NA.notify("{dw}{ globals: #{NA.globals}, command_line: #{NA.command_line}, @command: #{@command}}", debug: true)
+    NA.notify("{dw}{ globals: #{NA.globals}, command_line: #{NA.command_line}, command: #{NA.command}}", debug: true)
     true
   end
 
@@ -1057,6 +1052,6 @@ ARGV.each do |arg|
     in_globals = false
   end
 end
-@command = NA.command_line[0]
+NA.command = NA.command_line[0]
 
 exit App.run(ARGV)

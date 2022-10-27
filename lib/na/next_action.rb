@@ -3,7 +3,7 @@
 # Next Action methods
 module NA
   class << self
-    attr_accessor :verbose, :extension, :na_tag, :command_line, :globals, :global_file, :cwd_is, :cwd, :stdin
+    attr_accessor :verbose, :extension, :na_tag, :command_line, :command, :globals, :global_file, :cwd_is, :cwd, :stdin
 
     ##
     ## Output to STDERR
@@ -116,31 +116,13 @@ module NA
     ## @param      files     [Array] The files
     ## @param      multiple  [Boolean] allow multiple selections
     ##
+    ## @return [String, Array] array if multiple
     def select_file(files, multiple: false)
-      if TTY::Which.exist?('fzf')
-        res = choose_from(files, prompt: 'Use which file?', multiple: multiple)
-        unless res
-          notify('{r}No file selected, cancelled', exit_code: 1)
-        end
+      res = choose_from(files, prompt: multiple ? 'Select files' : 'Select a file', multiple: multiple)
 
-        multiple ? res.split("\n") : res.strip
-      elsif TTY::Which.exist?('gum')
-        args = [
-          '--cursor.foreground="151"',
-          '--item.foreground=""'
-        ]
-        args.push('--no-limit') if multiple
-        res = `echo #{Shellwords.escape(files.join("\n"))}|#{TTY::Which.which('gum')} choose #{args.join(' ')}`
-        multiple ? res.split("\n") : res.strip
-      else
-        reader = TTY::Reader.new
-        puts
-        files.each.with_index do |f, i|
-          puts NA::Color.template(format("{bw}%<idx> 2d{xw}) {y}%<file>s{x}\n", idx: i + 1, file: f))
-        end
-        res = reader.read_line(NA::Color.template('{bw}Use which file? {x}')).strip.to_i
-        files[res - 1]
-      end
+      notify('{r}No file selected, cancelled', exit_code: 1) unless res && res.length.positive?
+
+      res
     end
 
     def shift_index_after(projects, idx, length = 1)
@@ -166,33 +148,12 @@ module NA
       return [projects, actions] if actions.count == 1 || all
 
       options = actions.map { |action| "#{action.line} % #{action.parent.join('/')} : #{action.action}" }
-      res = if TTY::Which.exist?('fzf')
-              choose_from(options, prompt: 'Make a selection: ', multiple: true, sorted: true)
-            elsif TTY::Which.exist?('gum')
-              args = [
-                '--cursor.foreground="151"',
-                '--item.foreground=""',
-                '--no-limit'
-              ]
-              `echo #{Shellwords.escape(options.join("\n"))}|#{TTY::Which.which('gum')} choose #{args.join(' ')}`.strip
-            else
-              reader = TTY::Reader.new
-              puts
-              options.each.with_index do |f, i|
-                puts NA::Color.template(format("{bw}%<idx> 2d{xw}) {y}%<action>s{x}\n", idx: i + 1, action: f))
-              end
-              result = reader.read_line(NA::Color.template('{bw}Use which file? {x}')).strip
-              if result && result.to_i.positive?
-                options[result.to_i - 1]
-              else
-                nil
-              end
-            end
+      res = choose_from(options, prompt: 'Make a selection: ', multiple: true, sorted: true)
 
       NA.notify('{r}Cancelled', exit_code: 1) unless res && res.length.positive?
 
       selected = []
-      res.split(/\n/).each do |result|
+      res.each do |result|
         idx = result.match(/^(\d+)(?= % )/)[1]
         action = actions.select { |a| a.line == idx.to_i }.first
         selected.push(action)
@@ -822,21 +783,41 @@ module NA
     ## @param      sorted    [Boolean] If true, sort selections alphanumerically
     ## @param      fzf_args  [Array] Additional fzf arguments
     ##
+    ## @return [String, Array] array if multiple is true
     def choose_from(options, prompt: 'Make a selection: ', multiple: false, sorted: true, fzf_args: [])
       return nil unless $stdout.isatty
 
-      default_args = [%(--prompt="#{prompt}"), "--height=#{options.count + 2}", '--info=inline']
-      default_args << '--multi' if multiple
-      default_args << '--bind ctrl-a:select-all'
-      header = "esc: cancel,#{multiple ? ' tab: multi-select, ctrl-a: select all,' : ''} return: confirm"
-      default_args << %(--header="#{header}")
-      default_args.concat(fzf_args)
       options.sort! if sorted
 
-      res = `echo #{Shellwords.escape(options.join("\n"))}|#{TTY::Which.which('fzf')} #{default_args.join(' ')}`
+      res = if TTY::Which.exist?('fzf')
+              default_args = [%(--prompt="#{prompt}"), "--height=#{options.count + 2}", '--info=inline']
+              default_args << '--multi' if multiple
+              default_args << '--bind ctrl-a:select-all' if multiple
+              header = "esc: cancel,#{multiple ? ' tab: multi-select, ctrl-a: select all,' : ''} return: confirm"
+              default_args << %(--header="#{header}")
+              default_args.concat(fzf_args)
+              `echo #{Shellwords.escape(options.join("\n"))}|#{TTY::Which.which('fzf')} #{default_args.join(' ')}`.strip
+            elsif TTY::Which.exist?('gum')
+              args = [
+                '--cursor.foreground="151"',
+                '--item.foreground=""'
+              ]
+              args.push '--no-limit' if multiple
+              puts NS::Color.template("{bw}#{prompt}{x}")
+              `echo #{Shellwords.escape(options.join("\n"))}|#{TTY::Which.which('gum')} choose #{args.join(' ')}`.strip
+            else
+              reader = TTY::Reader.new
+              puts
+              options.each.with_index do |f, i|
+                puts NA::Color.template(format("{bw}%<idx> 2d{xw}) {y}%<action>s{x}\n", idx: i + 1, action: f))
+              end
+              result = reader.read_line(NA::Color.template("{bw}#{prompt}{x}")).strip
+              result.to_i&.positive? ? options[result.to_i - 1] : nil
+            end
+
       return false if res.strip.size.zero?
 
-      res
+      multiple ? res.split(/\n/) : res
     end
 
     def parse_search(tag, negate)
