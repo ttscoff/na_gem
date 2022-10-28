@@ -1,3 +1,16 @@
+### 1.2.8
+
+2022-10-28 11:52
+
+#### IMPROVED
+
+- Empty lines in notes end a task in the parser
+- Moving a task to the end of a project respects line breaks
+
+#### FIXED
+
+- Moving action within same project to end not parsing correctly
+
 ### 1.2.7
 
 2022-10-28 07:29
