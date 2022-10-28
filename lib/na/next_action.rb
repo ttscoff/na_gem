@@ -127,7 +127,10 @@ module NA
 
     def shift_index_after(projects, idx, length = 1)
       projects.map do |proj|
-        proj.line = proj.line > idx ? proj.line - length : proj.line
+        if proj.line > idx
+          proj.line = proj.line - length
+          proj.last_line = proj.last_line - length
+        end
         proj
       end
     end
@@ -196,7 +199,7 @@ module NA
           content = "#{input.join("\n")}\n#{content}"
         end
 
-        new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, input.count - 1)
+        new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, input.count - 1, input.count - 1)
       else
         line = final_match.line + 1
         indent = final_match.indent + 1
@@ -206,7 +209,7 @@ module NA
           indent += 1
         end
         content = content.split("\n").insert(line, input.join("\n")).join("\n")
-        new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, line + input.count - 1)
+        new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, line + input.count - 1, line + input.count - 1)
       end
 
       File.open(target, 'w') do |f|
@@ -307,19 +310,18 @@ module NA
               break
             end
           end
-
           target_line = if this_idx == projects.length - 1
                           contents.count
                         else
-                          projects[this_idx + 1].line - 1
+                          projects[this_idx].last_line + 1
                         end
         else
-          target_line = target_proj.line
+          target_line = target_proj.line + 1
         end
 
         contents.insert(target_line, "#{indent}\t- #{action.action}#{note}")
       else
-        projects, actions = find_actions(target, search, tagged, done: done, all: all)
+        _, actions = find_actions(target, search, tagged, done: done, all: all)
 
         return if actions.nil?
 
@@ -328,6 +330,7 @@ module NA
           next if delete
 
           projects = shift_index_after(projects, action.line, action.note.count + 1)
+          target_proj = projects.select { |proj| proj.project =~ /^#{target_proj.project}$/ }.first
 
           action = process_action(action, priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
 
@@ -347,14 +350,21 @@ module NA
           note = note.empty? ? '' : "\n#{indent}\t\t#{note.join("\n#{indent}\t\t").strip}"
 
           if append
-            this_idx = projects.index(target_proj)
-            if this_idx == projects.length - 1
-              target_line = contents.count
-            else
-              target_line = projects[this_idx + 1].line - 1
+            this_idx = 0
+            projects.each_with_index do |proj, idx|
+              if proj.line == target_proj.line
+                this_idx = idx
+                break
+              end
             end
+
+            target_line = if this_idx == projects.length - 1
+                            contents.count
+                          else
+                            projects[this_idx].last_line + 1
+                          end
           else
-            target_line = target_proj.line
+            target_line = target_proj.line + 1
           end
 
           contents.insert(target_line, "#{indent}\t- #{action.action}#{note}")
@@ -497,6 +507,7 @@ module NA
         content = file.read_file
         indent_level = 0
         parent = []
+        last_line = 0
         in_action = false
         content.split("\n").each.with_index do |line, idx|
           if line =~ /^([ \t]*)([^\-][^@()]+?): *(@\S+ *)*$/
@@ -513,19 +524,22 @@ module NA
               parent.push(proj)
             end
 
-            projects.push(NA::Project.new(parent.join(':'), indent, idx + 1))
+            projects.push(NA::Project.new(parent.join(':'), indent, idx, idx))
 
             indent_level = indent
+          elsif line.strip =~ /^$/
+            in_action = false
           elsif line =~ /^[ \t]*- /
             in_action = false
-            # search_for_done = false
-            # optional_tag.each { |t| search_for_done = true if t[:tag] =~ /done/ }
-            next if line =~ /@done/ && !done
-
-            next if require_na && line !~ /@#{NA.na_tag}\b/
 
             action = line.sub(/^[ \t]*- /, '')
             new_action = NA::Action.new(file, File.basename(file, ".#{NA.extension}"), parent.dup, action, idx)
+
+            projects[-1].last_line = idx if projects.count.positive?
+
+            next if line =~ /@done/ && !done
+
+            next if require_na && line !~ /@#{NA.na_tag}\b/
 
             has_search = !optional.empty? || !required.empty? || !negated.empty?
 
@@ -545,10 +559,12 @@ module NA
 
             actions.push(new_action)
             in_action = true
-          else
-            actions[-1].note.push(line.strip) if actions.count.positive? && in_action
+          elsif in_action
+            actions[-1].note.push(line.strip) if actions.count.positive?
+            projects[-1].last_line = idx if projects.count.positive?
           end
         end
+        projects = projects.dup
       end
 
       [files, actions, projects]
