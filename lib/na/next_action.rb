@@ -127,10 +127,9 @@ module NA
 
     def shift_index_after(projects, idx, length = 1)
       projects.map do |proj|
-        if proj.line > idx
-          proj.line = proj.line - length
-          proj.last_line = proj.last_line - length
-        end
+        proj.line = proj.line - length if proj.line > idx
+        proj.last_line = proj.last_line - length if proj.last_line > idx
+
         proj
       end
     end
@@ -330,6 +329,7 @@ module NA
           next if delete
 
           projects = shift_index_after(projects, action.line, action.note.count + 1)
+
           target_proj = projects.select { |proj| proj.project =~ /^#{target_proj.project}$/ }.first
 
           action = process_action(action, priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
