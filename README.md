@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.6
+The current version of `na` is 1.2.7
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -31,9 +31,13 @@ If you don't have Ruby/RubyGems, you can install them pretty easily with Homebre
 
 
 
+### Optional Dependencies
+
+If you have [gum][] installed, na will use it for command line input when adding tasks and notes. If you have [fzf][] installed, it will be used for menus, falling back to gum if available.
+
 ### Features
 
-You can list next actions in files in the current directory by typing `na`. By default, `na` looks for `*.taskpaper` files and extracts items tagged `@na` and not `@done`. All of these can be changed in the configuration.
+You can list next actions in files in the current directory by typing `na`. By default, `na` looks for `*.taskpaper` files and extracts items tagged `@na` and not `@done`. This can be modified to work with a single global file, and all of these options can be changed in the configuration.
 
 #### Easy matching
 
@@ -73,7 +77,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.6
+    1.2.7
 
 GLOBAL OPTIONS
     -a, --[no-]add          - Add a next action (deprecated, for backwards compatibility)
@@ -479,6 +483,9 @@ EXAMPLES
 
 Global options such as todo extension and default next action tag can be stored permanently by using the `na initconfig` command. Run na with the global options you'd like to set, and add `initconfig` at the end of the command. A file will be written to `~/.na.rc`. You can edit this manually, or just update it using the `initconfig --force` command to overwrite it with new settings.
 
+> You can see all available global options by running `na help`.
+
+
 Example: `na --ext md --na_tag next initconfig --force`
 
 When this command is run, it doesn't include options for subcommands, but inserts placeholders for them. If you want to permanently set an option for a subcommand, you'll need to edit `~/.na.rc`. For example, if you wanted the `next` command to always recurse 2 levels deep, you could edit it to look like this:
@@ -509,11 +516,13 @@ When using a global file, you can additionally include `--cwd_as TYPE` to determ
 
 #### Add tasks at the end of a project
 
-By default, tasks are added at the top of the target project (Inbox, etc.). If you prefer new tasks to go at the bottom by default, include `--add_at end` as a global option when running `initconfig`.
+By default, tasks are added at the top of the target project (Inbox, etc.). If you prefer new tasks to go at the end of the project by default, include `--add_at end` as a global option when running `initconfig`.
 
 ### Prompt Hooks
 
 You can add a prompt command to your shell to have na automatically list your next actions when you `cd` into a directory. To install a prompt command for your current shell, just run `na prompt install`. It works with Zsh, Bash, and Fish. If you'd rather make the changes to your startup file yourself, run `na prompt show` to get the hook and instructions printed out for copying.
+
+If you're using a single global file, you'll need `--cwd_as` to be `tag` or `project` for a prompt command to work. na will detect which system you're using and provide a prompt command that lists actions based on the current directory using either project or tag.
 
 > You can also get output for shells other than the one you're currently using by adding "bash", "zsh", or "fish" to the show or install command.
 
@@ -523,9 +532,6 @@ You can add a prompt command to your shell to have na automatically list your ne
 
 After installing a hook, you'll need to close your terminal and start a new session to initialize the new commands.
 
-### Misc
-
-If you have [gum][] installed, na will use it for command line input when adding tasks and notes. If you have [fzf][] installed, it will be used for menus, falling back to gum if available.
 
 [fzf]: https://github.com/junegunn/fzf
 [gum]: https://github.com/charmbracelet/gum

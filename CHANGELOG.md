@@ -1,3 +1,16 @@
+### 1.2.7
+
+2022-10-28 07:29
+
+#### IMPROVED
+
+- Code refactoring
+
+#### FIXED
+
+- All_req error
+- Adding entries to project names containing hyphen
+
 ### 1.2.6
 
 2022-10-26 10:50
