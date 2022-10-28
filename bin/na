@@ -232,6 +232,7 @@ class App
         end
       elsif options[:todo]
         todo = []
+        all_req = options[:todo] !~ /[+!\-]/
         options[:todo].split(/ *, */).each do |a|
           m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
           todo.push({

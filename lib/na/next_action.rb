@@ -288,6 +288,7 @@ module NA
                         projects.select { |proj| proj.project =~ /^#{action.parent.join(':')}$/ }.first
                       end
 
+
         indent = "\t" * target_proj.indent
         note = note.split("\n") unless note.is_a?(Array)
         note = if note.empty?
@@ -498,7 +499,7 @@ module NA
         parent = []
         in_action = false
         content.split("\n").each.with_index do |line, idx|
-          if line =~ /^([ \t]*)([^\-@()]+?): *(@\S+ *)*$/
+          if line =~ /^([ \t]*)([^\-][^@()]+?): *(@\S+ *)*$/
             in_action = false
             proj = Regexp.last_match(2)
             indent = line.indent_level
