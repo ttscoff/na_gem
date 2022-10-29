@@ -1,3 +1,11 @@
+### 1.2.9
+
+2022-10-29 10:50
+
+#### FIXED
+
+- Na next with a todo search wasn't requiring a match
+
 ### 1.2.8
 
 2022-10-28 11:52
