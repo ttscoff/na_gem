@@ -291,6 +291,7 @@ module NA
                         projects.select { |proj| proj.project =~ /^#{action.parent.join(':')}$/ }.first
                       end
 
+        NA.notify("{r}Error parsing project #{target_proj}", exit_code: 1) if target_proj.nil?
 
         indent = "\t" * target_proj.indent
         note = note.split("\n") unless note.is_a?(Array)
