@@ -119,7 +119,7 @@ class App
 
       args.concat(options[:in])
       if args.count.positive?
-        all_req = false
+        all_req = args.join(' ') !~ /[+!\-]/
 
         tokens = []
         args.each do |arg|
