@@ -759,12 +759,12 @@ module NA
 
       dirs = file.read_file.split("\n")
 
-      optional = search.map { |t| t[:token] }
+      optional = search.filter { |s| !s[:negate] }.map { |t| t[:token] }
       required = search.filter { |s| s[:required] }.map { |t| t[:token] }
       negated = search.filter { |s| s[:negate] }.map { |t| t[:token] }
 
-      optional.push('*') if required.count.zero? && negated.count.positive?
-      if required == negated
+      optional.push('*') if optional.count.zero? && required.count.zero? && negated.count.positive?
+      if optional == negated
         required = ['*']
         optional = ['*']
       end

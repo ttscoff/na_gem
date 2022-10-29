@@ -127,7 +127,7 @@ class App
             m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
             tokens.push({
                           token: m['tok'],
-                          required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                          required: !m['req'].nil? && m['req'] == '+',
                           negate: !m['req'].nil? && m['req'] =~ /[!\-]/
                         })
           end
