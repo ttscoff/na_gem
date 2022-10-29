@@ -1,3 +1,12 @@
+### 1.2.10
+
+2022-10-29 15:59
+
+#### FIXED
+
+- Better handling of tokenized search for todo matching with multiple arguments
+- Guard for error parsing project name
+
 ### 1.2.9
 
 2022-10-29 10:50
