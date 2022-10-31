@@ -1,3 +1,11 @@
+### 1.2.12
+
+2022-10-31 13:52
+
+#### FIXED
+
+- --save flag for find and tagged not working properly
+
 ### 1.2.11
 
 2022-10-31 13:45
