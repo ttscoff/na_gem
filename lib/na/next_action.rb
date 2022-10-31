@@ -265,7 +265,7 @@ module NA
       target_proj = nil
 
       if project
-        project.sub!(/:$/, '')
+        project = project.sub(/:$/, '')
         target_proj = projects.select { |pr| pr.project =~ /#{project.gsub(/:/, '.*?:.*?')}/i }.first
         if target_proj.nil?
           res = NA.yn(NA::Color.template("{y}Project {bw}#{project}{xy} doesn't exist, add it"), default: true)
