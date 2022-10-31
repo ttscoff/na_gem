@@ -600,7 +600,7 @@ class App
     c.action do |global_options, options, args|
       if options[:save]
         title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
-        NA.save_search(title, "find #{NA.command_line.map { |cmd| "\"#{cmd}\"" }.join(' ')}")
+        NA.save_search(title, "#{NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '')}")
       end
 
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
@@ -705,7 +705,7 @@ class App
     c.action do |global_options, options, args|
       if options[:save]
         title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
-        NA.save_search(title, "tagged #{NA.command_line.map { |cmd| "\"#{cmd}\"" }.join(' ')}")
+        NA.save_search(title, "#{NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '')}")
       end
 
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
