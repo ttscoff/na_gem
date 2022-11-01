@@ -512,7 +512,7 @@ module NA
         last_line = 0
         in_action = false
         content.split("\n").each.with_index do |line, idx|
-          if line =~ /^([ \t]*)([^\-][^@()]+?): *(@\S+ *)*$/
+          if line !~ /^[ \t]*- / && line =~ /^([ \t]*)([^\-][^@()]+?): *(@\S+ *)*$/
             in_action = false
             proj = Regexp.last_match(2)
             indent = line.indent_level
