@@ -1,3 +1,11 @@
+### 1.2.13
+
+2022-11-01 12:43
+
+#### FIXED
+
+- Allow colon at end of action without recognizing as project
+
 ### 1.2.12
 
 2022-10-31 13:52
