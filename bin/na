@@ -95,6 +95,20 @@ class App
     c.arg_name 'PROJECT[/SUBPROJECT]'
     c.flag %i[proj project]
 
+    c.desc 'Match actions containing tag. Allows value comparisons'
+    c.arg_name 'TAG'
+    c.flag %i[tagged], multiple: true
+
+    c.desc 'Filter results using search terms'
+    c.arg_name 'QUERY'
+    c.flag %i[search], multiple: true
+
+    c.desc 'Search query is regular expression'
+    c.switch %i[regex]
+
+    c.desc 'Search query is exact text match (not tokens)'
+    c.switch %i[exact]
+
     c.desc 'Include notes in output'
     c.switch %i[notes], negatable: true, default_value: false
 
@@ -117,6 +131,20 @@ class App
                 options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
               end
 
+      all_req = options[:tagged].join(' ') !~ /[+!\-]/ && !options[:or]
+      tags = []
+      options[:tagged].join(',').split(/ *, */).each do |arg|
+        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
+
+        tags.push({
+                    tag: m['tag'].wildcard_to_rx,
+                    comp: m['op'],
+                    value: m['val'],
+                    required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                    negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                  })
+      end
+
       args.concat(options[:in])
       if args.count.positive?
         all_req = args.join(' ') !~ /[+!\-]/
@@ -134,14 +162,37 @@ class App
         end
       end
 
+      search = nil
+      if options[:search]
+        if options[:exact]
+          search = options[:search].join(' ')
+        elsif options[:regex]
+          search = Regexp.new(options[:search].join(' '), Regexp::IGNORECASE)
+        else
+          search = []
+          all_req = options[:search].join(' ') !~ /[+!\-]/ && !options[:or]
+
+          options[:search].join(' ').split(/ /).each do |arg|
+            m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
+            search.push({
+                          token: m['tok'],
+                          required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                          negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                        })
+          end
+        end
+      end
+
       NA.na_tag = options[:tag] unless options[:tag].nil?
       require_na = true
 
-      tag = [{ tag: tag, value: nil }, { tag: 'done', value: nil, negate: true}]
+      tag = [{ tag: NA.na_tag, value: nil }, { tag: 'done', value: nil, negate: true}]
+      tag.concat(tags)
       files, actions, = NA.parse_actions(depth: depth,
                                          done: options[:done],
                                          query: tokens,
                                          tag: tag,
+                                         search: search,
                                          project: options[:project],
                                          require_na: require_na)
 
