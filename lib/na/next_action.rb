@@ -512,36 +512,36 @@ module NA
         last_line = 0
         in_action = false
         content.split("\n").each.with_index do |line, idx|
-          if line !~ /^[ \t]*- / && line =~ /^([ \t]*)([^\-][^@()]+?): *(@\S+ *)*$/
+          if line.project?
             in_action = false
-            proj = Regexp.last_match(2)
+            proj = line.project
             indent = line.indent_level
 
-            if indent.zero?
+            if indent.zero? # top level project
               parent = [proj]
-            elsif indent <= indent_level
+            elsif indent <= indent_level # if indent level is same or less, split parent before indent level and append
               parent.slice!(indent, parent.count - indent)
               parent.push(proj)
-            elsif indent > indent_level
+            else # if indent level is greater, append project to parent
               parent.push(proj)
             end
 
             projects.push(NA::Project.new(parent.join(':'), indent, idx, idx))
 
             indent_level = indent
-          elsif line.strip =~ /^$/
+          elsif line.blank?
             in_action = false
-          elsif line =~ /^[ \t]*- /
+          elsif line.action?
             in_action = false
 
-            action = line.sub(/^[ \t]*- /, '')
+            action = line.action
             new_action = NA::Action.new(file, File.basename(file, ".#{NA.extension}"), parent.dup, action, idx)
 
             projects[-1].last_line = idx if projects.count.positive?
 
-            next if line =~ /@done/ && !done
+            next if line.done? && !done
 
-            next if require_na && line !~ /@#{NA.na_tag}\b/
+            next if require_na && !line.na?
 
             has_search = !optional.empty? || !required.empty? || !negated.empty?
 
@@ -600,11 +600,11 @@ module NA
       db_dir = File.expand_path('~/.local/share/na')
       db_file = 'tdlist.txt'
       file = File.join(db_dir, db_file)
-      if File.exist?(file)
-        dirs = file.read_file.split("\n")
-        dirs.delete_if { |f| !File.exist?(f) }
-        File.open(file, 'w') { |f| f.puts dirs.join("\n") }
-      end
+      return unless File.exist?(file)
+
+      dirs = file.read_file.split("\n")
+      dirs.delete_if { |f| !File.exist?(f) }
+      File.open(file, 'w') { |f| f.puts dirs.join("\n") }
     end
 
     def list_projects(query: [], file_path: nil, depth: 1, paths: true)
@@ -624,7 +624,7 @@ module NA
         output = if paths
                    "{bg}#{parts.join('{bw}/{bg}')}{x}"
                  else
-                   parts.fill("{bw}—{bg}", 0..-2)
+                   parts.fill('{bw}—{bg}', 0..-2)
                    "{bg}#{parts.join(' ')}{x}"
                  end
 
@@ -633,15 +633,15 @@ module NA
     end
 
     def list_todos(query: [])
-      if query
-        dirs = match_working_dir(query, distance: 2, require_last: false)
-      else
-        file = database_path
-        content = File.exist?(file) ? file.read_file.strip : ''
-        notify('{br}Database empty', exit_code: 1) if content.empty?
+      dirs = if query
+               match_working_dir(query, distance: 2, require_last: false)
+             else
+               file = database_path
+               content = File.exist?(file) ? file.read_file.strip : ''
+               notify('{br}Database empty', exit_code: 1) if content.empty?
 
-        dirs = content.split(/\n/)
-      end
+               content.split(/\n/)
+             end
 
       dirs.map! do |dir|
         "{xg}#{dir.sub(/^#{ENV['HOME']}/, '~').sub(%r{/([^/]+)\.#{NA.extension}$}, '/{xbw}\1{x}')}"

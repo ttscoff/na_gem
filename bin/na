@@ -587,6 +587,10 @@ class App
     c.arg_name 'PROJECT[/SUBPROJECT]'
     c.flag %i[proj project]
 
+    c.desc 'Match actions containing tag. Allows value comparisons'
+    c.arg_name 'TAG'
+    c.flag %i[tagged], multiple: true
+
     c.desc 'Include @done actions'
     c.switch %i[done]
 
@@ -600,7 +604,7 @@ class App
     c.action do |global_options, options, args|
       if options[:save]
         title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
-        NA.save_search(title, "#{NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '')}")
+        NA.save_search(title, "#{NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '').split(' ').map { |t| %("#{t}") }.join(' ')}")
       end
 
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
@@ -608,6 +612,21 @@ class App
               else
                 options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
               end
+
+      all_req = options[:tagged].join(' ') !~ /[+!\-]/ && !options[:or]
+      tags = []
+      options[:tagged].join(',').split(/ *, */).each do |arg|
+        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
+
+        tags.push({
+                    tag: m['tag'].wildcard_to_rx,
+                    comp: m['op'],
+                    value: m['val'],
+                    required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                    negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                  })
+      end
+
       tokens = nil
       if options[:exact]
         tokens = args.join(' ')
@@ -644,6 +663,7 @@ class App
                                          done: options[:done],
                                          query: todo,
                                          search: tokens,
+                                         tag: tags,
                                          negate: options[:invert],
                                          regex: options[:regex],
                                          project: options[:project],
@@ -692,6 +712,16 @@ class App
     c.arg_name 'PROJECT[/SUBPROJECT]'
     c.flag %i[proj project]
 
+    c.desc 'Filter results using search terms'
+    c.arg_name 'QUERY'
+    c.flag %i[search], multiple: true
+
+    c.desc 'Search query is regular expression'
+    c.switch %i[regex]
+
+    c.desc 'Search query is exact text match (not tokens)'
+    c.switch %i[exact]
+
     c.desc 'Include @done actions'
     c.switch %i[done]
 
@@ -705,7 +735,7 @@ class App
     c.action do |global_options, options, args|
       if options[:save]
         title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
-        NA.save_search(title, "#{NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '')}")
+        NA.save_search(title, "#{NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '').split(' ').map { |t| %("#{t}") }.join(' ')}")
       end
 
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
@@ -733,6 +763,27 @@ class App
       tags.each { |tag| search_for_done = true if tag[:tag] =~ /done/ }
       tags.push({ tag: 'done', value: nil, negate: true}) unless search_for_done
 
+      tokens = nil
+      if options[:search]
+        if options[:exact]
+          tokens = options[:search].join(' ')
+        elsif options[:regex]
+          tokens = Regexp.new(options[:search].join(' '), Regexp::IGNORECASE)
+        else
+          tokens = []
+          all_req = options[:search].join(' ') !~ /[+!\-]/ && !options[:or]
+
+          options[:search].join(' ').split(/ /).each do |arg|
+            m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
+            tokens.push({
+                          token: m['tok'],
+                          required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                          negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                        })
+          end
+        end
+      end
+
       todo = nil
       if options[:in]
         todo = []
@@ -749,11 +800,17 @@ class App
       files, actions, = NA.parse_actions(depth: depth,
                                          done: options[:done],
                                          query: todo,
+                                         search: tokens,
                                          tag: tags,
                                          negate: options[:invert],
                                          project: options[:project],
                                          require_na: false)
-      regexes = tags.delete_if { |token| token[:negate] }.map { |token| token[:token] }
+      # regexes = tags.delete_if { |token| token[:negate] }.map { |token| token[:token] }
+      regexes = if tokens.is_a?(Array)
+                  tokens.delete_if { |token| token[:negate] }.map { |token| token[:token] }
+                else
+                  [tokens]
+                end
       NA.output_actions(actions, depth, files: files, regexes: regexes, notes: options[:notes])
     end
   end

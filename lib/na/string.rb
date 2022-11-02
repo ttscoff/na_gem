@@ -22,6 +22,34 @@ class ::String
     prefix[1].gsub(/  /, "\t").scan(/\t/).count
   end
 
+  def action?
+    self =~ /^[ \t]*- /
+  end
+
+  def blank?
+    strip =~ /^$/
+  end
+
+  def project?
+    !action? && self =~ /:( +@\S+(\([^)]*\))?)*$/
+  end
+
+  def project
+    match(/^([ \t]*)([^\-][^@()]+?): *(@\S+ *)*$/)[2]
+  end
+
+  def action
+    sub(/^[ \t]*- /, '')
+  end
+
+  def done?
+    self =~ /@done/
+  end
+
+  def na?
+    self =~ /@#{NA.na_tag}\b/
+  end
+
   ##
   ## Colorize @tags with ANSI escapes
   ##
