@@ -1,3 +1,17 @@
+### 1.2.14
+
+2022-11-12 10:57
+
+#### NEW
+
+- `na find --tagged` allows narrowing search results with tag queries
+- `na tagged --search` allows narrowing tag results with text search
+- `na next` accepts --tagged and --search (as well as --exact and --regex) for filtering actions
+
+#### FIXED
+
+- Error when a todo file contained a task without a project
+
 ### 1.2.13
 
 2022-11-01 12:43

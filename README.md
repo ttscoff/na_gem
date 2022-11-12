@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.13
+The current version of `na` is 1.2.14
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -77,7 +77,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.13
+    1.2.14
 
 GLOBAL OPTIONS
     -a, --[no-]add          - Add a next action (deprecated, for backwards compatibility)
@@ -214,6 +214,7 @@ COMMAND OPTIONS
     -o, --or                               - Combine search tokens with OR, displaying actions matching ANY of the terms
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --save=TITLE                           - Save this search for future use (default: none)
+    --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
     -v, --invert                           - Show actions not matching search pattern
     -x, --exact                            - Match pattern exactly
 
@@ -269,10 +270,14 @@ DESCRIPTION
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
     --[no-]done                            - Include @done actions
+    --[no-]exact                           - Search query is exact text match (not tokens)
     --in, --todo=TODO_FILE                 - Display matches from a known todo file (may be used more than once, default: none)
     --[no-]notes                           - Include notes in output
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
+    --[no-]regex                           - Search query is regular expression
+    --search=QUERY                         - Filter results using search terms (may be used more than once, default: none)
     -t, --tag=TAG                          - Alternate tag to search for (default: none)
+    --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
 
 EXAMPLES
 
@@ -369,10 +374,14 @@ DESCRIPTION
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
     --[no-]done                            - Include @done actions
+    --[no-]exact                           - Search query is exact text match (not tokens)
     --in, --todo=TODO_FILE                 - Display matches from a known todo file (may be used more than once, default: none)
     --[no-]notes                           - Include notes in output
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
+    --[no-]regex                           - Search query is regular expression
+    --search=QUERY                         - Filter results using search terms (may be used more than once, default: none)
     -t, --tag=TAG                          - Alternate tag to search for (default: none)
+    --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
 
 EXAMPLES
 
