@@ -186,7 +186,7 @@ class App
       NA.na_tag = options[:tag] unless options[:tag].nil?
       require_na = true
 
-      tag = [{ tag: NA.na_tag, value: nil }, { tag: 'done', value: nil, negate: true}]
+      tag = [{ tag: NA.na_tag, value: nil }, { tag: 'done', value: nil, negate: true }]
       tag.concat(tags)
       files, actions, = NA.parse_actions(depth: depth,
                                          done: options[:done],
