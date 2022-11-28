@@ -330,6 +330,8 @@ module NA
           contents.slice!(action.line, action.note.count + 1)
           next if delete
 
+          target_proj = action.project if target_proj.nil?
+
           projects = shift_index_after(projects, action.line, action.note.count + 1)
 
           target_proj = projects.select { |proj| proj.project =~ /^#{target_proj.project}$/ }.first

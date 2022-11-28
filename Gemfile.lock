@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    na (1.2.14)
+    na (1.2.15)
       chronic (~> 0.10, >= 0.10.2)
       gli (~> 2.21.0)
       mdless (~> 1.0, >= 1.0.32)
