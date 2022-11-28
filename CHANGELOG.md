@@ -1,3 +1,11 @@
+### 1.2.15
+
+2022-11-28 10:58
+
+#### FIXED
+
+- `na update` error when not moving project
+
 ### 1.2.14
 
 2022-11-12 10:57
