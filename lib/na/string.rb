@@ -167,6 +167,15 @@ class ::String
     end
   end
 
+  ##
+  ## Replace home directory with tilde
+  ##
+  ## @return     [String] shortened path
+  ##
+  def shorten_path
+    sub(/^#{ENV['HOME']}/, '~')
+  end
+
   private
 
   def matches_none(regexes)

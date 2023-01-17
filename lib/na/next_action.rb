@@ -414,7 +414,7 @@ module NA
           current_parent = current_parent[par]
         end
 
-        current_parent[:actions].push(a.action)
+        current_parent[:actions].push(a)
       end
       parents
     end
@@ -425,7 +425,27 @@ module NA
       children.each do |k, v|
         if k.to_s =~ /actions/
           indent += "\t"
-          v.each { |a| out.push("#{indent}- #{a}")}
+
+          v.each do |a|
+            item = "#{indent}- #{a.action}"
+
+            unless a.tags.empty?
+              tags = []
+              a.tags.each do |k, v|
+                next if k =~ /^(due|flagged|done)$/
+
+                tag = k
+                tag += "-#{v}" unless v.nil? || v.empty?
+                tags.push(tag)
+              end
+
+              item += " @tags(#{tags.join(',')})" unless tags.empty?
+            end
+
+            item += "\n#{indent}\t#{a.note.join("\n#{indent}\t")}" if !a.note.empty?
+
+            out.push(item)
+          end
         else
           out.push("#{indent}#{k}:")
           out.concat(output_children(v, level + 1))
@@ -461,7 +481,7 @@ module NA
         out = []
         parent_files.each do |file, actions|
           projects = project_hierarchy(actions)
-          out.push("#{file.sub(%r{^./}, '')}:")
+          out.push("#{file.sub(%r{^./}, '').shorten_path}:")
           out.concat(output_children(projects, 0))
         end
         puts out.join("\n")
