@@ -115,6 +115,9 @@ class App
     c.desc 'Include @done actions'
     c.switch %i[done]
 
+    c.desc 'Output actions nested by file'
+    c.switch %[nest]
+
     c.action do |global_options, options, args|
       if global_options[:add]
         cmd = ['add']
@@ -196,7 +199,11 @@ class App
                                          project: options[:project],
                                          require_na: require_na)
 
-      NA.output_actions(actions, depth, files: files, notes: options[:notes])
+      if options[:nest]
+        NA.output_actions_by_file(actions, depth, files: files, notes: options[:notes])
+      else
+        NA.output_actions(actions, depth, files: files, notes: options[:notes])
+      end
     end
   end
 

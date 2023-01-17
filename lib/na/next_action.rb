@@ -436,6 +436,32 @@ module NA
       puts(actions.map { |action| action.pretty(template: { output: template }, regexes: regexes, notes: notes) })
     end
 
+    def output_actions_by_file(actions, depth, files: nil, regexes: [], notes: false)
+      return if files.nil?
+
+      template = '%parent%action'
+
+      parent_files = {}
+
+      actions.each do |action|
+        if parent_files.key?(action.file)
+          parent_files[action.file].push(action)
+        else
+          parent_files[action.file] = [action]
+        end
+      end
+
+      out = []
+      parent_files.each do |k, v|
+        out.push("#{k.sub(%r{^\./}, '')}:")
+        v.each do |a|
+          out.push("  - [#{a.parent.join('/')}] #{a.action}")
+        end
+      end
+
+      puts out.join("\n")
+    end
+
     ##
     ## Read a todo file and create a list of actions
     ##
