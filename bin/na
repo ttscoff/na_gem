@@ -118,6 +118,9 @@ class App
     c.desc 'Output actions nested by file'
     c.switch %[nest]
 
+    c.desc 'Output actions nested by file and project'
+    c.switch %[omnifocus]
+
     c.action do |global_options, options, args|
       if global_options[:add]
         cmd = ['add']
@@ -127,6 +130,8 @@ class App
         cmd.unshift(*NA.globals)
         exit run(cmd)
       end
+
+      options[:nest] = true if options[:omnifocus]
 
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
                 3
@@ -199,7 +204,7 @@ class App
                                          project: options[:project],
                                          require_na: require_na)
 
-      NA.output_actions(actions, depth, files: files, notes: options[:notes], nest: options[:nest])
+      NA.output_actions(actions, depth, files: files, notes: options[:notes], nest: options[:nest], nest_projects: options[:omnifocus])
     end
   end
 
@@ -658,11 +663,17 @@ class App
     c.desc 'Output actions nested by file'
     c.switch %[nest]
 
+    c.desc 'Output actions nested by file and project'
+    c.switch %[omnifocus]
+
     c.action do |global_options, options, args|
+      options[:nest] = true if options[:omnifocus]
+
       if options[:save]
         title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
         NA.save_search(title, "#{NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '').split(' ').map { |t| %("#{t}") }.join(' ')}")
       end
+
 
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
                 3
@@ -731,7 +742,7 @@ class App
                   [tokens]
                 end
 
-      NA.output_actions(actions, depth, files: files, regexes: regexes, notes: options[:notes], nest: options[:nest])
+      NA.output_actions(actions, depth, files: files, regexes: regexes, notes: options[:notes], nest: options[:nest], nest_projects: options[:omnifocus])
     end
   end
 
@@ -792,7 +803,12 @@ class App
     c.desc 'Output actions nested by file'
     c.switch %[nest]
 
+    c.desc 'Output actions nested by file and project'
+    c.switch %[omnifocus]
+
     c.action do |global_options, options, args|
+      options[:nest] = true if options[:omnifocus]
+
       if options[:save]
         title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
         NA.save_search(title, "#{NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '').split(' ').map { |t| %("#{t}") }.join(' ')}")
@@ -871,7 +887,7 @@ class App
                 else
                   [tokens]
                 end
-      NA.output_actions(actions, depth, files: files, regexes: regexes, notes: options[:notes], nest: options[:nest])
+      NA.output_actions(actions, depth, files: files, regexes: regexes, notes: options[:notes], nest: options[:nest], nest_projects: options[:omnifocus])
     end
   end
 

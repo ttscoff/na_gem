@@ -431,18 +431,18 @@ module NA
 
             unless a.tags.empty?
               tags = []
-              a.tags.each do |k, v|
-                next if k =~ /^(due|flagged|done)$/
+              a.tags.each do |key, val|
+                next if key =~ /^(due|flagged|done)$/
 
-                tag = k
-                tag += "-#{v}" unless v.nil? || v.empty?
+                tag = key
+                tag += "-#{val}" unless val.nil? || val.empty?
                 tags.push(tag)
               end
 
               item += " @tags(#{tags.join(',')})" unless tags.empty?
             end
 
-            item += "\n#{indent}\t#{a.note.join("\n#{indent}\t")}" if !a.note.empty?
+            item += "\n#{indent}\t#{a.note.join("\n#{indent}\t")}" unless a.note.empty?
 
             out.push(item)
           end
@@ -462,31 +462,50 @@ module NA
     ## @param      files    [Array] The files actions originally came from
     ## @param      regexes  [Array] The regexes used to gather actions
     ##
-    def output_actions(actions, depth, files: nil, regexes: [], notes: false, nest: false)
+    def output_actions(actions, depth, files: nil, regexes: [], notes: false, nest: false, nest_projects: false)
       return if files.nil?
 
       if nest
         template = '%parent%action'
 
         parent_files = {}
-
-        actions.each do |action|
-          if parent_files.key?(action.file)
-            parent_files[action.file].push(action)
-          else
-            parent_files[action.file] = [action]
-          end
-        end
-
         out = []
-        parent_files.each do |file, actions|
-          projects = project_hierarchy(actions)
-          out.push("#{file.sub(%r{^./}, '').shorten_path}:")
-          out.concat(output_children(projects, 0))
+
+        if nest_projects
+          actions.each do |action|
+            if parent_files.key?(action.file)
+              parent_files[action.file].push(action)
+            else
+              parent_files[action.file] = [action]
+            end
+          end
+
+          parent_files.each do |file, acts|
+            projects = project_hierarchy(acts)
+            out.push("#{file.sub(%r{^./}, '').shorten_path}:")
+            out.concat(output_children(projects, 0))
+          end
+        else
+          template = '%parent%action'
+
+          actions.each do |action|
+            if parent_files.key?(action.file)
+              parent_files[action.file].push(action)
+            else
+              parent_files[action.file] = [action]
+            end
+          end
+
+          parent_files.each do |k, v|
+            out.push("#{k.sub(%r{^\./}, '')}:")
+            v.each do |a|
+              out.push("\t- [#{a.parent.join('/')}] #{a.action}")
+              out.push("\t\t#{a.note.join("\n\t\t")}") unless a.note.empty?
+            end
+          end
         end
         puts out.join("\n")
       else
-
         template = if files.count.positive?
                      if files.count == 1
                        '%parent%action'
