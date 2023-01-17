@@ -199,11 +199,7 @@ class App
                                          project: options[:project],
                                          require_na: require_na)
 
-      if options[:nest]
-        NA.output_actions_by_file(actions, depth, files: files, notes: options[:notes])
-      else
-        NA.output_actions(actions, depth, files: files, notes: options[:notes])
-      end
+      NA.output_actions(actions, depth, files: files, notes: options[:notes], nest: options[:nest])
     end
   end
 
@@ -659,6 +655,9 @@ class App
     c.arg_name 'TITLE'
     c.flag %i[save]
 
+    c.desc 'Output actions nested by file'
+    c.switch %[nest]
+
     c.action do |global_options, options, args|
       if options[:save]
         title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
@@ -732,7 +731,7 @@ class App
                   [tokens]
                 end
 
-      NA.output_actions(actions, depth, files: files, regexes: regexes, notes: options[:notes])
+      NA.output_actions(actions, depth, files: files, regexes: regexes, notes: options[:notes], nest: options[:nest])
     end
   end
 
@@ -789,6 +788,9 @@ class App
     c.desc 'Save this search for future use'
     c.arg_name 'TITLE'
     c.flag %i[save]
+
+    c.desc 'Output actions nested by file'
+    c.switch %[nest]
 
     c.action do |global_options, options, args|
       if options[:save]
@@ -869,7 +871,7 @@ class App
                 else
                   [tokens]
                 end
-      NA.output_actions(actions, depth, files: files, regexes: regexes, notes: options[:notes])
+      NA.output_actions(actions, depth, files: files, regexes: regexes, notes: options[:notes], nest: options[:nest])
     end
   end
 

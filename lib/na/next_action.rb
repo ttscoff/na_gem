@@ -1,5 +1,22 @@
 # frozen_string_literal: true
 
+class ::Hash
+  # Add an action to a nested hash of projects
+  #
+  # @param      path   [Array] key path
+  # @param      action [Action] action to add
+  #
+  def deep_add(action)
+    path = action.parent
+    if path.count == 1
+      self[path[0]][:actions].push(action)
+    elsif action
+      self.default_proc = ->(h, k) { h[k] = Hash.new(&h.default_proc) }
+      dig(*path[0..-2])[path.fetch(-1)][:actions].push(action)
+    end
+  end
+end
+
 # Next Action methods
 module NA
   class << self
@@ -18,7 +35,6 @@ module NA
 
       $stderr.puts NA::Color.template("{x}#{msg}{x}")
       Process.exit exit_code if exit_code
-
     end
 
     ##
@@ -403,6 +419,38 @@ module NA
       update_action(file, nil, add: action, project: project, add_tag: add_tag, priority: priority, finish: finish, append: append)
     end
 
+    def project_hierarchy(actions)
+      parents = { actions: []}
+      actions.each do |a|
+        parent = a.parent
+        current_parent = parents
+        parent.each do |par|
+          if !current_parent.key?(par)
+            current_parent[par] = { actions: [] }
+          end
+          current_parent = current_parent[par]
+        end
+
+        current_parent[:actions].push(a.action)
+      end
+      parents
+    end
+
+    def output_children(children, level = 1)
+      out = []
+      indent = "\t" * level
+      children.each do |k, v|
+        if k.to_s =~ /actions/
+          indent += "\t"
+          v.each { |a| out.push("#{indent}- #{a}")}
+        else
+          out.push("#{indent}#{k}:")
+          out.concat(output_children(v, level + 1))
+        end
+      end
+      out
+    end
+
     ##
     ## Pretty print a list of actions
     ##
@@ -411,55 +459,52 @@ module NA
     ## @param      files    [Array] The files actions originally came from
     ## @param      regexes  [Array] The regexes used to gather actions
     ##
-    def output_actions(actions, depth, files: nil, regexes: [], notes: false)
+    def output_actions(actions, depth, files: nil, regexes: [], notes: false, nest: false)
       return if files.nil?
 
-      template = if files.count.positive?
-                   if files.count == 1
+      if nest
+        template = '%parent%action'
+
+        parent_files = {}
+
+        actions.each do |action|
+          if parent_files.key?(action.file)
+            parent_files[action.file].push(action)
+          else
+            parent_files[action.file] = [action]
+          end
+        end
+
+        out = []
+        parent_files.each do |file, actions|
+          projects = project_hierarchy(actions)
+          out.push("#{file}:")
+          out.concat(output_children(projects, 1))
+        end
+        puts out.join("\n")
+      else
+
+        template = if files.count.positive?
+                     if files.count == 1
+                       '%parent%action'
+                     else
+                       '%filename%parent%action'
+                     end
+                   elsif find_files(depth: depth).count > 1
+                     if depth > 1
+                       '%filename%parent%action'
+                     else
+                       '%project%parent%action'
+                     end
+                   else
                      '%parent%action'
-                   else
-                     '%filename%parent%action'
                    end
-                 elsif find_files(depth: depth).count > 1
-                   if depth > 1
-                     '%filename%parent%action'
-                   else
-                     '%project%parent%action'
-                   end
-                 else
-                   '%parent%action'
-                 end
-      template += '%note' if notes
+        template += '%note' if notes
 
-      files.map { |f| notify("{dw}#{f}", debug: true) } if files
+        files.map { |f| notify("{dw}#{f}", debug: true) } if files
 
-      puts(actions.map { |action| action.pretty(template: { output: template }, regexes: regexes, notes: notes) })
-    end
-
-    def output_actions_by_file(actions, depth, files: nil, regexes: [], notes: false)
-      return if files.nil?
-
-      template = '%parent%action'
-
-      parent_files = {}
-
-      actions.each do |action|
-        if parent_files.key?(action.file)
-          parent_files[action.file].push(action)
-        else
-          parent_files[action.file] = [action]
-        end
+        puts(actions.map { |action| action.pretty(template: { output: template }, regexes: regexes, notes: notes) })
       end
-
-      out = []
-      parent_files.each do |k, v|
-        out.push("#{k.sub(%r{^\./}, '')}:")
-        v.each do |a|
-          out.push("  - [#{a.parent.join('/')}] #{a.action}")
-        end
-      end
-
-      puts out.join("\n")
     end
 
     ##
