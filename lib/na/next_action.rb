@@ -1,22 +1,5 @@
 # frozen_string_literal: true
 
-class ::Hash
-  # Add an action to a nested hash of projects
-  #
-  # @param      path   [Array] key path
-  # @param      action [Action] action to add
-  #
-  def deep_add(action)
-    path = action.parent
-    if path.count == 1
-      self[path[0]][:actions].push(action)
-    elsif action
-      self.default_proc = ->(h, k) { h[k] = Hash.new(&h.default_proc) }
-      dig(*path[0..-2])[path.fetch(-1)][:actions].push(action)
-    end
-  end
-end
-
 # Next Action methods
 module NA
   class << self
@@ -478,8 +461,8 @@ module NA
         out = []
         parent_files.each do |file, actions|
           projects = project_hierarchy(actions)
-          out.push("#{file}:")
-          out.concat(output_children(projects, 1))
+          out.push("#{file.sub(%r{^./}, '')}:")
+          out.concat(output_children(projects, 0))
         end
         puts out.join("\n")
       else
