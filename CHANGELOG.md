@@ -1,3 +1,12 @@
+### 1.2.17
+
+2023-01-17 11:23
+
+#### IMPROVED
+
+- `--nest` works with `find` and `tagged`
+- `--nest` creates heirarchy of parent projects, indented TaskPaper style
+
 ### 1.2.16
 
 2023-01-17 10:13
