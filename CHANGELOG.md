@@ -1,3 +1,11 @@
+### 1.2.19
+
+2023-01-17 16:49
+
+#### IMPROVED
+
+- `--nest` flag creates a flat list with project included in task title, `--omnifocus` creates OmniFocus-compatible project nesting
+
 ### 1.2.18
 
 2023-01-17 13:38
