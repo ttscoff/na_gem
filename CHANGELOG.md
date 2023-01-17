@@ -1,3 +1,12 @@
+### 1.2.18
+
+2023-01-17 13:38
+
+#### IMPROVED
+
+- Format tags OmniFocus wouldn't recognize as @tags(TAG) in --nest output
+- Include notes in --nest output
+
 ### 1.2.17
 
 2023-01-17 11:23
