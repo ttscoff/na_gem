@@ -1,3 +1,15 @@
+### 1.2.16
+
+2023-01-17 10:13
+
+#### NEW
+
+- `na next --nest` will output a TaskPaper format list of actions grouped under their respective files with the filename as the containing project
+
+#### FIXED
+
+- Better solution to target_proj nil error
+
 ### 1.2.15
 
 2022-11-28 10:58
