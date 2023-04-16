@@ -15,7 +15,7 @@ task :doc, [*Rake.application[:yard].arg_names] => [:yard]
 Rake::RDocTask.new do |rd|
   rd.main = "README.rdoc"
   rd.rdoc_files.include("README.rdoc","lib/**/*.rb","bin/**/*")
-  rd.title = 'Your application title'
+  rd.title = 'na'
 end
 
 spec = eval(File.read('na.gemspec'))
