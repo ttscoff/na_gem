@@ -1,6 +1,11 @@
 ### 1.2.20
 
-2023-05-09 10:39
+2023-05-09 10:40
+
+#### FIXED
+
+- Allow single character projects
+- Allow parens in project title
 
 ### 1.2.19
 
