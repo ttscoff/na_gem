@@ -35,7 +35,7 @@ class ::String
   end
 
   def project
-    m = match(/^([ \t]*)([^\-][^@()]+?): *(@\S+ *)*$/)
+    m = match(/^([ \t]*)([^\-][^@:]*?): *(@\S+ *)*$/)
     m ? m[2] : nil
   end
 
