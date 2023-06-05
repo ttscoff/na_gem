@@ -1,3 +1,11 @@
+### 1.2.23
+
+2023-06-05 10:42
+
+#### FIXED
+
+- Actually implement the --template option
+
 ### 1.2.22
 
 2023-06-05 10:35
