@@ -226,6 +226,7 @@ module NA
       ##
       def template(input)
         input = input.join(' ') if input.is_a? Array
+        return input.gsub(/(?<!\\)\{(\w+)\}/i, '') unless NA::Color.coloring?
 
         fmt = input.gsub(/%/, '%%')
         fmt = fmt.gsub(/(?<!\\)\{(\w+)\}/i) do

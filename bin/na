@@ -36,6 +36,9 @@ class App
   desc 'Add a next action (deprecated, for backwards compatibility)'
   switch %i[a add], negatable: false
 
+  desc 'Colorize output'
+  switch %i[color], negatable: true, default_value: true
+
   desc 'Set a priority 0-5 (deprecated, for backwards compatibility)'
   arg_name 'PRIORITY'
   flag %i[p priority]
@@ -1128,6 +1131,7 @@ class App
 
   pre do |global, _command, _options, _args|
     NA.verbose = global[:debug]
+    NA::Color.coloring = global[:color]
     NA.extension = global[:ext]
     NA.na_tag = global[:na_tag]
     NA.global_file = global[:file]
