@@ -72,21 +72,25 @@ module NA
     ## @param      target    [String] The target path
     ## @param      basename  [String] The project base name
     ##
-    def create_todo(target, basename)
+    def create_todo(target, basename, template: nil)
       File.open(target, 'w') do |f|
-        content = <<~ENDCONTENT
-          Inbox:
-          #{basename}:
-          \tFeature Requests:
-          \tIdeas:
-          \tBugs:
-          Archive:
-          Search Definitions:
-          \tTop Priority @search(@priority = 5 and not @done)
-          \tHigh Priority @search(@priority > 3 and not @done)
-          \tMaybe @search(@maybe)
-          \tNext @search(@#{NA.na_tag} and not @done and not project = \"Archive\")
-        ENDCONTENT
+        if template && File.exist?(template)
+          content = IO.read(template)
+        else
+          content = <<~ENDCONTENT
+            Inbox:
+            #{basename}:
+            \tFeature Requests:
+            \tIdeas:
+            \tBugs:
+            Archive:
+            Search Definitions:
+            \tTop Priority @search(@priority = 5 and not @done)
+            \tHigh Priority @search(@priority > 3 and not @done)
+            \tMaybe @search(@maybe)
+            \tNext @search(@#{NA.na_tag} and not @done and not project = \"Archive\")
+          ENDCONTENT
+        end
         f.puts(content)
       end
       save_working_dir(target)

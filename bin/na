@@ -47,6 +47,10 @@ class App
   arg_name 'PATH'
   flag %i[f file]
 
+  desc 'Provide a template for new/blank todo files, use --initconfig to make permanent'
+  arg_name 'PATH'
+  flag %[template]
+
   desc 'Use current working directory as [p]roject, [t]ag, or [n]one'
   arg_name 'TYPE'
   flag %i[cwd_as], must_match: /^[ptn].*?$/i, default_value: 'none'
