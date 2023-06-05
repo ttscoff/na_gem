@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.20
+The current version of `na` is 1.2.22
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -77,14 +77,14 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.21
+    1.2.22
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
     --add_at=POSITION       - Add all new/moved entries at [s]tart or [e]nd of target project (default: start)
     --[no-]color            - Colorize output (default: enabled)
     --cwd_as=TYPE           - Use current working directory as [p]roject, [t]ag, or [n]one (default: none)
-    -d, --depth=DEPTH       - Recurse to depth (default: 3)
+    -d, --depth=DEPTH       - Recurse to depth (default: 1)
     --[no-]debug            - Display verbose output
     --ext=EXT               - File extension to consider a todo file (default: taskpaper)
     -f, --file=PATH         - Use a single file as global todo, use --initconfig to make permanent (default: none)
@@ -93,6 +93,7 @@ GLOBAL OPTIONS
     -p, --priority=PRIORITY - Set a priority 0-5 (deprecated, for backwards compatibility) (default: none)
     -r, --[no-]recurse      - Recurse 3 directories deep (deprecated, for backwards compatability)
     -t, --na_tag=TAG        - Tag to consider a next action (default: na)
+    --template=PATH         - Provide a template for new/blank todo files, use --initconfig to make permanent (default: none)
     --version               - Display the program version
 
 COMMANDS
@@ -204,7 +205,7 @@ SYNOPSIS
     na [global options] find [command options] PATTERN
 
 DESCRIPTION
-    Search tokens are separated by spaces. Actions matching all tokens in the pattern will be shown   (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe` 
+    Search tokens are separated by spaces. Actions matching all tokens in the pattern will be shown   (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe`,   add a - or ! to ignore matches containing that token. 
 
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
@@ -225,6 +226,9 @@ EXAMPLES
 
     # Find all actions containing feature, idea, and swift
     na find feature idea swift
+
+    # Find all actions containing feature and idea but NOT swift
+    na find feature idea -swift
 
     # Find all actions containing the exact text "feature idea"
     na find -x feature idea
