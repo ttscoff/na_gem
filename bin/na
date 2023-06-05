@@ -43,11 +43,11 @@ class App
   arg_name 'PRIORITY'
   flag %i[p priority]
 
-  desc 'Use a single file as global todo, use --initconfig to make permanent'
+  desc 'Use a single file as global todo, use initconfig to make permanent'
   arg_name 'PATH'
   flag %i[f file]
 
-  desc 'Provide a template for new/blank todo files, use --initconfig to make permanent'
+  desc 'Provide a template for new/blank todo files, use initconfig to make permanent'
   arg_name 'PATH'
   flag %[template]
 
@@ -278,7 +278,7 @@ class App
           res = NA.yn(NA::Color.template('{by}Specified file not found, create it'), default: true)
           if res
             basename = File.basename(target, ".#{NA.extension}")
-            NA.create_todo(target, basename)
+            NA.create_todo(target, basename, template: global_options[:template])
           else
             puts NA::Color.template('{r}Cancelled{x}')
             Process.exit 1
@@ -290,7 +290,7 @@ class App
           res = NA.yn(NA::Color.template('{by}Specified file not found, create it'), default: true)
           if res
             basename = File.basename(target, ".#{NA.extension}")
-            NA.create_todo(target, basename)
+            NA.create_todo(target, basename, template: global_options[:template])
           else
             puts NA::Color.template('{r}Cancelled{x}')
             Process.exit 1
@@ -319,7 +319,7 @@ class App
             NA.notify('{r}Cancelled{x}', exit_code: 1) unless res
 
             basename = File.basename(target, ".#{NA.extension}")
-            NA.create_todo(target, basename)
+            NA.create_todo(target, basename, template: global_options[:template])
           end
 
         end
@@ -330,7 +330,7 @@ class App
           if res
             basename = File.expand_path('.').split('/').last
             target = "#{basename}.#{NA.extension}"
-            NA.create_todo(target, basename)
+            NA.create_todo(target, basename, template: global_options[:template])
             files = NA.find_files(depth: 1)
           end
         end
@@ -906,7 +906,7 @@ class App
     c.example 'na init', desc: 'Generate a new todo file, prompting for project name'
     c.example 'na init warpspeed', desc: 'Generate a new todo for a project called warpspeed'
 
-    c.action do |_global_options, _options, args|
+    c.action do |global_options, _options, args|
       reader = TTY::Reader.new
       if args.count.positive?
         project = args.join(' ')
@@ -923,7 +923,7 @@ class App
 
       end
 
-      NA.create_todo(target, project)
+      NA.create_todo(target, project, template: global_options[:template])
     end
   end
 
