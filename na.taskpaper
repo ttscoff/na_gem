@@ -1,0 +1,21 @@
+Testing:
+	New Commands:
+Inbox: @inbox
+	- Allow custom template for creating new files @priority(4) @na
+	- test the new add command @na
+	- Need to add some tests @priority(5) @na
+na:
+	New Features:
+	Ideas:
+		- Ability to remove na tag, mark done, or archive @idea @maybe
+	Bugs:
+Archive:
+	- Easy matching search should require last argument to be in last position of match @na @done (22-10-15 12:00) @project(Inbox)
+		Searching for "na" should not select .../na_gem/na/marked, only na_gem/na/na
+	- ability to add to a specific project @maybe @na @done (22-10-15 11:59) @project(na / Ideas)
+	- Value queries like priority<3 @na @done (22-10-15 11:59) @project(na / Ideas)
+Search Definitions:
+	Top Priority @search(@priority = 5 and not @done)
+	High Priority @search(@priority > 3 and not @done)
+	Maybe @search(@maybe)
+	Next @search(@na and not @done and not project = "Archive")
