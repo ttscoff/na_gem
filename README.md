@@ -77,11 +77,12 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.20
+    1.2.21
 
 GLOBAL OPTIONS
-    -a, --[no-]add          - Add a next action (deprecated, for backwards compatibility)
+    -a, --add               - Add a next action (deprecated, for backwards compatibility)
     --add_at=POSITION       - Add all new/moved entries at [s]tart or [e]nd of target project (default: start)
+    --[no-]color            - Colorize output (default: enabled)
     --cwd_as=TYPE           - Use current working directory as [p]roject, [t]ag, or [n]one (default: none)
     -d, --depth=DEPTH       - Recurse to depth (default: 3)
     --[no-]debug            - Display verbose output
@@ -210,10 +211,10 @@ COMMAND OPTIONS
     --[no-]done                            - Include @done actions
     -e, --regex                            - Interpret search pattern as regular expression
     --in=TODO_PATH                         - Show actions from a specific todo file in history. May use wildcards (* and ?) (default: none)
-    --[no-]nest                            - Output actions nested by file
+    --nest                                 - Output actions nested by file
     --[no-]notes                           - Include notes in output
     -o, --or                               - Combine search tokens with OR, displaying actions matching ANY of the terms
-    --[no-]omnifocus                       - Output actions nested by file and project
+    --omnifocus                            - Output actions nested by file and project
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --save=TITLE                           - Save this search for future use (default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
@@ -272,13 +273,13 @@ DESCRIPTION
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
     --[no-]done                            - Include @done actions
-    --[no-]exact                           - Search query is exact text match (not tokens)
+    --exact                                - Search query is exact text match (not tokens)
     --in, --todo=TODO_FILE                 - Display matches from a known todo file (may be used more than once, default: none)
-    --[no-]nest                            - Output actions nested by file
+    --nest                                 - Output actions nested by file
     --[no-]notes                           - Include notes in output
-    --[no-]omnifocus                       - Output actions nested by file and project
+    --omnifocus                            - Output actions nested by file and project
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
-    --[no-]regex                           - Search query is regular expression
+    --regex                                - Search query is regular expression
     --search=QUERY                         - Filter results using search terms (may be used more than once, default: none)
     -t, --tag=TAG                          - Alternate tag to search for (default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
@@ -338,8 +339,8 @@ DESCRIPTION
     Run without argument to list saved searches 
 
 COMMAND OPTIONS
-    -d, --[no-]delete - Delete the specified search definition
-    -e, --[no-]edit   - Open the saved search file in $EDITOR
+    -d, --delete - Delete the specified search definition
+    -e, --edit   - Open the saved search file in $EDITOR
 
 EXAMPLES
 
@@ -378,13 +379,13 @@ DESCRIPTION
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
     --[no-]done                            - Include @done actions
-    --[no-]exact                           - Search query is exact text match (not tokens)
+    --exact                                - Search query is exact text match (not tokens)
     --in, --todo=TODO_FILE                 - Display matches from a known todo file (may be used more than once, default: none)
-    --[no-]nest                            - Output actions nested by file
+    --nest                                 - Output actions nested by file
     --[no-]notes                           - Include notes in output
-    --[no-]omnifocus                       - Output actions nested by file and project
+    --omnifocus                            - Output actions nested by file and project
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
-    --[no-]regex                           - Search query is regular expression
+    --regex                                - Search query is regular expression
     --search=QUERY                         - Filter results using search terms (may be used more than once, default: none)
     -t, --tag=TAG                          - Alternate tag to search for (default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
