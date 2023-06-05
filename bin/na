@@ -34,7 +34,7 @@ class App
   NA::Color.coloring = $stdin.isatty
 
   desc 'Add a next action (deprecated, for backwards compatibility)'
-  switch %i[a add]
+  switch %i[a add], negatable: false
 
   desc 'Set a priority 0-5 (deprecated, for backwards compatibility)'
   arg_name 'PRIORITY'
