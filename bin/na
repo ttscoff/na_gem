@@ -104,10 +104,10 @@ class App
     c.flag %i[search], multiple: true
 
     c.desc 'Search query is regular expression'
-    c.switch %i[regex]
+    c.switch %i[regex], negatable: false
 
     c.desc 'Search query is exact text match (not tokens)'
-    c.switch %i[exact]
+    c.switch %i[exact], negatable: false
 
     c.desc 'Include notes in output'
     c.switch %i[notes], negatable: true, default_value: false
@@ -116,10 +116,10 @@ class App
     c.switch %i[done]
 
     c.desc 'Output actions nested by file'
-    c.switch %[nest]
+    c.switch %[nest], negatable: false
 
     c.desc 'Output actions nested by file and project'
-    c.switch %[omnifocus]
+    c.switch %[omnifocus], negatable: false
 
     c.action do |global_options, options, args|
       if global_options[:add]
@@ -248,7 +248,7 @@ class App
     c.flag %i[t tag]
 
     c.desc 'Don\'t add next action tag to new entry'
-    c.switch %i[x]
+    c.switch %i[x], negatable: false
 
     c.desc 'Specify the file to which the task should be added'
     c.arg_name 'PATH'
@@ -661,10 +661,10 @@ class App
     c.flag %i[save]
 
     c.desc 'Output actions nested by file'
-    c.switch %[nest]
+    c.switch %[nest], negatable: false
 
     c.desc 'Output actions nested by file and project'
-    c.switch %[omnifocus]
+    c.switch %[omnifocus], negatable: false
 
     c.action do |global_options, options, args|
       options[:nest] = true if options[:omnifocus]
@@ -785,10 +785,10 @@ class App
     c.flag %i[search], multiple: true
 
     c.desc 'Search query is regular expression'
-    c.switch %i[regex]
+    c.switch %i[regex], negatable: false
 
     c.desc 'Search query is exact text match (not tokens)'
-    c.switch %i[exact]
+    c.switch %i[exact], negatable: false
 
     c.desc 'Include @done actions'
     c.switch %i[done]
@@ -801,10 +801,10 @@ class App
     c.flag %i[save]
 
     c.desc 'Output actions nested by file'
-    c.switch %[nest]
+    c.switch %[nest], negatable: false
 
     c.desc 'Output actions nested by file and project'
-    c.switch %[omnifocus]
+    c.switch %[omnifocus], negatable: false
 
     c.action do |global_options, options, args|
       options[:nest] = true if options[:omnifocus]
@@ -1101,10 +1101,10 @@ class App
     c.example 'na saved', description: 'list available searches'
 
     c.desc 'Open the saved search file in $EDITOR'
-    c.switch %i[e edit]
+    c.switch %i[e edit], negatable: false
 
     c.desc 'Delete the specified search definition'
-    c.switch %i[d delete]
+    c.switch %i[d delete], negatable: false
 
     c.action do |_global_options, options, args|
       NA.edit_searches if options[:edit]
