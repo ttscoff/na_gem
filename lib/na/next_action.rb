@@ -600,7 +600,6 @@ module NA
         content = file.read_file
         indent_level = 0
         parent = []
-        last_line = 0
         in_action = false
         content.split("\n").each.with_index do |line, idx|
           if line.project?
