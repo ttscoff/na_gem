@@ -619,10 +619,12 @@ class App
 
   desc 'Find actions matching a search pattern'
   long_desc 'Search tokens are separated by spaces. Actions matching all tokens in the pattern will be shown
-  (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe`'
+  (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe`,
+  add a - or ! to ignore matches containing that token.'
   arg_name 'PATTERN'
   command %i[find grep] do |c|
     c.example 'na find feature idea swift', desc: 'Find all actions containing feature, idea, and swift'
+    c.example 'na find feature idea -swift', desc: 'Find all actions containing feature and idea but NOT swift'
     c.example 'na find -x feature idea', desc: 'Find all actions containing the exact text "feature idea"'
 
     c.desc 'Interpret search pattern as regular expression'
@@ -1098,7 +1100,7 @@ class App
     c.example 'na tagged "+maybe,+priority<=3" --save maybelater', description: 'save a search called "maybelater"'
     c.example 'na saved maybelater', description: 'perform the search named "maybelater"'
     c.example 'na saved maybe',
-              description: 'perform the search named "maybelater", assuming no other searches match "may"'
+              description: 'perform the search named "maybelater", assuming no other searches match "maybe"'
     c.example 'na maybe',
               description: 'na run with no command and a single argument automatically performs a matching saved search'
     c.example 'na saved', description: 'list available searches'
