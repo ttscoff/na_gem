@@ -1,3 +1,27 @@
+### 1.2.23
+
+2023-06-05 10:42
+
+#### FIXED
+
+- Actually implement the --template option
+
+### 1.2.22
+
+2023-06-05 10:35
+
+#### NEW
+
+- Global `--template PATH` option to define a template for new files, can be added to .na.rc
+
+#### IMPROVED
+
+- Help verbiage and examples
+
+#### FIXED
+
+- Variable assignment warnings
+
 ### 1.2.20
 
 2023-05-09 10:40

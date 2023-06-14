@@ -4,8 +4,8 @@ title: NA Todos
 Testing:
 	New Commands:
 Inbox: @inbox
+	- test the new add command @na @done(2023-06-05 10:22)
 	- Allow custom template for creating new files @priority(4) @na
-	- test the new add command @na
 	- Need to add some tests @priority(5) @na
 na:
 	New Features:
