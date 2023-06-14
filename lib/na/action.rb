@@ -24,7 +24,7 @@ module NA
              else
                ''
              end
-      "(#{@file}:#{@line}) #{@project}:#{@parent.join('>')} | #{@action}#{@note}"
+      "(#{@file}:#{@line}) #{@project}:#{@parent.join('>')} | #{@action}#{note}"
     end
 
     def inspect

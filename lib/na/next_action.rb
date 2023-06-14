@@ -162,7 +162,7 @@ module NA
       [projects, selected]
     end
 
-    def insert_project(target, project)
+    def insert_project(target, project, projects)
       path = project.split(%r{[:/]})
       _, _, projects = parse_actions(file_path: target)
       built = []
@@ -192,9 +192,13 @@ module NA
         end
 
         if new_path.join('') =~ /Archive/i
-          content = "#{content.strip}\n#{input.join("\n")}"
+          line = projects.last.last_line
+          content = content.split(/\n/).insert(line, input.join("\n")).join("\n")
         else
-          content = "#{input.join("\n")}\n#{content}"
+          split = content.split(/\n/)
+          before = split.slice(0, projects.first.line).join("\n")
+          after = split.slice(projects.first.line, split.count - projects.first.line).join("\n")
+          content = "#{before}\n#{input.join("\n")}\n#{after}"
         end
 
         new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, input.count - 1, input.count - 1)
@@ -206,7 +210,7 @@ module NA
           input.push("#{"\t" * indent}#{part.cap_first}:")
           indent += 1
         end
-        content = content.split("\n").insert(line, input.join("\n")).join("\n")
+        content = content.split(/\n/).insert(line, input.join("\n")).join("\n")
         new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, line + input.count - 1, line + input.count - 1)
       end
 
@@ -269,7 +273,7 @@ module NA
         if target_proj.nil?
           res = NA.yn(NA::Color.template("{y}Project {bw}#{project}{xy} doesn't exist, add it"), default: true)
           if res
-            target_proj = insert_project(target, project)
+            target_proj = insert_project(target, project, projects)
           else
             NA.notify('{x}Cancelled', exit_code: 1)
           end
@@ -600,7 +604,7 @@ module NA
         content = file.read_file
         indent_level = 0
         parent = []
-        last_line = 0
+
         in_action = false
         content.split("\n").each.with_index do |line, idx|
           if line.project?

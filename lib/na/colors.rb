@@ -306,7 +306,7 @@ module NA
       %w[r g b].each do |e|
         t << parts[e].hex
       end
-      color =
+
       "\e[#{is_bg ? '48' : '38'};2;#{t.join(';')}m"
     end
 

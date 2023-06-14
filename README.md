@@ -77,7 +77,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.21
+    1.2.22
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -204,7 +204,7 @@ SYNOPSIS
     na [global options] find [command options] PATTERN
 
 DESCRIPTION
-    Search tokens are separated by spaces. Actions matching all tokens in the pattern will be shown   (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe` 
+    Search tokens are separated by spaces. Actions matching all tokens in the pattern will be shown   (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe`,   add a - or ! to ignore matches containing that token. 
 
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
@@ -225,6 +225,9 @@ EXAMPLES
 
     # Find all actions containing feature, idea, and swift
     na find feature idea swift
+
+    # Find all actions containing feature and idea but NOT swift
+    na find feature idea -swift
 
     # Find all actions containing the exact text "feature idea"
     na find -x feature idea
