@@ -20,7 +20,7 @@ It can also auto-display next actions when you enter a project directory, automa
 
 ### Installation
 
-Assuming you have Ruby and RubyGems installed, you can just run `gem install na`. If you run into errors, use `sudo gem install na`.
+Assuming you have Ruby and RubyGems installed, you can just run `gem install na`. If you run into errors, try `gem install --user-install na`, or use `sudo gem install na`.
 
 If you're using Homebrew, you have the option to install via [brew-gem](https://github.com/sportngin/brew-gem):
 
@@ -77,7 +77,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.24
+    1.2.25
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
