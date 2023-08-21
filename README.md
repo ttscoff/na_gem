@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.28
+The current version of `na` is 1.2.29
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -77,7 +77,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.28
+    1.2.29
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -138,7 +138,7 @@ SYNOPSIS
     na [global options] add [command options] ACTION
 
 DESCRIPTION
-    Provides an easy way to store todos while you work. Add quick reminders and (if you set up Prompt Hooks) they'll automatically display next time you enter the directory. If multiple todo files are found in the current directory, a menu will allow you to pick to which file the action gets added. 
+    Provides an easy way to store todos while you work. Add quick   reminders and (if you set up Prompt Hooks) they'll automatically display   next time you enter the directory.   If multiple todo files are found in the current directory, a menu will   allow you to pick to which file the action gets added. 
 
 COMMAND OPTIONS
     --at=POSITION                   - Add task at [s]tart or [e]nd of target project (default: none)
@@ -175,7 +175,7 @@ SYNOPSIS
     na [global options] edit [command options] 
 
 DESCRIPTION
-    Let the system choose the defualt, (e.g. TaskPaper), or specify a command line utility (e.g. vim).            If more than one todo file is found, a menu is displayed. 
+    Let the system choose the defualt, (e.g. TaskPaper), or specify a command line utility (e.g. vim).              If more than one todo file is found, a menu is displayed. 
 
 COMMAND OPTIONS
     -a, --app=EDITOR    - Specify a Mac app (default: none)
@@ -188,7 +188,7 @@ EXAMPLES
     na edit
 
     # Display a menu of all todo files three levels deep from the
-             current directory, open selection in vim.
+               current directory, open selection in vim.
     na edit -d 3 -a vim
 ```
 
@@ -207,7 +207,7 @@ SYNOPSIS
     na [global options] find [command options] PATTERN
 
 DESCRIPTION
-    Search tokens are separated by spaces. Actions matching all tokens in the pattern will be shown (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe`, add a - or ! to ignore matches containing that token. 
+    Search tokens are separated by spaces. Actions matching all tokens in the pattern will be shown   (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe`,   add a - or ! to ignore matches containing that token. 
 
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
@@ -274,7 +274,7 @@ SYNOPSIS
     na [global options] next [command options] [QUERY]
 
 DESCRIPTION
-    Next actions are actions which contain the next action tag (default @na), do not contain @done, and are not in the Archive project. Arguments will target a todo file from history, whether it's in the current directory or not. Todo file queries can include path components separated by / or :, and may use wildcards (`*` to match any text, `?` to match a single character). Multiple queries allowed (separate arguments or separated by comma). 
+    Next actions are actions which contain the next action tag (default @na),   do not contain @done, and are not in the Archive project.   Arguments will target a todo file from history, whether it's in the current   directory or not. Todo file queries can include path components separated by /   or :, and may use wildcards (`*` to match any text, `?` to match a single character). Multiple queries allowed (separate arguments or separated by comma). 
 
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
@@ -315,7 +315,7 @@ SYNOPSIS
     na [global options] projects [command options] [QUERY]
 
 DESCRIPTION
-    Arguments will be interpreted as a query for a known todo file, fuzzy matched. Separate directories with /, :, or a space, e.g. `na projects code/marked` 
+    Arguments will be interpreted as a query for a known todo file,   fuzzy matched. Separate directories with /, :, or a space, e.g. `na projects code/marked` 
 
 COMMAND OPTIONS
     -d, --depth=DEPTH - Search for files X directories deep (default: 1)
@@ -380,7 +380,7 @@ SYNOPSIS
     na [global options] next [command options] [QUERY]
 
 DESCRIPTION
-    Next actions are actions which contain the next action tag (default @na), do not contain @done, and are not in the Archive project. Arguments will target a todo file from history, whether it's in the current directory or not. Todo file queries can include path components separated by / or :, and may use wildcards (`*` to match any text, `?` to match a single character). Multiple queries allowed (separate arguments or separated by comma). 
+    Next actions are actions which contain the next action tag (default @na),   do not contain @done, and are not in the Archive project.   Arguments will target a todo file from history, whether it's in the current   directory or not. Todo file queries can include path components separated by /   or :, and may use wildcards (`*` to match any text, `?` to match a single character). Multiple queries allowed (separate arguments or separated by comma). 
 
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
@@ -421,7 +421,7 @@ SYNOPSIS
     na [global options] todos [QUERY]
 
 DESCRIPTION
-    Arguments will be interpreted as a query against which the list of todos will be fuzzy matched. Separate directories with /, :, or a space, e.g. `na todos code/marked`
+    Arguments will be interpreted as a query against which the   list of todos will be fuzzy matched. Separate directories with   /, :, or a space, e.g. `na todos code/marked`
 ```
 
 ##### update
@@ -467,7 +467,7 @@ SYNOPSIS
     na [global options] update [command options] ACTION
 
 DESCRIPTION
-    Provides an easy way to complete, prioritize, and tag existing actions. If multiple todo files are found in the current directory, a menu will allow you to pick which file to act on. 
+    Provides an easy way to complete, prioritize, and tag existing actions.   If multiple todo files are found in the current directory, a menu will   allow you to pick which file to act on. 
 
 COMMAND OPTIONS
     -a, --archive                   - Add a @done tag to action and move to Archive
@@ -480,7 +480,7 @@ COMMAND OPTIONS
     -f, --finish                    - Add a @done tag to action
     --file=PATH                     - Specify the file to search for the task (default: none)
     --in, --todo=TODO_FILE          - Use a known todo file, partial matches allowed (default: none)
-    -n, --note                      - Prompt for additional notes. Input will be appended to any existing note.   If STDIN input (piped) is detected, it will be used as a note.
+    -n, --note                      - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
     -o, --overwrite                 - Overwrite note instead of appending
     -p, --priority=PRIO             - Add/change a priority level 1-5 (default: 0)
     -r, --remove=TAG                - Remove a tag to the action (may be used more than once, default: none)
