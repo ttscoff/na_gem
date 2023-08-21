@@ -1,3 +1,19 @@
+### 1.2.28
+
+2023-08-21 11:01
+
+### 1.2.27
+
+2023-08-21 10:58
+
+#### NEW
+
+- `na archive --done` to archive all @done actions
+
+#### IMPROVED
+
+- Split commands into separate files for easier maintenance
+
 ### 1.2.26
 
 2023-08-21 10:26
