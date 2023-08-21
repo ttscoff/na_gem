@@ -397,6 +397,100 @@ class App
     end
   end
 
+  desc 'Find and mark an action as @done'
+  arg_name 'ACTION'
+  command %i[complete finish] do |c|
+    c.example 'na complete "An existing task"',
+              desc: 'Find "An existing task" and mark @done'
+    c.example 'na finish "An existing task"',
+              desc: 'Alias for complete'
+
+    c.desc 'Prompt for additional notes. Input will be appended to any existing note.
+    If STDIN input (piped) is detected, it will be used as a note.'
+    c.switch %i[n note], negatable: false
+
+    c.desc 'Overwrite note instead of appending'
+    c.switch %i[o overwrite], negatable: false
+
+    c.desc 'Add a @done tag to action and move to Archive'
+    c.switch %i[a archive], negatable: false
+
+    c.desc 'Specify the file to search for the task'
+    c.arg_name 'PATH'
+    c.flag %i[file]
+
+    c.desc 'Search for files X directories deep'
+    c.arg_name 'DEPTH'
+    c.flag %i[d depth], must_match: /^[1-9]$/, type: :integer, default_value: 1
+
+    c.desc 'Match actions containing tag. Allows value comparisons'
+    c.arg_name 'TAG'
+    c.flag %i[tagged], multiple: true
+
+    c.desc 'Act on all matches immediately (no menu)'
+    c.switch %i[all], negatable: false
+
+    c.desc 'Interpret search pattern as regular expression'
+    c.switch %i[e regex], negatable: false
+
+    c.desc 'Match pattern exactly'
+    c.switch %i[x exact], negatable: false
+
+    c.action do |global, options, args|
+      options[:finish] = true
+      options[:f] = true
+      cmd = commands[:update]
+      action = cmd.send(:get_action, nil)
+      action.call(global, options, args)
+    end
+  end
+
+  desc 'Mark an action as @done and archive'
+  arg_name 'ACTION'
+  command %i[archive] do |c|
+    c.example 'na archive "An existing task"',
+              desc: 'Find "An existing task", mark @done if needed, and move to archive'
+
+    c.desc 'Prompt for additional notes. Input will be appended to any existing note.
+    If STDIN input (piped) is detected, it will be used as a note.'
+    c.switch %i[n note], negatable: false
+
+    c.desc 'Overwrite note instead of appending'
+    c.switch %i[o overwrite], negatable: false
+
+    c.desc 'Specify the file to search for the task'
+    c.arg_name 'PATH'
+    c.flag %i[file]
+
+    c.desc 'Search for files X directories deep'
+    c.arg_name 'DEPTH'
+    c.flag %i[d depth], must_match: /^[1-9]$/, type: :integer, default_value: 1
+
+    c.desc 'Match actions containing tag. Allows value comparisons'
+    c.arg_name 'TAG'
+    c.flag %i[tagged], multiple: true
+
+    c.desc 'Act on all matches immediately (no menu)'
+    c.switch %i[all], negatable: false
+
+    c.desc 'Interpret search pattern as regular expression'
+    c.switch %i[e regex], negatable: false
+
+    c.desc 'Match pattern exactly'
+    c.switch %i[x exact], negatable: false
+
+    c.action do |global, options, args|
+      options[:done] = true
+      options[:finish] = true
+      options[:project] = 'Archive'
+      options[:archive] = true
+      options[:a] = true
+      cmd = commands[:update]
+      action = cmd.send(:get_action, nil)
+      action.call(global, options, args)
+    end
+  end
+
   desc 'Update an existing action'
   long_desc 'Provides an easy way to complete, prioritize, and tag existing actions.
 
@@ -534,8 +628,8 @@ class App
       end
 
       priority = options[:priority].to_i if options[:priority]&.to_i&.positive?
-      add_tags = options[:tag].map { |t| t.sub(/^@/, '').wildcard_to_rx }
-      remove_tags = options[:remove].map { |t| t.sub(/^@/, '').wildcard_to_rx }
+      add_tags = options[:tag] ? options[:tag].map { |t| t.sub(/^@/, '').wildcard_to_rx } : []
+      remove_tags = options[:remove] ? options[:remove].map { |t| t.sub(/^@/, '').wildcard_to_rx } : []
 
       stdin_note = NA.stdin ? NA.stdin.split("\n") : []
 
@@ -598,8 +692,10 @@ class App
 
       end
 
-      options[:finish] = true if options[:archive]
-      options[:project] = 'Archive' if options[:archive]
+      if options[:archive]
+        options[:finish] = true
+        options[:project] = 'Archive'
+      end
 
       NA.notify('{r}No search terms provided', exit_code: 1) if tokens.nil? && options[:tagged].empty?
 

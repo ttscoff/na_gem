@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    na (1.2.23)
+    na (1.2.24)
       chronic (~> 0.10, >= 0.10.2)
       gli (~> 2.21.0)
       mdless (~> 1.0, >= 1.0.32)
@@ -14,7 +14,7 @@ GEM
   specs:
     chronic (0.10.2)
     gli (2.21.0)
-    mdless (1.0.32)
+    mdless (1.0.33)
     minitest (5.16.3)
     rake (0.9.6)
     rdoc (4.3.0)
