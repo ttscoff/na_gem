@@ -439,6 +439,8 @@ class App
     c.action do |global, options, args|
       options[:finish] = true
       options[:f] = true
+      options[:project] = 'Archive' if options[:archive]
+
       cmd = commands[:update]
       action = cmd.send(:get_action, nil)
       action.call(global, options, args)
