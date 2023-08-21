@@ -1,3 +1,15 @@
+### 1.2.26
+
+2023-08-21 10:26
+
+#### NEW
+
+- `na finish` and `na archive` subcommands as aliases for equivalant `update` commands
+
+#### FIXED
+
+- --archive flag for `na finish`
+
 ### 1.2.25
 
 2023-08-21 07:23
