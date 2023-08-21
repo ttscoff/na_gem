@@ -468,6 +468,9 @@ class App
     c.arg_name 'DEPTH'
     c.flag %i[d depth], must_match: /^[1-9]$/, type: :integer, default_value: 1
 
+    c.desc 'Archive all done tasks'
+    c.switch %i[done], negatable: false
+
     c.desc 'Match actions containing tag. Allows value comparisons'
     c.arg_name 'TAG'
     c.flag %i[tagged], multiple: true
@@ -482,6 +485,11 @@ class App
     c.switch %i[x exact], negatable: false
 
     c.action do |global, options, args|
+      if options[:done]
+        options[:tagged] = ['done']
+        options[:all] = true
+      end
+
       options[:done] = true
       options[:finish] = true
       options[:project] = 'Archive'
