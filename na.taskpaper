@@ -1,12 +1,16 @@
+---
+title: NA Todos
+---
 Testing:
 	New Commands:
 Inbox: @inbox
 	- test the new add command @na @done(2023-06-05 10:22)
 	- Need to add some tests @priority(5) @na
+	- command to archive all done tasks @na @priority(2) @maybe
 na:
 	New Features:
 	Ideas:
-		- Ability to remove na tag, mark done, or archive @idea @maybe
+		- Ability to remove na tag, mark done, or archive @idea @maybe @done (23-06-14 18:42)
 	Bugs:
 Archive:
 	- Allow custom template for creating new files @priority(4) @na @done(2023-08-21 07:58)

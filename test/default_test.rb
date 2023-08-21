@@ -1,7 +1,6 @@
 require_relative "test_helper"
 
 class DefaultTest < Minitest::Test
-
   def setup
   end
 
