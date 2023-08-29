@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+REGEX_DAY = /^(mon|tue|wed|thur?|fri|sat|sun)(\w+(day)?)?$/i.freeze
+REGEX_CLOCK = '(?:\d{1,2}+(?::\d{1,2}+)?(?: *(?:am|pm))?|midnight|noon)'
+REGEX_TIME = /^#{REGEX_CLOCK}$/i.freeze
+
 # String helpers
 class ::String
   ##
@@ -10,6 +14,16 @@ class ::String
   ##
   def good?
     !strip.empty?
+  end
+
+  ##
+  ## Test if line should be ignored
+  ##
+  ## @return     [Boolean] line is empty or comment
+  ##
+  def ignore?
+    line = self
+    line =~ /^#/ || line.strip.empty?
   end
 
   def read_file
@@ -184,6 +198,105 @@ class ::String
   ##
   def shorten_path
     sub(/^#{ENV['HOME']}/, '~')
+  end
+
+  ##
+  ## Convert (chronify) natural language dates
+  ## within configured date tags (tags whose value is
+  ## expected to be a date). Modifies string in place.
+  ##
+  ## @param      additional_tags  [Array] An array of
+  ##                              additional tags to
+  ##                              consider date_tags
+  ##
+  def expand_date_tags(additional_tags = nil)
+    iso_rx = /\d{4}-\d\d-\d\d \d\d:\d\d/
+
+    watch_tags = [
+      'due',
+      'start(?:ed)?',
+      'beg[ia]n',
+      'done',
+      'finished',
+      'completed?',
+      'waiting',
+      'defer(?:red)?'
+    ]
+
+    if additional_tags
+      date_tags = additional_tags
+      date_tags = date_tags.split(/ *, */) if date_tags.is_a?(String)
+      date_tags.map! do |tag|
+        tag.sub(/^@/, '').gsub(/\((?!\?:)(.*?)\)/, '(?:\1)').strip
+      end
+      watch_tags.concat(date_tags).uniq!
+    end
+
+    done_rx = /(?<=^| )@(?<tag>#{watch_tags.join('|')})\((?<date>.*?)\)/i
+
+    gsub!(done_rx) do
+      m = Regexp.last_match
+      t = m['tag']
+      d = m['date']
+      future = t =~ /^(done|complete)/ ? false : true
+      parsed_date = d =~ iso_rx ? Time.parse(d) : d.chronify(guess: :begin, future: future)
+      parsed_date.nil? ? m[0] : "@#{t}(#{parsed_date.strftime('%F %R')})"
+    end
+  end
+
+  ##
+  ## Converts input string into a Time object when input
+  ## takes on the following formats:
+  ##             - interval format e.g. '1d2h30m', '45m'
+  ##               etc.
+  ##             - a semantic phrase e.g. 'yesterday
+  ##               5:30pm'
+  ##             - a strftime e.g. '2016-03-15 15:32:04
+  ##               PDT'
+  ##
+  ## @param      options  Additional options
+  ##
+  ## @option options :future [Boolean] assume future date
+  ##                                   (default: false)
+  ##
+  ## @option options :guess  [Symbol] :begin or :end to
+  ##                                   assume beginning or end of
+  ##                                   arbitrary time range
+  ##
+  ## @return     [DateTime] result
+  ##
+  def chronify(**options)
+    now = Time.now
+    raise StandardError, "Invalid time expression #{inspect}" if to_s.strip == ''
+
+    secs_ago = if match(/^(\d+)$/)
+                 # plain number, assume minutes
+                 Regexp.last_match(1).to_i * 60
+               elsif (m = match(/^(?:(?<day>\d+)d)? *(?:(?<hour>\d+)h)? *(?:(?<min>\d+)m)?$/i))
+                 # day/hour/minute format e.g. 1d2h30m
+                 [[m['day'], 24 * 3600],
+                  [m['hour'], 3600],
+                  [m['min'], 60]].map { |qty, secs| qty ? (qty.to_i * secs) : 0 }.reduce(0, :+)
+               end
+
+    if secs_ago
+      res = now - secs_ago
+      notify(%(date/time string "#{self}" interpreted as #{res} (#{secs_ago} seconds ago)), debug: true)
+    else
+      date_string = dup
+      date_string = 'today' if date_string.match(REGEX_DAY) && now.strftime('%a') =~ /^#{Regexp.last_match(1)}/i
+      date_string = "#{options[:context].to_s} #{date_string}" if date_string =~ REGEX_TIME && options[:context]
+
+      res = Chronic.parse(date_string, {
+                            guess: options.fetch(:guess, :begin),
+                            context: options.fetch(:future, false) ? :future : :past,
+                            ambiguous_time_range: 8
+                          })
+
+      NA.notify(%(date/time string "#{self}" interpreted as #{res}), debug: true)
+    end
+
+    res
   end
 
   private

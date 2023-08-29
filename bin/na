@@ -6,6 +6,7 @@ require 'gli'
 require 'na/help_monkey_patch'
 require 'na'
 require 'fcntl'
+require 'tempfile'
 
 # Main application
 class App
