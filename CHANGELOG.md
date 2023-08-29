@@ -1,3 +1,39 @@
+### 1.2.29
+
+2023-08-21 11:08
+
+#### FIXED
+
+- Reverting subcommand breakup
+
+### 1.2.28
+
+2023-08-21 11:01
+
+### 1.2.27
+
+2023-08-21 10:58
+
+#### NEW
+
+- `na archive --done` to archive all @done actions
+
+#### IMPROVED
+
+- Split commands into separate files for easier maintenance
+
+### 1.2.26
+
+2023-08-21 10:26
+
+#### NEW
+
+- `na finish` and `na archive` subcommands as aliases for equivalant `update` commands
+
+#### FIXED
+
+- --archive flag for `na finish`
+
 ### 1.2.25
 
 2023-08-21 07:23
