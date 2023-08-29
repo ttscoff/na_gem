@@ -92,10 +92,10 @@ class App
       reader = TTY::Reader.new
       append = options[:at] ? options[:at] =~ /^[ae]/i : global_options[:add_at] =~ /^[ae]/i
 
-      if options[:restore] || options[:remove].include?('done')
+      if options[:restore] || (!options[:remove].nil? && options[:remove].include?('done'))
         options[:done] = true
         options[:tagged] << '+done'
-      elsif !options[:remove].empty?
+      elsif !options[:remove].nil? && !options[:remove].empty?
         options[:tagged].concat(options[:remove])
       end
 
