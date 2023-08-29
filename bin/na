@@ -77,7 +77,7 @@ class App
   desc 'Display verbose output'
   switch %i[debug], default_value: false
 
-  Dir.glob('bin/commands/*.rb').each do |cmd|
+  Dir.glob(File.join(File.dirname(__FILE__), 'commands/*.rb')).each do |cmd|
     require_relative "commands/#{File.basename(cmd, '.rb')}"
   end
 
