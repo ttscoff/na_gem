@@ -1,3 +1,22 @@
+### 1.2.33
+
+2023-08-29 13:45
+
+#### NEW
+
+- `na update --edit` flag to open a single task in your default $EDITOR for modification and notes
+- Expand natural language dates in recognized date-based tags (@due, @start, @deferred, etc.)
+- Edit command now opens editor on matched action, previous edit
+
+#### IMPROVED
+
+- Allow multiple add or remove tags using comma-separated list
+
+#### FIXED
+
+- `na update --restore` irregularities
+- Failing if using gum to input search string
+
 ### 1.2.32
 
 2023-08-29 10:59

@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.32
+The current version of `na` is 1.2.33
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -77,7 +77,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.32
+    1.2.33
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -103,12 +103,13 @@ COMMANDS
     changes, changelog  - Display the changelog
     complete, finish    - Find and mark an action as @done
     completed, finished - Display completed actions
-    edit                - Open a todo file in the default editor
+    edit                - Edit an existing action
     find, grep          - Find actions matching a search pattern
     help                - Shows a list of commands or help for one command
     init, create        - Create a new todo file in the current directory
     initconfig          - Initialize the config file using current global options
     next, show          - Show next actions
+    open                - Open a todo file in the default editor
     projects            - Show list of projects for a file
     prompt              - Show or install prompt hooks for the current shell
     saved               - Execute a saved search
@@ -170,28 +171,28 @@ EXAMPLES
 
 ```
 NAME
-    edit - Open a todo file in the default editor
+    edit - Edit an existing action
 
 SYNOPSIS
 
-    na [global options] edit [command options] 
+    na [global options] edit [command options] ACTION
 
 DESCRIPTION
-    Let the system choose the defualt, (e.g. TaskPaper), or specify a command line utility (e.g. vim).              If more than one todo file is found, a menu is displayed. 
+    Open a matching action in your default $EDITOR.   If multiple todo files are found in the current directory, a menu will   allow you to pick which file to act on.   Natural language dates are expanded in known date-based tags. 
 
 COMMAND OPTIONS
-    -a, --app=EDITOR    - Specify a Mac app (default: none)
-    -d, --depth=DEPTH   - Recurse to depth (default: 1)
-    -e, --editor=EDITOR - Specify an editor CLI (default: none)
+    -d, --depth=DEPTH      - Search for files X directories deep (default: 1)
+    --[no-]done            - Include @done actions
+    -e, --regex            - Interpret search pattern as regular expression
+    --file=PATH            - Specify the file to search for the task (default: none)
+    --in, --todo=TODO_FILE - Use a known todo file, partial matches allowed (default: none)
+    --tagged=TAG           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
+    -x, --exact            - Match pattern exactly
 
-EXAMPLES
+EXAMPLE
 
-    # Open the main todo file in the default editor
-    na edit
-
-    # Display a menu of all todo files three levels deep from the
-               current directory, open selection in vim.
-    na edit -d 3 -a vim
+    # Find "An existing task" action and open it for editing
+    na edit "An existing task"
 ```
 
 ##### find
@@ -484,15 +485,16 @@ COMMAND OPTIONS
     --delete                        - Delete an action
     --[no-]done                     - Include @done actions
     -e, --regex                     - Interpret search pattern as regular expression
+    --edit                          - Open action in editor (vim).             Natural language dates will be parsed and converted in date-based tags.
     -f, --finish                    - Add a @done tag to action
     --file=PATH                     - Specify the file to search for the task (default: none)
     --in, --todo=TODO_FILE          - Use a known todo file, partial matches allowed (default: none)
     -n, --note                      - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
     -o, --overwrite                 - Overwrite note instead of appending
     -p, --priority=PRIO             - Add/change a priority level 1-5 (default: 0)
-    -r, --remove=TAG                - Remove a tag to the action (may be used more than once, default: none)
+    -r, --remove=TAG                - Remove a tag from the action, use multiple times or combine multiple tags with a comma,             wildcards (* and ?) allowed (may be used more than once, default: none)
     --restore                       - Remove @done tag from action
-    -t, --tag=TAG                   - Add a tag to the action, @tag(values) allowed (may be used more than once, default: none)
+    -t, --tag=TAG                   - Add a tag to the action, @tag(values) allowed, use multiple times or combine multiple tags with a comma (may be used more than once, default: none)
     --tagged=TAG                    - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
     --to, --project, --proj=PROJECT - Move action to specific project (default: none)
     -x, --exact                     - Match pattern exactly
