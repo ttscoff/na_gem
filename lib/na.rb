@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'na/version'
+require 'na/pager'
 require 'time'
 require 'fileutils'
 require 'shellwords'
@@ -11,6 +12,7 @@ require 'tty-which'
 require 'na/hash'
 require 'na/colors'
 require 'na/string'
+require 'na/array'
 require 'na/project'
 require 'na/action'
 require 'na/next_action'

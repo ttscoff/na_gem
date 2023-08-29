@@ -56,6 +56,9 @@ class App
     c.desc 'Add a @done tag to action and move to Archive'
     c.switch %i[a archive], negatable: false
 
+    c.desc 'Remove @done tag from action'
+    c.switch %i[restore], negatable: false
+
     c.desc 'Delete an action'
     c.switch %i[delete], negatable: false
 
@@ -83,6 +86,8 @@ class App
     c.action do |global_options, options, args|
       reader = TTY::Reader.new
       append = options[:at] ? options[:at] =~ /^[ae]/i : global_options[:add_at] =~ /^[ae]/i
+
+      options[:done] = true if options[:restore] || options[:remove] =~ /^done/
 
       action = if args.count.positive?
                  args.join(' ').strip

@@ -512,7 +512,7 @@ module NA
             end
           end
         end
-        puts out.join("\n")
+        NA::Pager.page out.join("\n")
       else
         template = if files.count.positive?
                      if files.count == 1
@@ -533,7 +533,8 @@ module NA
 
         files.map { |f| notify("{dw}#{f}", debug: true) } if files
 
-        puts(actions.map { |action| action.pretty(template: { output: template }, regexes: regexes, notes: notes) })
+        output = actions.map { |action| action.pretty(template: { output: template }, regexes: regexes, notes: notes) }
+        NA::Pager.page(output.join("\n"))
       end
     end
 

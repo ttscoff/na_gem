@@ -2,6 +2,16 @@
 
 # String helpers
 class ::String
+  ##
+  ## Tests if object is nil or empty
+  ##
+  ## @return     [Boolean] true if object is defined and
+  ##             has content
+  ##
+  def good?
+    !strip.empty?
+  end
+
   def read_file
     file = File.expand_path(self)
     raise "Missing file #{file}" unless File.exist?(file)

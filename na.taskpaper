@@ -18,9 +18,7 @@ Archive:
 	- Allow custom template for creating new files @priority(4) @na @done(2023-08-21 07:58)
 		Searching for "na" should not select .../na_gem/na/marked, only na_gem/na/na
 	- ability to add to a specific project @maybe @na @done (22-10-15 11:59) @project(na / Ideas)
-	- test the new add command @na @done(2023-06-05 10:22)
 	- Easy matching search should require last argument to be in last position of match @na @done (22-10-15 12:00) @project(Inbox)
-	- ability to add to a specific project @maybe @na @done (22-10-15 11:59) @project(na / Ideas)
 Search Definitions:
 	Top Priority @search(@priority = 5 and not @done)
 	High Priority @search(@priority > 3 and not @done)
