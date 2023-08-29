@@ -1,3 +1,11 @@
+### 1.2.31
+
+2023-08-29 10:32
+
+#### FIXED
+
+- Invalid path for `na changelog` command
+
 ### 1.2.30
 
 2023-08-29 06:50
