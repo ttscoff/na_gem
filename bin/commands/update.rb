@@ -102,12 +102,12 @@ class App
       action = if args.count.positive?
                  args.join(' ').strip
                elsif $stdin.isatty && TTY::Which.exist?('gum') && options[:tagged].empty?
-                 options = [
+                 opts = [
                    %(--placeholder "Enter a task to search for"),
                    '--char-limit=500',
                    "--width=#{TTY::Screen.columns}"
                  ]
-                 `gum input #{options.join(' ')}`.strip
+                 `gum input #{opts.join(' ')}`.strip
                elsif $stdin.isatty && options[:tagged].empty?
                  puts NA::Color.template('{bm}Enter search string:{x}')
                  reader.read_line(NA::Color.template('{by}> {bw}')).strip
