@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.29
+The current version of `na` is 1.2.30
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -77,42 +77,44 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.29
+    1.2.30
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
     --add_at=POSITION       - Add all new/moved entries at [s]tart or [e]nd of target project (default: start)
     --[no-]color            - Colorize output (default: enabled)
     --cwd_as=TYPE           - Use current working directory as [p]roject, [t]ag, or [n]one (default: none)
-    -d, --depth=DEPTH       - Recurse to depth (default: 3)
+    -d, --depth=DEPTH       - Recurse to depth (default: 1)
     --[no-]debug            - Display verbose output
     --ext=EXT               - File extension to consider a todo file (default: taskpaper)
     -f, --file=PATH         - Use a single file as global todo, use initconfig to make permanent (default: none)
     --help                  - Show this message
     -n, --note              - Prompt for additional notes (deprecated, for backwards compatibility)
     -p, --priority=PRIORITY - Set a priority 0-5 (deprecated, for backwards compatibility) (default: none)
+    --[no-]pager            - Enable pagination (default: enabled)
     -r, --[no-]recurse      - Recurse 3 directories deep (deprecated, for backwards compatability)
     -t, --na_tag=TAG        - Tag to consider a next action (default: na)
     --template=PATH         - Provide a template for new/blank todo files, use initconfig to make permanent (default: none)
     --version               - Display the program version
 
 COMMANDS
-    add                - Add a new next action
-    archive            - Mark an action as @done and archive
-    changes, changelog - Display the changelog
-    complete, finish   - Find and mark an action as @done
-    edit               - Open a todo file in the default editor
-    find, grep         - Find actions matching a search pattern
-    help               - Shows a list of commands or help for one command
-    init, create       - Create a new todo file in the current directory
-    initconfig         - Initialize the config file using current global options
-    next, show         - Show next actions
-    projects           - Show list of projects for a file
-    prompt             - Show or install prompt hooks for the current shell
-    saved              - Execute a saved search
-    tagged             - Find actions matching a tag
-    todos              - Show list of known todo files
-    update             - Update an existing action
+    add                 - Add a new next action
+    archive             - Mark an action as @done and archive
+    changes, changelog  - Display the changelog
+    complete, finish    - Find and mark an action as @done
+    completed, finished - Display completed actions
+    edit                - Open a todo file in the default editor
+    find, grep          - Find actions matching a search pattern
+    help                - Shows a list of commands or help for one command
+    init, create        - Create a new todo file in the current directory
+    initconfig          - Initialize the config file using current global options
+    next, show          - Show next actions
+    projects            - Show list of projects for a file
+    prompt              - Show or install prompt hooks for the current shell
+    saved               - Execute a saved search
+    tagged              - Find actions matching a tag
+    todos               - Show list of known todo files
+    update              - Update an existing action
 ```
 
 #### Commands
@@ -339,7 +341,7 @@ NAME
 
 SYNOPSIS
 
-    na [global options] saved [command options] [SEARCH_TITLE]
+    na [global options] saved [command options] [SEARCH_TITLE]...
 
 DESCRIPTION
     Run without argument to list saved searches 
@@ -350,14 +352,19 @@ COMMAND OPTIONS
 
 EXAMPLES
 
+    # save a search called "maybelater"
     na tagged "+maybe,+priority<=3" --save maybelater
 
+    # perform the search named "maybelater"
     na saved maybelater
 
+    # perform the search named "maybelater", assuming no other searches match "maybe"
     na saved maybe
 
+    # na run with no command and a single argument automatically performs a matching saved search
     na maybe
 
+    # list available searches
     na saved
 ```
 
@@ -484,6 +491,7 @@ COMMAND OPTIONS
     -o, --overwrite                 - Overwrite note instead of appending
     -p, --priority=PRIO             - Add/change a priority level 1-5 (default: 0)
     -r, --remove=TAG                - Remove a tag to the action (may be used more than once, default: none)
+    --restore                       - Remove @done tag from action
     -t, --tag=TAG                   - Add a tag to the action, @tag(values) allowed (may be used more than once, default: none)
     --tagged=TAG                    - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
     --to, --project, --proj=PROJECT - Move action to specific project (default: none)
