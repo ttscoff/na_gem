@@ -354,7 +354,7 @@ class App
       end
 
       if options[:priority]&.to_i&.positive?
-        action = "#{action.gsub(/@priority\(\d+\)/, '')} @priority(#{options[:priority]})"
+        action = "#{action.gsub(/ *@priority\(\d+\)/, '')} @priority(#{options[:priority]})"
       end
 
       note_rx = /^(.+) \((.*?)\)$/
