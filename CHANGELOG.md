@@ -1,3 +1,25 @@
+### 1.2.30
+
+2023-08-29 06:50
+
+#### NEW
+
+- `na completed` to show completed actions with date ranges and search patterns
+- Pagination using system pager
+
+#### IMPROVED
+
+- When replacing a priority tag, remove any space before it the action text
+- Restore command decomposition
+- Allow multiple saved searches to be executed at once
+- `--restore` flag for update command to remove @done tags
+- Pagination for help output
+
+#### FIXED
+
+- `--done` flag not working on `na next`
+- Missing descriptions in help examples
+
 ### 1.2.29
 
 2023-08-21 11:08
