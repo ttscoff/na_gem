@@ -64,7 +64,6 @@ class App
         NA.save_search(title, "#{NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '').split(' ').map { |t| %("#{t}") }.join(' ')}")
       end
 
-
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
                 3
               else
@@ -74,17 +73,24 @@ class App
       if options[:exact] || options[:regex]
         search = args.join(' ')
       else
-        search = args.join(' ').gsub(/([-+!]?@[^ ,@]+)/) do |arg|
+        search = args.join(' ').gsub(/(?<=\A|[ ,])(?<req>[+\-!])?@(?<tag>[^ *=<>$\^,@(]+)(?:\((?<value>.*?)\)| *(?<op>[=<>]{1,2}|[*$\^]=) *(?<val>.*?(?=\Z|[,@])))?/) do |arg|
           m = Regexp.last_match
-          options[:tagged] << m[1].sub(/@/, '')
+          string = if m['value']
+                     "#{m['req']}#{m['tag']}=#{m['value']}"
+                   else
+                     m[0]
+                   end
+          options[:tagged] << string.sub(/@/, '')
           ''
         end
       end
 
+      search = search.gsub(/ +/, ' ').strip
+
       all_req = options[:tagged].join(' ') !~ /[+!\-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?) *(?:(?<op>[=<>]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
 
         tags.push({
                     tag: m['tag'].wildcard_to_rx,
@@ -95,6 +101,10 @@ class App
                   })
       end
 
+      search_for_done = false
+      tags.each { |tag| search_for_done = true if tag[:tag] =~ /done/ }
+      options[:done] = true if search_for_done
+
       tokens = nil
       if options[:exact]
         tokens = search
@@ -104,10 +114,10 @@ class App
         tokens = []
         all_req = search !~ /[+!\-]/ && !options[:or]
 
-        args.join(' ').split(/ /).each do |arg|
+        search.split(/ /).each do |arg|
           m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
           tokens.push({
-                        token: m['tok'],
+                        token: Regexp.escape(m['tok']),
                         required: all_req || (!m['req'].nil? && m['req'] == '+'),
                         negate: !m['req'].nil? && m['req'] =~ /[!\-]/
                       })

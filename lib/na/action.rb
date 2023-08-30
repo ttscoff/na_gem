@@ -37,7 +37,18 @@ module NA
       EOINSPECT
     end
 
+    ##
+    ## Pretty print an action
+    ##
+    ## @param      extension  [String] The file extension
+    ## @param      template   [Hash] The template to use for
+    ##                        colorization
+    ## @param      regexes    [Array] The regexes to
+    ##                        highlight (searches)
+    ## @param      notes      [Boolean] Include notes
+    ##
     def pretty(extension: 'taskpaper', template: {}, regexes: [], notes: false)
+      # Default colorization, can be overridden with full or partial template variable
       default_template = {
         file: '{xbk}',
         parent: '{c}',
@@ -51,32 +62,38 @@ module NA
         note: '{dw}'
       }
       template = default_template.merge(template)
-
+      # Create the hierarchical parent string
       parents = @parent.map do |par|
         NA::Color.template("#{template[:parent]}#{par}")
       end.join(NA::Color.template(template[:parent_divider]))
       parents = "{dc}[{x}#{parents}{dc}]{x} "
 
+      # Create the project string
       project = NA::Color.template("#{template[:project]}#{@project}{x} ")
 
+      # Create the source filename string, substituting ~ for HOME and removing extension
       file = @file.sub(%r{^\./}, '').sub(/#{ENV['HOME']}/, '~')
       file = file.sub(/\.#{extension}$/, '')
+      # colorize the basename
       file = file.sub(/#{File.basename(@file, ".#{extension}")}$/, "{dw}#{File.basename(@file, ".#{extension}")}{x}")
       file_tpl = "#{template[:file]}#{file} {x}"
       filename = NA::Color.template(file_tpl)
 
+      # Add notes if needed
       note = if notes && @note.count.positive?
                NA::Color.template("\n#{@note.map { |l| "  #{template[:note]}• #{l}{x}" }.join("\n")}")
              else
                ''
              end
 
+      # colorize the action and highlight tags
       action = NA::Color.template("#{template[:action]}#{@action.sub(/ @#{NA.na_tag}\b/, '')}{x}")
       action = action.highlight_tags(color: template[:tags],
                                      parens: template[:value_parens],
                                      value: template[:values],
                                      last_color: template[:action])
 
+      # Replace variables in template string and output colorized
       NA::Color.template(template[:output].gsub(/%filename/, filename)
                           .gsub(/%project/, project)
                           .gsub(/%parents?/, parents)

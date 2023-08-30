@@ -420,7 +420,7 @@ module NA
                         projects.select { |proj| proj.project =~ /^#{action.parent.join(':')}$/ }.first
                       end
 
-        NA.notify("{r}Error parsing project #{target_proj}", exit_code: 1) if target_proj.nil?
+        NA.notify("{r}Error parsing project #{target}", exit_code: 1) if target_proj.nil?
 
         indent = "\t" * target_proj.indent
         note = note.split("\n") unless note.is_a?(Array)
@@ -450,6 +450,8 @@ module NA
         end
 
         contents.insert(target_line, "#{indent}\t- #{action.action}#{note}")
+
+        notify(action.pretty)
       else
         _, actions = find_actions(target, search, tagged, done: done, all: all)
 
@@ -502,7 +504,10 @@ module NA
             target_line = target_proj.line + 1
           end
 
+
           contents.insert(target_line, "#{indent}\t- #{action.action}#{note}")
+
+          notify(action.pretty)
         end
       end
 
@@ -692,6 +697,9 @@ module NA
       negated_tag = []
       projects = []
 
+      notify("{dw}Tags: #{tag}", debug:true)
+      notify("{dw}Search: #{search}", debug:true)
+
       tag&.each do |t|
         unless t[:tag].nil?
           if negate
@@ -706,7 +714,7 @@ module NA
         end
       end
 
-      unless search.nil?
+      unless search.nil? || search.empty?
         if regex || search.is_a?(String)
           if negate
             negated.push(search)

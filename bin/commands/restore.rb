@@ -17,6 +17,10 @@ class App
     c.desc 'Overwrite note instead of appending'
     c.switch %i[o overwrite], negatable: false
 
+    c.desc 'Move action to specific project'
+    c.arg_name 'PROJECT'
+    c.flag %i[to project proj]
+
     c.desc 'Specify the file to search for the task'
     c.arg_name 'PATH'
     c.flag %i[file]

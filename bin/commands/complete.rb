@@ -20,6 +20,10 @@ class App
     c.desc 'Add a @done tag to action and move to Archive'
     c.switch %i[a archive], negatable: false
 
+    c.desc 'Move action to specific project'
+    c.arg_name 'PROJECT'
+    c.flag %i[to project proj]
+
     c.desc 'Specify the file to search for the task'
     c.arg_name 'PATH'
     c.flag %i[file]
@@ -44,7 +48,7 @@ class App
     c.action do |global, options, args|
       options[:finish] = true
       options[:f] = true
-      options[:project] = 'Archive' if options[:archive]
+      options[:project] = 'Archive' if options[:archive] && !options[:project]
 
       cmd = commands[:update]
       action = cmd.send(:get_action, nil)
