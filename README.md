@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.34
+The current version of `na` is 1.2.35
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -77,7 +77,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.34
+    1.2.35
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -104,7 +104,7 @@ COMMANDS
     complete, finish    - Find and mark an action as @done
     completed, finished - Display completed actions
     edit                - Edit an existing action
-    find, grep          - Find actions matching a search pattern
+    find, grep, search  - Find actions matching a search pattern
     help                - Shows a list of commands or help for one command
     init, create        - Create a new todo file in the current directory
     initconfig          - Initialize the config file using current global options

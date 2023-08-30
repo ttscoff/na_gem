@@ -1,3 +1,20 @@
+### 1.2.35
+
+2023-08-30 11:59
+
+#### IMPROVED
+
+- If a search string contains @tags and --exact or --regex isn't specified, the @tags will be extracted and passed as a --tagged search.
+- Tag handling (including values and comparisons) in tags extracted from search strings
+- `na complete --project PROJ` flag to move to a specific project
+- `na restore --project PROJ` flag to move restored action to
+- Exit gracefully if tagged command is run with invalid
+- Display action affected when using update command
+
+#### FIXED
+
+- Escape search for tokens to allow parenthesis and other
+
 ### 1.2.34
 
 2023-08-30 09:22
