@@ -7,7 +7,7 @@ class App
   (partial matches allowed). Add a + before a token to make it required, e.g. `na find +feature +maybe`,
   add a - or ! to ignore matches containing that token.'
   arg_name 'PATTERN'
-  command %i[find grep] do |c|
+  command %i[find grep search] do |c|
     c.example 'na find feature idea swift', desc: 'Find all actions containing feature, idea, and swift'
     c.example 'na find feature idea -swift', desc: 'Find all actions containing feature and idea but NOT swift'
     c.example 'na find -x feature idea', desc: 'Find all actions containing the exact text "feature idea"'
@@ -71,6 +71,16 @@ class App
                 options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
               end
 
+      if options[:exact] || options[:regex]
+        search = args.join(' ')
+      else
+        search = args.join(' ').gsub(/([-+!]?@[^ ,@]+)/) do |arg|
+          m = Regexp.last_match
+          options[:tagged] << m[1].sub(/@/, '')
+          ''
+        end
+      end
+
       all_req = options[:tagged].join(' ') !~ /[+!\-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
@@ -87,12 +97,12 @@ class App
 
       tokens = nil
       if options[:exact]
-        tokens = args.join(' ')
+        tokens = search
       elsif options[:regex]
-        tokens = Regexp.new(args.join(' '), Regexp::IGNORECASE)
+        tokens = Regexp.new(search, Regexp::IGNORECASE)
       else
         tokens = []
-        all_req = args.join(' ') !~ /[+!\-]/ && !options[:or]
+        all_req = search !~ /[+!\-]/ && !options[:or]
 
         args.join(' ').split(/ /).each do |arg|
           m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)

@@ -43,7 +43,7 @@ class App
       options[:done] = true
       options[:finish] = false
       options[:f] = false
-      
+
       cmd = commands[:update]
       action = cmd.send(:get_action, nil)
       action.call(global, options, args)
