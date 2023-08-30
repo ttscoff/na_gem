@@ -1,3 +1,11 @@
+### 1.2.34
+
+2023-08-30 09:22
+
+#### NEW
+
+- `na restore SEARCH` to remove @done tag from result(s) (aliased as `unfinish`)
+
 ### 1.2.33
 
 2023-08-29 13:45
