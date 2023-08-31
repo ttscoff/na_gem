@@ -1,3 +1,63 @@
+### 1.2.35
+
+2023-08-30 11:59
+
+#### IMPROVED
+
+- If a search string contains @tags and --exact or --regex isn't specified, the @tags will be extracted and passed as a --tagged search.
+- Tag handling (including values and comparisons) in tags extracted from search strings
+- `na complete --project PROJ` flag to move to a specific project
+- `na restore --project PROJ` flag to move restored action to
+- Exit gracefully if tagged command is run with invalid
+- Display action affected when using update command
+
+#### FIXED
+
+- Escape search for tokens to allow parenthesis and other
+
+### 1.2.34
+
+2023-08-30 09:22
+
+#### NEW
+
+- `na restore SEARCH` to remove @done tag from result(s) (aliased as `unfinish`)
+
+### 1.2.33
+
+2023-08-29 13:45
+
+#### NEW
+
+- `na update --edit` flag to open a single task in your default $EDITOR for modification and notes
+- Expand natural language dates in recognized date-based tags (@due, @start, @deferred, etc.)
+- Edit command now opens editor on matched action, previous edit
+
+#### IMPROVED
+
+- Allow multiple add or remove tags using comma-separated list
+
+#### FIXED
+
+- `na update --restore` irregularities
+- Failing if using gum to input search string
+
+### 1.2.32
+
+2023-08-29 10:59
+
+#### FIXED
+
+- Missing commands
+
+### 1.2.31
+
+2023-08-29 10:32
+
+#### FIXED
+
+- Invalid path for `na changelog` command
+
 ### 1.2.30
 
 2023-08-29 06:50

@@ -2,13 +2,13 @@
 
 class App
   extend GLI::App
-  desc 'Find and mark an action as @done'
-  arg_name 'ACTION'
-  command %i[complete finish] do |c|
-    c.example 'na complete "An existing task"',
-              desc: 'Find "An existing task" and mark @done'
-    c.example 'na finish "An existing task"',
-              desc: 'Alias for complete'
+  desc 'Find and remove @done tag from an action'
+  arg_name 'PATTERN'
+  command %i[restore unfinish] do |c|
+    c.example 'na restore "An existing task"',
+              desc: 'Find "An existing task" and remove @done'
+    c.example 'na unfinish "An existing task"',
+              desc: 'Alias for restore'
 
     c.desc 'Prompt for additional notes. Input will be appended to any existing note.
     If STDIN input (piped) is detected, it will be used as a note.'
@@ -16,9 +16,6 @@ class App
 
     c.desc 'Overwrite note instead of appending'
     c.switch %i[o overwrite], negatable: false
-
-    c.desc 'Add a @done tag to action and move to Archive'
-    c.switch %i[a archive], negatable: false
 
     c.desc 'Move action to specific project'
     c.arg_name 'PROJECT'
@@ -46,9 +43,10 @@ class App
     c.switch %i[x exact], negatable: false
 
     c.action do |global, options, args|
-      options[:finish] = true
-      options[:f] = true
-      options[:project] = 'Archive' if options[:archive] && !options[:project]
+      options[:remove] = ['done']
+      options[:done] = true
+      options[:finish] = false
+      options[:f] = false
 
       cmd = commands[:update]
       action = cmd.send(:get_action, nil)

@@ -80,10 +80,11 @@ class App
 
       all_req = args.join(' ') !~ /[+!\-]/ && !options[:or]
       args.join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?) *(?:(?<op>[=<>]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
+        next if m.nil?
 
         tags.push({
-                    tag: m['tag'].wildcard_to_rx,
+                    tag: m['tag'].sub(/^@/, '').wildcard_to_rx,
                     comp: m['op'],
                     value: m['val'],
                     required: all_req || (!m['req'].nil? && m['req'] == '+'),
@@ -93,7 +94,8 @@ class App
 
       search_for_done = false
       tags.each { |tag| search_for_done = true if tag[:tag] =~ /done/ }
-      tags.push({ tag: 'done', value: nil, negate: true}) unless search_for_done
+      tags.push({ tag: 'done', value: nil, negate: true}) unless search_for_done || options[:done]
+      options[:done] = true if search_for_done
 
       tokens = nil
       if options[:search]
@@ -128,6 +130,8 @@ class App
                     })
         end
       end
+
+      NA.notify('{br}No actions matched search', exit_code: 1) if tags.empty? && tokens.empty?
 
       files, actions, = NA.parse_actions(depth: depth,
                                          done: options[:done],

@@ -5,7 +5,7 @@ class App
   desc 'Display the changelog'
   command %i[changes changelog] do |c|
     c.action do |_, _, _|
-      changelog = File.expand_path(File.join(File.dirname(__FILE__), '..', 'CHANGELOG.md'))
+      changelog = File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'CHANGELOG.md'))
       pagers = [
         'mdless',
         'mdcat',

@@ -45,6 +45,125 @@ module NA
       res.empty? ? default : res =~ /y/i
     end
 
+    def default_editor
+      editor ||= ENV['NA_EDITOR'] || ENV['GIT_EDITOR'] || ENV['EDITOR']
+
+      if editor.good? && TTY::Which.exist?(editor)
+        return editor
+      end
+
+      notify('No EDITOR environment variable, testing available editors', debug: true)
+      editors = %w[vim vi code subl mate mvim nano emacs]
+      editors.each do |ed|
+        try = TTY::Which.which(ed)
+        if try
+          notify("Using editor #{try}", debug: true)
+          return try
+        end
+      end
+
+      notify('{br}No editor found{x}', exit_code: 5)
+
+      nil
+    end
+
+    def editor_with_args
+      args_for_editor(default_editor)
+    end
+
+    def args_for_editor(editor)
+      return editor if editor =~ /-\S/
+
+      args = case editor
+             when /^(subl|code|mate)$/
+               ['-w']
+             when /^(vim|mvim)$/
+               ['-f']
+             else
+               []
+             end
+      "#{editor} #{args.join(' ')}"
+    end
+
+    ##
+    ## Create a process for an editor and wait for the file handle to return
+    ##
+    ## @param      input  [String] Text input for editor
+    ##
+    def fork_editor(input = '', message: :default)
+      # raise NonInteractive, 'Non-interactive terminal' unless $stdout.isatty || ENV['DOING_EDITOR_TEST']
+
+      notify('{br}No EDITOR variable defined in environment{x}', exit_code: 5) if default_editor.nil?
+
+      tmpfile = Tempfile.new(['na_temp', '.na'])
+
+      File.open(tmpfile.path, 'w+') do |f|
+        f.puts input
+        unless message.nil?
+          f.puts message == :default ? '# First line is the action, lines after are added as a note' : message
+        end
+      end
+
+      pid = Process.fork { system("#{editor_with_args} #{tmpfile.path}") }
+
+      trap('INT') do
+        begin
+          Process.kill(9, pid)
+        rescue StandardError
+          Errno::ESRCH
+        end
+        tmpfile.unlink
+        tmpfile.close!
+        exit 0
+      end
+
+      Process.wait(pid)
+
+      begin
+        if $?.exitstatus == 0
+          input = IO.read(tmpfile.path)
+        else
+          exit_now! 'Cancelled'
+        end
+      ensure
+        tmpfile.close
+        tmpfile.unlink
+      end
+
+      input.split(/\n/).delete_if(&:ignore?).join("\n")
+    end
+
+    ##
+    ## Takes a multi-line string and formats it as an entry
+    ##
+    ## @param      input  [String] The string to parse
+    ##
+    ## @return     [Array] [[String]title, [Note]note]
+    ##
+    def format_input(input)
+      notify('No content in entry', exit_code: 1) if input.nil? || input.strip.empty?
+
+      input_lines = input.split(/[\n\r]+/).delete_if(&:ignore?)
+      title = input_lines[0]&.strip
+      notify('{br}No content in first line{x}', exit_code: 1) if title.nil? || title.strip.empty?
+
+      title.expand_date_tags
+
+      note = if input_lines.length > 1
+               input_lines[1..-1]
+             else
+               []
+             end
+
+
+      unless note.empty?
+        note.map!(&:strip)
+        note.delete_if { |l| l =~ /^\s*$/ || l =~ /^#/ }
+      end
+
+      [title, note]
+    end
+
     ##
     ## Helper function to colorize the Y/N prompt
     ##
@@ -247,6 +366,8 @@ module NA
       string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})" if finish && string !~ /(?<=\A| )@done/
 
       action.action = string
+      action.action.expand_date_tags
+      action.note = note unless note.empty?
 
       action
     end
@@ -254,18 +375,19 @@ module NA
     def update_action(target,
                       search,
                       add: nil,
-                      priority: 0,
                       add_tag: [],
-                      remove_tag: [],
-                      finish: false,
-                      project: nil,
+                      all: false,
+                      append: false,
                       delete: false,
+                      done: false,
+                      edit: false,
+                      finish: false,
                       note: [],
                       overwrite: false,
-                      tagged: nil,
-                      all: false,
-                      done: false,
-                      append: false)
+                      priority: 0,
+                      project: nil,
+                      remove_tag: [],
+                      tagged: nil)
 
       projects = find_projects(target)
 
@@ -298,7 +420,7 @@ module NA
                         projects.select { |proj| proj.project =~ /^#{action.parent.join(':')}$/ }.first
                       end
 
-        NA.notify("{r}Error parsing project #{target_proj}", exit_code: 1) if target_proj.nil?
+        NA.notify("{r}Error parsing project #{target}", exit_code: 1) if target_proj.nil?
 
         indent = "\t" * target_proj.indent
         note = note.split("\n") unless note.is_a?(Array)
@@ -328,6 +450,8 @@ module NA
         end
 
         contents.insert(target_line, "#{indent}\t- #{action.action}#{note}")
+
+        notify(action.pretty)
       else
         _, actions = find_actions(target, search, tagged, done: done, all: all)
 
@@ -338,6 +462,12 @@ module NA
           next if delete
 
           projects = shift_index_after(projects, action.line, action.note.count + 1)
+
+          if edit
+            new_action, new_note = format_input(fork_editor("#{action.action}\n#{action.note.join("\n")}"))
+            action.action = new_action
+            action.note = new_note
+          end
 
           action = process_action(action, priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
 
@@ -374,7 +504,10 @@ module NA
             target_line = target_proj.line + 1
           end
 
+
           contents.insert(target_line, "#{indent}\t- #{action.action}#{note}")
+
+          notify(action.pretty)
         end
       end
 
@@ -564,6 +697,9 @@ module NA
       negated_tag = []
       projects = []
 
+      notify("{dw}Tags: #{tag}", debug:true)
+      notify("{dw}Search: #{search}", debug:true)
+
       tag&.each do |t|
         unless t[:tag].nil?
           if negate
@@ -578,7 +714,7 @@ module NA
         end
       end
 
-      unless search.nil?
+      unless search.nil? || search.empty?
         if regex || search.is_a?(String)
           if negate
             negated.push(search)

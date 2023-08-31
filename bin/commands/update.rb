@@ -42,11 +42,12 @@ class App
     c.desc 'Include @done actions'
     c.switch %i[done]
 
-    c.desc 'Add a tag to the action, @tag(values) allowed'
+    c.desc 'Add a tag to the action, @tag(values) allowed, use multiple times or combine multiple tags with a comma'
     c.arg_name 'TAG'
     c.flag %i[t tag], multiple: true
 
-    c.desc 'Remove a tag to the action'
+    c.desc 'Remove a tag from the action, use multiple times or combine multiple tags with a comma,
+            wildcards (* and ?) allowed'
     c.arg_name 'TAG'
     c.flag %i[r remove], multiple: true
 
@@ -61,6 +62,10 @@ class App
 
     c.desc 'Delete an action'
     c.switch %i[delete], negatable: false
+
+    c.desc "Open action in editor (#{NA.default_editor}).
+            Natural language dates will be parsed and converted in date-based tags."
+    c.switch %i[edit], negatable: false
 
     c.desc 'Specify the file to search for the task'
     c.arg_name 'PATH'
@@ -87,17 +92,22 @@ class App
       reader = TTY::Reader.new
       append = options[:at] ? options[:at] =~ /^[ae]/i : global_options[:add_at] =~ /^[ae]/i
 
-      options[:done] = true if options[:restore] || options[:remove] =~ /^done/
+      if options[:restore] || (!options[:remove].nil? && options[:remove].include?('done'))
+        options[:done] = true
+        options[:tagged] << '+done'
+      elsif !options[:remove].nil? && !options[:remove].empty?
+        options[:tagged].concat(options[:remove])
+      end
 
       action = if args.count.positive?
                  args.join(' ').strip
                elsif $stdin.isatty && TTY::Which.exist?('gum') && options[:tagged].empty?
-                 options = [
+                 opts = [
                    %(--placeholder "Enter a task to search for"),
                    '--char-limit=500',
                    "--width=#{TTY::Screen.columns}"
                  ]
-                 `gum input #{options.join(' ')}`.strip
+                 `gum input #{opts.join(' ')}`.strip
                elsif $stdin.isatty && options[:tagged].empty?
                  puts NA::Color.template('{bm}Enter search string:{x}')
                  reader.read_line(NA::Color.template('{by}> {bw}')).strip
@@ -144,8 +154,9 @@ class App
       end
 
       priority = options[:priority].to_i if options[:priority]&.to_i&.positive?
-      add_tags = options[:tag] ? options[:tag].map { |t| t.sub(/^@/, '').wildcard_to_rx } : []
-      remove_tags = options[:remove] ? options[:remove].map { |t| t.sub(/^@/, '').wildcard_to_rx } : []
+      add_tags = options[:tag] ? options[:tag].join(',').split(/ *, */).map { |t| t.sub(/^@/, '').wildcard_to_rx } : []
+      remove_tags = options[:remove] ? options[:remove].join(',').split(/ *, */).map { |t| t.sub(/^@/, '').wildcard_to_rx } : []
+      remove_tags << 'done' if options[:restore]
 
       stdin_note = NA.stdin ? NA.stdin.split("\n") : []
 
@@ -217,18 +228,19 @@ class App
 
       targets.each do |target|
         NA.update_action(target, tokens,
-                         priority: priority,
                          add_tag: add_tags,
-                         remove_tag: remove_tags,
-                         finish: options[:finish],
-                         project: target_proj,
+                         all: options[:all],
+                         append: append,
                          delete: options[:delete],
+                         done: options[:done],
+                         edit: options[:edit],
+                         finish: options[:finish],
                          note: note,
                          overwrite: options[:overwrite],
-                         tagged: tags,
-                         all: options[:all],
-                         done: options[:done],
-                         append: append)
+                         priority: priority,
+                         project: target_proj,
+                         remove_tag: remove_tags,
+                         tagged: tags)
       end
     end
   end
