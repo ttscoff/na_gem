@@ -533,14 +533,17 @@ module NA
         optional = ['*']
       end
 
-      NA.notify("{dw}Optional directory regex: {x}#{optional.map(&:dir_to_rx)}", debug: true)
-      NA.notify("{dw}Required directory regex: {x}#{required.map(&:dir_to_rx)}", debug: true)
-      NA.notify("{dw}Negated directory regex: {x}#{negated.map { |t| t.dir_to_rx(distance: 1, require_last: false) }}", debug: true)
+      NA.notify("{dw}Optional directory regex: {x}#{optional.map { |t| t.dir_to_rx(distance: distance) }}", debug: true)
+      NA.notify("{dw}Required directory regex: {x}#{required.map { |t| t.dir_to_rx(distance: distance) }}", debug: true)
+      NA.notify("{dw}Negated directory regex: {x}#{negated.map { |t| t.dir_to_rx(distance: distance, require_last: false) }}", debug: true)
 
       if require_last
         dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required, none: negated) }
       else
-        dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required, none: negated, distance: 2, require_last: false) }
+        dirs.delete_if do |d|
+          !d.sub(/\.#{NA.extension}$/, '')
+            .dir_matches(any: optional, all: required, none: negated, distance: 2, require_last: false)
+        end
       end
 
       dirs = dirs.sort.uniq
