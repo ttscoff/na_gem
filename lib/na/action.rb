@@ -205,7 +205,7 @@ module NA
           date = Time.parse(date.strftime('%Y-%m-%d 12:00'))
         end
 
-        puts "Comparing #{tag_date} #{tag[:comp]} #{date}" if NA.verbose
+        # NA.notify("{dw}Comparing #{tag_date} #{tag[:comp]} #{date}{x}", debug: true)
 
         case tag[:comp]
         when /^>$/

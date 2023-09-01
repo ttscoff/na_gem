@@ -97,6 +97,8 @@ class App
         options[:tagged] << '+done'
       elsif !options[:remove].nil? && !options[:remove].empty?
         options[:tagged].concat(options[:remove])
+      elsif options[:finish]
+        options[:tagged] << '-done'
       end
 
       action = if args.count.positive?
@@ -211,7 +213,15 @@ class App
 
         end
       else
-        files = NA.find_files(depth: options[:depth])
+        files = NA.find_files_matching({
+                                        depth: options[:depth],
+                                        done: options[:done],
+                                        project: target_proj,
+                                        regex: options[:regex],
+                                        require_na: false,
+                                        search: tokens,
+                                        tag: tags
+                                      })
         NA.notify('{r}No todo file found', exit_code: 1) if files.count.zero?
 
         targets = files.count > 1 ? NA.select_file(files, multiple: true) : [files[0]]

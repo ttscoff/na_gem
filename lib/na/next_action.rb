@@ -18,7 +18,11 @@ module NA
     def notify(msg, exit_code: false, debug: false)
       return if debug && !NA.verbose
 
-      $stderr.puts NA::Color.template("{x}#{msg}{x}")
+      if debug
+        $stderr.puts NA::Color.template("{xdw}#{msg}{x}")
+      else
+        $stderr.puts NA::Color.template("{x}#{msg}{x}")
+      end
       Process.exit exit_code if exit_code
     end
 
@@ -463,6 +467,42 @@ module NA
       files
     end
 
+    def find_files_matching(options = {})
+      defaults = {
+        depth: 1,
+        done: false,
+        file_path: nil,
+        negate: false,
+        project: nil,
+        query: nil,
+        regex: false,
+        require_na: true,
+        search: nil,
+        tag: nil
+      }
+      opts = defaults.merge(options)
+
+      files = find_files(depth: options[:depth])
+
+      files.delete_if do |file|
+        todo = NA::Todo.new({
+                              depth: options[:depth],
+                              done: options[:done],
+                              file_path: file,
+                              negate: options[:negate],
+                              project: options[:project],
+                              query: options[:query],
+                              regex: options[:regex],
+                              require_na: options[:require_na],
+                              search: options[:search],
+                              tag: options[:tag]
+                            })
+        todo.actions.length.zero?
+      end
+
+      files
+    end
+
     ##
     ## Find a matching path using semi-fuzzy matching.
     ## Search tokens can include ! and + to negate or make
@@ -505,7 +545,7 @@ module NA
 
       dirs = dirs.sort.uniq
       if dirs.empty? && require_last
-        NA.notify("{y}No matches, loosening search", debug: true)
+        NA.notify('{y}No matches, loosening search', debug: true)
         match_working_dir(search, distance: 2, require_last: false)
       else
         dirs
@@ -524,6 +564,61 @@ module NA
       dirs.push(File.expand_path(todo_file))
       dirs.sort!.uniq!
       File.open(file, 'w') { |f| f.puts dirs.join("\n") }
+    end
+
+    ##
+    ## Save a backed-up file to the database
+    ##
+    ## @param      file  The file
+    ##
+    def save_modified_file(file)
+      db = database_path(file: 'last_modified.txt')
+      file = File.expand_path(file)
+      files = IO.read(db).split(/\n/).map(&:strip)
+      files.delete(file)
+      files << file
+      File.open(db, 'w') { |f| f.puts(files.join("\n")) }
+    end
+
+    ##
+    ## Get the last modified file from the database
+    ##
+    ## @param      search  The search
+    ##
+    def last_modified_file(search: nil)
+      db = database_path(file: 'last_modified.txt')
+      files = IO.read(db).split(/\n/).map(&:strip)
+      files.delete_if { |f| f !~ Regexp.new(search.dir_to_rx(require_last: true)) } if search
+      files.last
+    end
+
+    ##
+    ## Get last modified file and restore a backup
+    ##
+    ## @param      search  The search
+    ##
+    def restore_last_modified_file(search: nil)
+      file = last_modified_file(search: search)
+      if file
+        restore_modified_file(file)
+      else
+        NA.notify('{br}No matching file found')
+      end
+    end
+
+    ##
+    ## Restore a file from backup
+    ##
+    ## @param      file  The file
+    ##
+    def restore_modified_file(file)
+      bak_file = File.join(File.dirname(file), ".#{File.basename(file)}.bak")
+      if File.exist?(bak_file)
+        FileUtils.mv(bak_file, file)
+        NA.notify("{bg}Backup restored for #{file}")
+      else
+        NA.notify("{br}Backup file for #{file} not found")
+      end
     end
 
     ##
@@ -606,7 +701,7 @@ module NA
              end
 
       dirs.map! do |dir|
-        "{xg}#{dir.sub(/^#{ENV['HOME']}/, '~').sub(%r{/([^/]+)\.#{NA.extension}$}, '/{xbw}\1{x}')}"
+        "{xdg}#{dir.sub(/^#{ENV['HOME']}/, '~').sub(%r{/([^/]+)\.#{NA.extension}$}, '/{xby}\1{x}')}"
       end
 
       puts NA::Color.template(dirs.join("\n"))
@@ -687,6 +782,7 @@ module NA
       file = ".#{File.basename(target)}.bak"
       backup = File.join(File.dirname(target), file)
       FileUtils.cp(target, backup)
+      save_modified_file(target)
       NA.notify("{dw}Backup file created at #{backup}", debug: true)
     end
 

@@ -10,16 +10,16 @@ class App
   command %i[todos] do |c|
     c.action do |_global_options, _options, args|
       if args.count.positive?
-        all_req = args.join(' ') !~ /[+!\-]/
+        all_req = args.join(' ') !~ /[+!-]/
 
         tokens = [{ token: '*', required: all_req, negate: false }]
         args.each do |arg|
           arg.split(/ *, */).each do |a|
-            m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
+            m = a.match(/^(?<req>[+!-])?(?<tok>.*?)$/)
             tokens.push({
                           token: m['tok'],
                           required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                          negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                          negate: !m['req'].nil? && m['req'] =~ /[!-]/
                         })
           end
         end
