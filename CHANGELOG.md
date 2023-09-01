@@ -1,3 +1,17 @@
+### 1.2.36
+
+2023-09-01 12:41
+
+#### NEW
+
+- `na undo` command to undo last change or last change to file specified in arguments
+
+#### IMPROVED
+
+- Disable pagination when using --omnifocus
+- Refactoring codebase
+- `--in TODO` option for `na complete`
+
 ### 1.2.35
 
 2023-08-30 11:59

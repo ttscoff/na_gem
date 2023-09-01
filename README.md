@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.35
+The current version of `na` is 1.2.36
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -510,6 +510,81 @@ EXAMPLES
 
     # Add @done to "My cool action" and immediately move to Archive
     na update --archive My cool action
+```
+
+##### changelog
+
+View recent changes with `na changelog` or `na changes`.
+
+```
+NAME
+    changes - Display the changelog
+
+SYNOPSIS
+
+    na [global options] changes
+```
+
+##### complete
+
+Mark an action as complete, shortcut for `na update --finish`.
+
+```
+NAME
+    complete - Find and mark an action as @done
+
+SYNOPSIS
+
+    na [global options] complete [command options] ACTION
+
+COMMAND OPTIONS
+    -a, --archive                   - Add a @done tag to action and move to Archive
+    --all                           - Act on all matches immediately (no menu)
+    -d, --depth=DEPTH               - Search for files X directories deep (default: 1)
+    -e, --regex                     - Interpret search pattern as regular expression
+    --file=PATH                     - Specify the file to search for the task (default: none)
+    -n, --note                      - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
+    -o, --overwrite                 - Overwrite note instead of appending
+    --tagged=TAG                    - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
+    --to, --project, --proj=PROJECT - Move action to specific project (default: none)
+    -x, --exact                     - Match pattern exactly
+
+EXAMPLES
+
+    # Find "An existing task" and mark @done
+    na complete "An existing task"
+
+    # Alias for complete
+    na finish "An existing task"
+```
+
+##### archive
+
+Mark an action as complete and move to archive, shortcut for `na update --archive`.
+
+```
+NAME
+    archive - Mark an action as @done and archive
+
+SYNOPSIS
+
+    na [global options] archive [command options] ACTION
+
+COMMAND OPTIONS
+    --all             - Act on all matches immediately (no menu)
+    -d, --depth=DEPTH - Search for files X directories deep (default: 1)
+    --done            - Archive all done tasks
+    -e, --regex       - Interpret search pattern as regular expression
+    --file=PATH       - Specify the file to search for the task (default: none)
+    -n, --note        - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
+    -o, --overwrite   - Overwrite note instead of appending
+    --tagged=TAG      - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
+    -x, --exact       - Match pattern exactly
+
+EXAMPLE
+
+    # Find "An existing task", mark @done if needed, and move to archive
+    na archive "An existing task"
 ```
 
 ### Configuration
