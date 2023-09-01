@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is <!--VER-->1.2.35<!--END VER-->.
+The current version of `na` is <!--VER-->1.2.37<!--END VER-->.
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
 
@@ -69,7 +69,7 @@ You can mark todos as complete, delete them, add and remove tags, change priorit
 ### Usage
 
 ```
-@cli(na help)
+@cli(bundle exec bin/na help)
 ```
 
 #### Commands
@@ -87,13 +87,13 @@ Use the `--note` switch to add a note. If STDIN (piped) input is present when th
 Notes are not displayed by the `next/tagged/find` commands unless `--notes` is specified.
 
 ```
-@cli(na help add)
+@cli(bundle exec bin/na help add)
 ```
 
 ##### edit
 
 ```
-@cli(na help edit)
+@cli(bundle exec bin/na help edit)
 ```
 
 ##### find
@@ -103,13 +103,13 @@ Example: `na find cool feature idea`
 Unless `--exact` is specified, search is tokenized and combined with AND, so `na find cool feature idea` translates to `cool AND feature AND idea`, matching any string that contains all of the words. To make a token required and others optional, add a `+` before it (e.g. `cool +feature idea` is `(cool OR idea) AND feature`). Wildcards allowed (`*` and `?`), use `--regex` to interpret the search as a regular expression. Use `-v` to invert the results (display non-matching actions only).
 
 ```
-@cli(na help find)
+@cli(bundle exec bin/na help find)
 ```
 
 ##### init, create
 
 ```
-@cli(na help init)
+@cli(bundle exec bin/na help init)
 ```
 
 ##### next, show
@@ -123,7 +123,7 @@ Examples:
 To see all next actions across all known todos, use `na next "*"`. You can combine multiple arguments to see actions across multiple todos, e.g. `na next marked nvultra`.
 
 ```
-@cli(na help next)
+@cli(bundle exec bin/na help next)
 ```
 
 ##### projects
@@ -131,7 +131,7 @@ To see all next actions across all known todos, use `na next "*"`. You can combi
 List all projects in a file. If arguments are provided, they're used to match a todo file from history, otherwise the todo file(s) in the current directory will be used.
 
 ```
-@cli(na help projects)
+@cli(bundle exec bin/na help projects)
 ```
 
 ##### saved
@@ -146,7 +146,7 @@ Run `na saved` without an argument to list your saved searches.
 <!--JEKYLL{:.tip}-->
 
 ```
-@cli(na help saved)
+@cli(bundle exec bin/na help saved)
 ```
 
 ##### tagged
@@ -160,7 +160,7 @@ You can also perform value comparisons on tags. A value in a TaskPaper tag is ad
 To perform a string comparison, you can use `*=` (contains), `^=` (starts with), `$=` (ends with), or `=` (matches). E.g. `na tagged "note*=video"`.
 
 ```
-@cli(na help show)
+@cli(bundle exec bin/na help show)
 ```
 
 ##### todos
@@ -168,7 +168,7 @@ To perform a string comparison, you can use `*=` (contains), `^=` (starts with),
 List all known todo files from history.
 
 ```
-@cli(na help todos)
+@cli(bundle exec bin/na help todos)
 ```
 
 ##### update
@@ -206,7 +206,7 @@ Notes are not displayed by the `next/tagged/find` commands unless `--notes` is s
 See the help output for a list of all available actions.
 
 ```
-@cli(na help update)
+@cli(bundle exec bin/na help update)
 ```
 
 ##### changelog
@@ -214,7 +214,7 @@ See the help output for a list of all available actions.
 View recent changes with `na changelog` or `na changes`.
 
 ```
-@cli(na help changelog)
+@cli(bundle exec bin/na help changelog)
 ```
 
 ##### complete
@@ -222,7 +222,7 @@ View recent changes with `na changelog` or `na changes`.
 Mark an action as complete, shortcut for `na update --finish`.
 
 ```
-@cli(na help complete)
+@cli(bundle exec bin/na help complete)
 ```
 
 ##### archive
@@ -230,7 +230,17 @@ Mark an action as complete, shortcut for `na update --finish`.
 Mark an action as complete and move to archive, shortcut for `na update --archive`.
 
 ```
-@cli(na help archive)
+@cli(bundle exec bin/na help archive)
+```
+
+##### undo
+
+Undoes the last file change resulting from an add or update command. If no argument is given, it undoes whatever the last change in history was. If an argument is provided, it's used to match against the change history, finding a specific file to restore from backup.
+
+Only the most recent change can be undone.
+
+```
+@cli(bundle exec bin/na help undo)
 ```
 
 ### Configuration
