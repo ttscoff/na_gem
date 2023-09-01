@@ -3,6 +3,8 @@
 # Next Action methods
 module NA
   class << self
+    include NA::Editor
+
     attr_accessor :verbose, :extension, :na_tag, :command_line, :command, :globals, :global_file, :cwd_is, :cwd, :stdin
 
     ##
@@ -43,125 +45,6 @@ module NA
       system 'stty cooked'
       system "stty #{tty_state}"
       res.empty? ? default : res =~ /y/i
-    end
-
-    def default_editor
-      editor ||= ENV['NA_EDITOR'] || ENV['GIT_EDITOR'] || ENV['EDITOR']
-
-      if editor.good? && TTY::Which.exist?(editor)
-        return editor
-      end
-
-      notify('No EDITOR environment variable, testing available editors', debug: true)
-      editors = %w[vim vi code subl mate mvim nano emacs]
-      editors.each do |ed|
-        try = TTY::Which.which(ed)
-        if try
-          notify("Using editor #{try}", debug: true)
-          return try
-        end
-      end
-
-      notify('{br}No editor found{x}', exit_code: 5)
-
-      nil
-    end
-
-    def editor_with_args
-      args_for_editor(default_editor)
-    end
-
-    def args_for_editor(editor)
-      return editor if editor =~ /-\S/
-
-      args = case editor
-             when /^(subl|code|mate)$/
-               ['-w']
-             when /^(vim|mvim)$/
-               ['-f']
-             else
-               []
-             end
-      "#{editor} #{args.join(' ')}"
-    end
-
-    ##
-    ## Create a process for an editor and wait for the file handle to return
-    ##
-    ## @param      input  [String] Text input for editor
-    ##
-    def fork_editor(input = '', message: :default)
-      # raise NonInteractive, 'Non-interactive terminal' unless $stdout.isatty || ENV['DOING_EDITOR_TEST']
-
-      notify('{br}No EDITOR variable defined in environment{x}', exit_code: 5) if default_editor.nil?
-
-      tmpfile = Tempfile.new(['na_temp', '.na'])
-
-      File.open(tmpfile.path, 'w+') do |f|
-        f.puts input
-        unless message.nil?
-          f.puts message == :default ? '# First line is the action, lines after are added as a note' : message
-        end
-      end
-
-      pid = Process.fork { system("#{editor_with_args} #{tmpfile.path}") }
-
-      trap('INT') do
-        begin
-          Process.kill(9, pid)
-        rescue StandardError
-          Errno::ESRCH
-        end
-        tmpfile.unlink
-        tmpfile.close!
-        exit 0
-      end
-
-      Process.wait(pid)
-
-      begin
-        if $?.exitstatus == 0
-          input = IO.read(tmpfile.path)
-        else
-          exit_now! 'Cancelled'
-        end
-      ensure
-        tmpfile.close
-        tmpfile.unlink
-      end
-
-      input.split(/\n/).delete_if(&:ignore?).join("\n")
-    end
-
-    ##
-    ## Takes a multi-line string and formats it as an entry
-    ##
-    ## @param      input  [String] The string to parse
-    ##
-    ## @return     [Array] [[String]title, [Note]note]
-    ##
-    def format_input(input)
-      notify('No content in entry', exit_code: 1) if input.nil? || input.strip.empty?
-
-      input_lines = input.split(/[\n\r]+/).delete_if(&:ignore?)
-      title = input_lines[0]&.strip
-      notify('{br}No content in first line{x}', exit_code: 1) if title.nil? || title.strip.empty?
-
-      title.expand_date_tags
-
-      note = if input_lines.length > 1
-               input_lines[1..-1]
-             else
-               []
-             end
-
-
-      unless note.empty?
-        note.map!(&:strip)
-        note.delete_if { |l| l =~ /^\s*$/ || l =~ /^#/ }
-      end
-
-      [title, note]
     end
 
     ##
@@ -217,19 +100,6 @@ module NA
     end
 
     ##
-    ## Use the *nix `find` command to locate files matching NA.extension
-    ##
-    ## @param      depth  [Number] The depth at which to search
-    ##
-    def find_files(depth: 1)
-      return [NA.global_file] if NA.global_file
-
-      files = `find . -maxdepth #{depth} -name "*.#{NA.extension}"`.strip.split("\n")
-      files.each { |f| save_working_dir(File.expand_path(f)) }
-      files
-    end
-
-    ##
     ## Select from multiple files
     ##
     ## @note       If `gum` or `fzf` are available, they'll
@@ -257,37 +127,41 @@ module NA
     end
 
     def find_projects(target)
-      _, _, projects = parse_actions(require_na: false, file_path: target)
-      projects
+      todo = NA::Todo.new(require_na: false, file_path: target)
+      todo.projects
     end
 
     def find_actions(target, search, tagged = nil, all: false, done: false)
-      _, actions, projects = parse_actions(search: search, require_na: false, file_path: target, tag: tagged, done: done)
+      todo = NA::Todo.new({ search: search,
+                            require_na: false,
+                            file_path: target,
+                            tag: tagged,
+                            done: done })
 
-      unless actions.count.positive?
+      unless todo.actions.count.positive?
         NA.notify("{r}No matching actions found in {bw}#{File.basename(target, ".#{NA.extension}")}")
         return
       end
 
-      return [projects, actions] if actions.count == 1 || all
+      return [todo.projects, todo.actions] if todo.actions.count == 1 || all
 
-      options = actions.map { |action| "#{action.line} % #{action.parent.join('/')} : #{action.action}" }
+      options = todo.actions.map { |action| "#{action.line} % #{action.parent.join('/')} : #{action.action}" }
       res = choose_from(options, prompt: 'Make a selection: ', multiple: true, sorted: true)
 
       NA.notify('{r}Cancelled', exit_code: 1) unless res && res.length.positive?
 
-      selected = []
+      selected = NA::Actions.new
       res.each do |result|
         idx = result.match(/^(\d+)(?= % )/)[1]
-        action = actions.select { |a| a.line == idx.to_i }.first
+        action = todo.actions.select { |a| a.line == idx.to_i }.first
         selected.push(action)
       end
-      [projects, selected]
+      [todo.projects, selected]
     end
 
     def insert_project(target, project, projects)
       path = project.split(%r{[:/]})
-      _, _, projects = parse_actions(file_path: target)
+      todo = NA::Todo.new(file_path: target)
       built = []
       last_match = nil
       final_match = nil
@@ -295,7 +169,7 @@ module NA
       matches = nil
       path.each_with_index do |part, i|
         built.push(part)
-        matches = projects.select { |proj| proj.project =~ /^#{built.join(':')}/i }
+        matches = todo.projects.select { |proj| proj.project =~ /^#{built.join(':')}/i }
         if matches.count.zero?
           final_match = last_match
           new_path = path.slice(i, path.count - i)
@@ -315,12 +189,12 @@ module NA
         end
 
         if new_path.join('') =~ /Archive/i
-          line = projects.last.last_line
+          line = todo.projects.last.last_line
           content = content.split(/\n/).insert(line, input.join("\n")).join("\n")
         else
           split = content.split(/\n/)
-          before = split.slice(0, projects.first.line).join("\n")
-          after = split.slice(projects.first.line, split.count - projects.first.line).join("\n")
+          before = split.slice(0, todo.projects.first.line).join("\n")
+          after = split.slice(todo.projects.first.line, split.count - todo.projects.first.line).join("\n")
           content = "#{before}\n#{input.join("\n")}\n#{after}"
         end
 
@@ -342,34 +216,6 @@ module NA
       end
 
       new_project
-    end
-
-    def process_action(action, priority: 0, finish: false, add_tag: [], remove_tag: [], note: [])
-      string = action.action
-
-      if priority&.positive?
-        string.gsub!(/(?<=\A| )@priority\(\d+\)/, '').strip!
-        string += " @priority(#{priority})"
-      end
-
-      add_tag.each do |tag|
-        string.gsub!(/(?<=\A| )@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
-        string.strip!
-        string += " @#{tag}"
-      end
-
-      remove_tag.each do |tag|
-        string.gsub!(/(?<=\A| )@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
-        string.strip!
-      end
-
-      string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})" if finish && string !~ /(?<=\A| )@done/
-
-      action.action = string
-      action.action.expand_date_tags
-      action.note = note unless note.empty?
-
-      action
     end
 
     def update_action(target,
@@ -410,14 +256,14 @@ module NA
 
       if add.is_a?(Action)
         add_tag ||= []
-        action = process_action(add, priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
+        add.process(priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
 
         projects = find_projects(target)
 
         target_proj = if target_proj
                         projects.select { |proj| proj.project =~ /^#{target_proj.project}$/ }.first
                       else
-                        projects.select { |proj| proj.project =~ /^#{action.parent.join(':')}$/ }.first
+                        projects.select { |proj| proj.project =~ /^#{add.parent.join(':')}$/ }.first
                       end
 
         NA.notify("{r}Error parsing project #{target}", exit_code: 1) if target_proj.nil?
@@ -425,9 +271,9 @@ module NA
         indent = "\t" * target_proj.indent
         note = note.split("\n") unless note.is_a?(Array)
         note = if note.empty?
-                 action.note
+                 add.note
                else
-                 overwrite ? note : action.note.concat(note)
+                 overwrite ? note : add.note.concat(note)
                end
 
         note = note.empty? ? '' : "\n#{indent}\t\t#{note.join("\n#{indent}\t\t").strip}"
@@ -449,9 +295,9 @@ module NA
           target_line = target_proj.line + 1
         end
 
-        contents.insert(target_line, "#{indent}\t- #{action.action}#{note}")
+        contents.insert(target_line, "#{indent}\t- #{add.action}#{note}")
 
-        notify(action.pretty)
+        notify(add.pretty)
       else
         _, actions = find_actions(target, search, tagged, done: done, all: all)
 
@@ -464,12 +310,13 @@ module NA
           projects = shift_index_after(projects, action.line, action.note.count + 1)
 
           if edit
-            new_action, new_note = format_input(fork_editor("#{action.action}\n#{action.note.join("\n")}"))
+            editor_content = "#{action.action}\n#{action.note.join("\n")}"
+            new_action, new_note = Editor.format_input(Editor.fork_editor(editor_content))
             action.action = new_action
             action.note = new_note
           end
 
-          action = process_action(action, priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
+          action.process(priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
 
           target_proj = if target_proj
                           projects.select { |proj| proj.project =~ /^#{target_proj.project}$/ }.first
@@ -503,7 +350,6 @@ module NA
           else
             target_line = target_proj.line + 1
           end
-
 
           contents.insert(target_line, "#{indent}\t- #{action.action}#{note}")
 
@@ -560,6 +406,11 @@ module NA
       parents
     end
 
+    # Output an Omnifocus-friendly action list
+    #
+    # @param      children  The children
+    # @param      level     The indent level
+    #
     def output_children(children, level = 1)
       out = []
       indent = "\t" * level
@@ -595,220 +446,96 @@ module NA
       out
     end
 
-    ##
-    ## Pretty print a list of actions
-    ##
-    ## @param      actions  [Array] The actions
-    ## @param      depth    [Number] The depth
-    ## @param      files    [Array] The files actions originally came from
-    ## @param      regexes  [Array] The regexes used to gather actions
-    ##
-    def output_actions(actions, depth, files: nil, regexes: [], notes: false, nest: false, nest_projects: false)
-      return if files.nil?
-
-      if nest
-        template = '%parent%action'
-
-        parent_files = {}
-        out = []
-
-        if nest_projects
-          actions.each do |action|
-            if parent_files.key?(action.file)
-              parent_files[action.file].push(action)
-            else
-              parent_files[action.file] = [action]
-            end
-          end
-
-          parent_files.each do |file, acts|
-            projects = project_hierarchy(acts)
-            out.push("#{file.sub(%r{^./}, '').shorten_path}:")
-            out.concat(output_children(projects, 0))
-          end
-        else
-          template = '%parent%action'
-
-          actions.each do |action|
-            if parent_files.key?(action.file)
-              parent_files[action.file].push(action)
-            else
-              parent_files[action.file] = [action]
-            end
-          end
-
-          parent_files.each do |k, v|
-            out.push("#{k.sub(%r{^\./}, '')}:")
-            v.each do |a|
-              out.push("\t- [#{a.parent.join('/')}] #{a.action}")
-              out.push("\t\t#{a.note.join("\n\t\t")}") unless a.note.empty?
-            end
-          end
-        end
-        NA::Pager.page out.join("\n")
-      else
-        template = if files.count.positive?
-                     if files.count == 1
-                       '%parent%action'
-                     else
-                       '%filename%parent%action'
-                     end
-                   elsif find_files(depth: depth).count > 1
-                     if depth > 1
-                       '%filename%parent%action'
-                     else
-                       '%project%parent%action'
-                     end
-                   else
-                     '%parent%action'
-                   end
-        template += '%note' if notes
-
-        files.map { |f| notify("{dw}#{f}", debug: true) } if files
-
-        output = actions.map { |action| action.pretty(template: { output: template }, regexes: regexes, notes: notes) }
-        NA::Pager.page(output.join("\n"))
-      end
-    end
-
-    ##
-    ## Read a todo file and create a list of actions
-    ##
-    ## @param      depth       [Number] The directory depth
-    ##                         to search for files
-    ## @param      done        [Boolean] include @done actions
-    ## @param      query       [Hash] The todo file query
-    ## @param      tag         [Array] Tags to search for
-    ## @param      search      [String] A search string
-    ## @param      negate      [Boolean] Invert results
-    ## @param      regex       [Boolean] Interpret as
-    ##                         regular expression
-    ## @param      project     [String] The project
-    ## @param      require_na  [Boolean] Require @na tag
-    ## @param      file_path   [String] file path to parse
-    ##
-    def parse_actions(depth: 1, done: false, query: nil, tag: nil, search: nil, negate: false, regex: false, project: nil, require_na: true, file_path: nil)
-      actions = []
-      required = []
-      optional = []
-      negated = []
-      required_tag = []
-      optional_tag = []
-      negated_tag = []
-      projects = []
-
-      notify("{dw}Tags: #{tag}", debug:true)
-      notify("{dw}Search: #{search}", debug:true)
-
-      tag&.each do |t|
-        unless t[:tag].nil?
-          if negate
-            optional_tag.push(t) if t[:negate]
-            required_tag.push(t) if t[:required] && t[:negate]
-            negated_tag.push(t) unless t[:negate]
-          else
-            optional_tag.push(t) unless t[:negate]
-            required_tag.push(t) if t[:required] && !t[:negate]
-            negated_tag.push(t) if t[:negate]
-          end
-        end
-      end
-
-      unless search.nil? || search.empty?
-        if regex || search.is_a?(String)
-          if negate
-            negated.push(search)
-          else
-            optional.push(search)
-            required.push(search)
-          end
-        else
-          search.each do |t|
-            opt, req, neg = parse_search(t, negate)
-            optional.concat(opt)
-            required.concat(req)
-            negated.concat(neg)
-          end
-        end
-      end
-
-      files = if !file_path.nil?
-                [file_path]
-              elsif query.nil?
-                find_files(depth: depth)
-              else
-                match_working_dir(query)
-              end
-
-      files.each do |file|
-        save_working_dir(File.expand_path(file))
-        content = file.read_file
-        indent_level = 0
-        parent = []
-        in_action = false
-        content.split("\n").each.with_index do |line, idx|
-          if line.project?
-            in_action = false
-            proj = line.project
-            indent = line.indent_level
-
-            if indent.zero? # top level project
-              parent = [proj]
-            elsif indent <= indent_level # if indent level is same or less, split parent before indent level and append
-              parent.slice!(indent, parent.count - indent)
-              parent.push(proj)
-            else # if indent level is greater, append project to parent
-              parent.push(proj)
-            end
-
-            projects.push(NA::Project.new(parent.join(':'), indent, idx, idx))
-
-            indent_level = indent
-          elsif line.blank?
-            in_action = false
-          elsif line.action?
-            in_action = false
-
-            action = line.action
-            new_action = NA::Action.new(file, File.basename(file, ".#{NA.extension}"), parent.dup, action, idx)
-
-            projects[-1].last_line = idx if projects.count.positive?
-
-            next if line.done? && !done
-
-            next if require_na && !line.na?
-
-            has_search = !optional.empty? || !required.empty? || !negated.empty?
-
-            next if has_search && !new_action.search_match?(any: optional,
-                                                            all: required,
-                                                            none: negated)
-
-            if project
-              rx = project.split(%r{[/:]}).join('.*?/.*?')
-              next unless parent.join('/') =~ Regexp.new(rx, Regexp::IGNORECASE)
-            end
-
-            has_tag = !optional_tag.empty? || !required_tag.empty? || !negated_tag.empty?
-            next if has_tag && !new_action.tags_match?(any: optional_tag,
-                                                       all: required_tag,
-                                                       none: negated_tag)
-
-            actions.push(new_action)
-            in_action = true
-          elsif in_action
-            actions[-1].note.push(line.strip) if actions.count.positive?
-            projects[-1].last_line = idx if projects.count.positive?
-          end
-        end
-        projects = projects.dup
-      end
-
-      [files, actions, projects]
-    end
-
     def edit_file(file: nil, app: nil)
       os_open(file, app: app) if file && File.exist?(file)
+    end
+
+    ##
+    ## Use the *nix `find` command to locate files matching NA.extension
+    ##
+    ## @param      depth  [Number] The depth at which to search
+    ##
+    def find_files(depth: 1)
+      return [NA.global_file] if NA.global_file
+
+      files = `find . -maxdepth #{depth} -name "*.#{NA.extension}"`.strip.split("\n")
+      files.each { |f| save_working_dir(File.expand_path(f)) }
+      files
+    end
+
+    ##
+    ## Find a matching path using semi-fuzzy matching.
+    ## Search tokens can include ! and + to negate or make
+    ## required.
+    ##
+    ## @param      search        [Array] search tokens to
+    ##                           match
+    ## @param      distance      [Integer] allowed distance
+    ##                           between characters
+    ## @param      require_last  [Boolean] require regex to
+    ##                           match last element of path
+    ##
+    ## @return     [Array] array of matching directories/todo files
+    ##
+    def match_working_dir(search, distance: 1, require_last: true)
+      file = database_path
+      NA.notify('{r}No na database found', exit_code: 1) unless File.exist?(file)
+
+      dirs = file.read_file.split("\n")
+
+      optional = search.filter { |s| !s[:negate] }.map { |t| t[:token] }
+      required = search.filter { |s| s[:required] }.map { |t| t[:token] }
+      negated = search.filter { |s| s[:negate] }.map { |t| t[:token] }
+
+      optional.push('*') if optional.count.zero? && required.count.zero? && negated.count.positive?
+      if optional == negated
+        required = ['*']
+        optional = ['*']
+      end
+
+      NA.notify("{dw}Optional directory regex: {x}#{optional.map(&:dir_to_rx)}", debug: true)
+      NA.notify("{dw}Required directory regex: {x}#{required.map(&:dir_to_rx)}", debug: true)
+      NA.notify("{dw}Negated directory regex: {x}#{negated.map { |t| t.dir_to_rx(distance: 1, require_last: false) }}", debug: true)
+
+      if require_last
+        dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required, none: negated) }
+      else
+        dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required, none: negated, distance: 2, require_last: false) }
+      end
+
+      dirs = dirs.sort.uniq
+      if dirs.empty? && require_last
+        NA.notify("{y}No matches, loosening search", debug: true)
+        match_working_dir(search, distance: 2, require_last: false)
+      else
+        dirs
+      end
+    end
+
+    ##
+    ## Save a todo file path to the database
+    ##
+    ## @param      todo_file  The todo file path
+    ##
+    def save_working_dir(todo_file)
+      file = database_path
+      content = File.exist?(file) ? file.read_file : ''
+      dirs = content.split(/\n/)
+      dirs.push(File.expand_path(todo_file))
+      dirs.sort!.uniq!
+      File.open(file, 'w') { |f| f.puts dirs.join("\n") }
+    end
+
+    ##
+    ## Get path to database of known todo files
+    ##
+    ## @return     [String] File path
+    ##
+    def database_path(file: 'tdlist.txt')
+      db_dir = File.expand_path('~/.local/share/na')
+      # Create directory if needed
+      FileUtils.mkdir_p(db_dir) unless File.directory?(db_dir)
+      File.join(db_dir, file)
     end
 
     ##
@@ -848,7 +575,7 @@ module NA
               elsif !file_path.nil?
                 [file_path]
               elsif query.nil?
-                find_files(depth: depth)
+                NA.find_files(depth: depth)
               else
                 match_working_dir(query)
               end
@@ -952,18 +679,6 @@ module NA
     end
 
     ##
-    ## Get path to database of known todo files
-    ##
-    ## @return     [String] File path
-    ##
-    def database_path(file: 'tdlist.txt')
-      db_dir = File.expand_path('~/.local/share/na')
-      # Create directory if needed
-      FileUtils.mkdir_p(db_dir) unless File.directory?(db_dir)
-      File.join(db_dir, file)
-    end
-
-    ##
     ## Create a backup file
     ##
     ## @param      target [String] The file to back up
@@ -973,55 +688,6 @@ module NA
       backup = File.join(File.dirname(target), file)
       FileUtils.cp(target, backup)
       NA.notify("{dw}Backup file created at #{backup}", debug: true)
-    end
-
-    ##
-    ## Find a matching path using semi-fuzzy matching.
-    ## Search tokens can include ! and + to negate or make
-    ## required.
-    ##
-    ## @param      search        [Array] search tokens to
-    ##                           match
-    ## @param      distance      [Integer] allowed distance
-    ##                           between characters
-    ## @param      require_last  [Boolean] require regex to
-    ##                           match last element of path
-    ##
-    ## @return     [Array] array of matching directories/todo files
-    ##
-    def match_working_dir(search, distance: 1, require_last: true)
-      file = database_path
-      notify('{r}No na database found', exit_code: 1) unless File.exist?(file)
-
-      dirs = file.read_file.split("\n")
-
-      optional = search.filter { |s| !s[:negate] }.map { |t| t[:token] }
-      required = search.filter { |s| s[:required] }.map { |t| t[:token] }
-      negated = search.filter { |s| s[:negate] }.map { |t| t[:token] }
-
-      optional.push('*') if optional.count.zero? && required.count.zero? && negated.count.positive?
-      if optional == negated
-        required = ['*']
-        optional = ['*']
-      end
-
-      NA.notify("{dw}Optional directory regex: {x}#{optional.map(&:dir_to_rx)}", debug: true)
-      NA.notify("{dw}Required directory regex: {x}#{required.map(&:dir_to_rx)}", debug: true)
-      NA.notify("{dw}Negated directory regex: {x}#{negated.map { |t| t.dir_to_rx(distance: 1, require_last: false) }}", debug: true)
-
-      if require_last
-        dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required, none: negated) }
-      else
-        dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required, none: negated, distance: 2, require_last: false) }
-      end
-
-      dirs = dirs.sort.uniq
-      if dirs.empty? && require_last
-        NA.notify("{y}No matches, loosening search", debug: true)
-        match_working_dir(search, distance: 2, require_last: false)
-      else
-        dirs
-      end
     end
 
     private
@@ -1072,39 +738,6 @@ module NA
       return false if res.strip.size.zero?
 
       multiple ? res.split(/\n/) : res
-    end
-
-    def parse_search(tag, negate)
-      required = []
-      optional = []
-      negated = []
-      new_rx = tag[:token].to_s.wildcard_to_rx
-
-      if negate
-        optional.push(new_rx) if tag[:negate]
-        required.push(new_rx) if tag[:required] && tag[:negate]
-        negated.push(new_rx) unless tag[:negate]
-      else
-        optional.push(new_rx) unless tag[:negate]
-        required.push(new_rx) if tag[:required] && !tag[:negate]
-        negated.push(new_rx) if tag[:negate]
-      end
-
-      [optional, required, negated]
-    end
-
-    ##
-    ## Save a todo file path to the database
-    ##
-    ## @param      todo_file  The todo file path
-    ##
-    def save_working_dir(todo_file)
-      file = database_path
-      content = File.exist?(file) ? file.read_file : ''
-      dirs = content.split(/\n/)
-      dirs.push(File.expand_path(todo_file))
-      dirs.sort!.uniq!
-      File.open(file, 'w') { |f| f.puts dirs.join("\n") }
     end
 
     ##

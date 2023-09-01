@@ -112,47 +112,55 @@ class App
         tokens = Regexp.new(search, Regexp::IGNORECASE)
       else
         tokens = []
-        all_req = search !~ /[+!\-]/ && !options[:or]
+        all_req = search !~ /[+!-]/ && !options[:or]
 
         search.split(/ /).each do |arg|
           m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
           tokens.push({
                         token: Regexp.escape(m['tok']),
                         required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                        negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                        negate: !m['req'].nil? && m['req'] =~ /[!-]/
                       })
         end
       end
 
-      todo = nil
+      todos = nil
       if options[:in]
-        todo = []
+        todos = []
         options[:in].split(/ *, */).each do |a|
           m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
-          todo.push({
-                      token: m['tok'],
-                      required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                      negate: !m['req'].nil? && m['req'] =~ /[!\-]/
-                    })
+          todos.push({
+                       token: m['tok'],
+                       required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                       negate: !m['req'].nil? && m['req'] =~ /[!-]/
+                     })
         end
       end
 
-      files, actions, = NA.parse_actions(depth: depth,
-                                         done: options[:done],
-                                         query: todo,
-                                         search: tokens,
-                                         tag: tags,
-                                         negate: options[:invert],
-                                         regex: options[:regex],
-                                         project: options[:project],
-                                         require_na: false)
+      todo = NA::Todo.new({
+                            depth: depth,
+                            done: options[:done],
+                            query: todos,
+                            search: tokens,
+                            tag: tags,
+                            negate: options[:invert],
+                            regex: options[:regex],
+                            project: options[:project],
+                            require_na: false
+                          })
+
       regexes = if tokens.is_a?(Array)
                   tokens.delete_if { |token| token[:negate] }.map { |token| token[:token] }
                 else
                   [tokens]
                 end
 
-      NA.output_actions(actions, depth, files: files, regexes: regexes, notes: options[:notes], nest: options[:nest], nest_projects: options[:omnifocus])
+      todo.actions.output(depth,
+                          files: todo.files,
+                          regexes: regexes,
+                          notes: options[:notes],
+                          nest: options[:nest],
+                          nest_projects: options[:omnifocus])
     end
   end
 end

@@ -140,11 +140,12 @@ class App
       NA.notify('{r}No search terms provided', exit_code: 1) if tokens.nil? && options[:tagged].empty?
 
       targets.each do |target|
-        NA.update_action(target, tokens,
-                                 done: options[:done],
-                                 edit: options[:edit],
-                                 project: target_proj,
-                                 tagged: tags)
+        NA.update_action(target,
+                         tokens,
+                         done: options[:done],
+                         edit: options[:edit],
+                         project: target_proj,
+                         tagged: tags)
       end
     end
   end

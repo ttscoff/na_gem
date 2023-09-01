@@ -52,10 +52,10 @@ class App
     c.switch %i[done]
 
     c.desc 'Output actions nested by file'
-    c.switch %[nest], negatable: false
+    c.switch %i[nest], negatable: false
 
     c.desc 'Output actions nested by file and project'
-    c.switch %[omnifocus], negatable: false
+    c.switch %i[omnifocus], negatable: false
 
     c.action do |global_options, options, args|
       if global_options[:add]
@@ -75,23 +75,23 @@ class App
                 options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
               end
 
-      all_req = options[:tagged].join(' ') !~ /[+!\-]/ && !options[:or]
+      all_req = options[:tagged].join(' ') !~ /[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
 
         tags.push({
                     tag: m['tag'].wildcard_to_rx,
                     comp: m['op'],
                     value: m['val'],
                     required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                    negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                    negate: !m['req'].nil? && m['req'] =~ /[!-]/
                   })
       end
 
       args.concat(options[:in])
       if args.count.positive?
-        all_req = args.join(' ') !~ /[+!\-]/
+        all_req = args.join(' ') !~ /[+!-]/
 
         tokens = []
         args.each do |arg|
@@ -100,7 +100,7 @@ class App
             tokens.push({
                           token: m['tok'],
                           required: !m['req'].nil? && m['req'] == '+',
-                          negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                          negate: !m['req'].nil? && m['req'] =~ /[!-]/
                         })
           end
         end
@@ -114,14 +114,14 @@ class App
           search = Regexp.new(options[:search].join(' '), Regexp::IGNORECASE)
         else
           search = []
-          all_req = options[:search].join(' ') !~ /[+!\-]/ && !options[:or]
+          all_req = options[:search].join(' ') !~ /[+!-]/ && !options[:or]
 
           options[:search].join(' ').split(/ /).each do |arg|
             m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
             search.push({
                           token: m['tok'],
                           required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                          negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                          negate: !m['req'].nil? && m['req'] =~ /[!-]/
                         })
           end
         end
@@ -133,15 +133,19 @@ class App
       tag = [{ tag: NA.na_tag, value: nil }]
       tag << { tag: 'done', value: nil, negate: true } unless options[:done]
       tag.concat(tags)
-      files, actions, = NA.parse_actions(depth: depth,
-                                         done: options[:done],
-                                         query: tokens,
-                                         tag: tag,
-                                         search: search,
-                                         project: options[:project],
-                                         require_na: require_na)
-
-      NA.output_actions(actions, depth, files: files, notes: options[:notes], nest: options[:nest], nest_projects: options[:omnifocus])
+      todo = NA::Todo.new({ depth: depth,
+                            done: options[:done],
+                            query: tokens,
+                            tag: tag,
+                            search: search,
+                            project: options[:project],
+                            require_na: require_na })
+      NA::Pager.paginate = false if options[:omnifocus]
+      todo.actions.output(depth,
+                          files: todo.files,
+                          notes: options[:notes],
+                          nest: options[:nest],
+                          nest_projects: options[:omnifocus])
     end
   end
 end

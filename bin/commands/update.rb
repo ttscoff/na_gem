@@ -63,7 +63,7 @@ class App
     c.desc 'Delete an action'
     c.switch %i[delete], negatable: false
 
-    c.desc "Open action in editor (#{NA.default_editor}).
+    c.desc "Open action in editor (#{NA::Editor.default_editor}).
             Natural language dates will be parsed and converted in date-based tags."
     c.switch %i[edit], negatable: false
 

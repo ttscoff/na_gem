@@ -18,6 +18,32 @@ module NA
       @note = note
     end
 
+    def process(priority: 0, finish: false, add_tag: [], remove_tag: [], note: [])
+      string = @action.dup
+
+      if priority&.positive?
+        string.gsub!(/(?<=\A| )@priority\(\d+\)/, '').strip!
+        string += " @priority(#{priority})"
+      end
+
+      add_tag.each do |tag|
+        string.gsub!(/(?<=\A| )@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
+        string.strip!
+        string += " @#{tag}"
+      end
+
+      remove_tag.each do |tag|
+        string.gsub!(/(?<=\A| )@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
+        string.strip!
+      end
+
+      string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})" if finish && string !~ /(?<=\A| )@done/
+
+      @action = string
+      @action.expand_date_tags
+      @note = note unless note.empty?
+    end
+
     def to_s
       note = if @note.count.positive?
                "\n#{@note.join("\n")}"
