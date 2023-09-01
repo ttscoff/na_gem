@@ -28,6 +28,10 @@ class App
     c.arg_name 'PATH'
     c.flag %i[file]
 
+    c.desc 'Use a known todo file, partial matches allowed'
+    c.arg_name 'TODO_FILE'
+    c.flag %i[in todo]
+
     c.desc 'Search for files X directories deep'
     c.arg_name 'DEPTH'
     c.flag %i[d depth], must_match: /^[1-9]$/, type: :integer, default_value: 1

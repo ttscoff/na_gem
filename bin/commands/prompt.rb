@@ -9,6 +9,8 @@ class App
     c.desc 'Output the prompt hook for the current shell to STDOUT. Pass an argument to
             specify a shell (zsh, bash, fish)'
     c.arg_name 'SHELL', optional: true
+    c.default_command :show
+
     c.command %i[show] do |s|
       s.action do |_global_options, _options, args|
         shell = if args.count.positive?

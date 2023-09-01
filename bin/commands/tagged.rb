@@ -122,6 +122,7 @@ class App
       todos = nil
       if options[:in]
         todos = []
+        all_req = options[:in] !~ /[+!-]/ && !options[:or]
         options[:in].split(/ *, */).each do |a|
           m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
           todos.push({
@@ -136,13 +137,13 @@ class App
 
       todo = NA::Todo.new({ depth: depth,
                             done: options[:done],
-                            query: todo,
+                            query: todos,
                             search: tokens,
                             tag: tags,
                             negate: options[:invert],
                             project: options[:project],
                             require_na: false })
-      # regexes = tags.delete_if { |token| token[:negate] }.map { |token| token[:token] }
+
       regexes = if tokens.is_a?(Array)
                   tokens.delete_if { |token| token[:negate] }.map { |token| token[:token] }
                 else
