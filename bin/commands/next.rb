@@ -140,6 +140,7 @@ class App
                             search: search,
                             project: options[:project],
                             require_na: require_na })
+      NA.notify("#{NA.theme[:error]}No matches found for #{tokens[0][:token]}. Run `na todos` to see available todo files.") if todo.files.empty?
       NA::Pager.paginate = false if options[:omnifocus]
       todo.actions.output(depth,
                           files: todo.files,
