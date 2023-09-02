@@ -51,8 +51,8 @@ module NA
       negated_tag = []
       projects = []
 
-      NA.notify("{dw}Tags: #{settings[:tag]}", debug:true)
-      NA.notify("{dw}Search: #{settings[:search]}", debug:true)
+      NA.notify("Tags: #{settings[:tag]}", debug:true)
+      NA.notify("Search: #{settings[:search]}", debug:true)
 
       settings[:tag]&.each do |t|
         unless t[:tag].nil?

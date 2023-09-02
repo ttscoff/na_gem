@@ -74,20 +74,9 @@ module NA
     ## @param      notes      [Boolean] Include notes
     ##
     def pretty(extension: 'taskpaper', template: {}, regexes: [], notes: false)
-      # Default colorization, can be overridden with full or partial template variable
-      default_template = {
-        file: '{xbk}',
-        parent: '{c}',
-        parent_divider: '{xw}/',
-        action: '{bg}',
-        project: '{xbk}',
-        tags: '{m}',
-        value_parens: '{m}',
-        values: '{y}',
-        output: '%filename%parents| %action',
-        note: '{dw}'
-      }
-      template = default_template.merge(template)
+      theme = NA::Theme.load_theme
+      template = theme.merge(template)
+
       # Create the hierarchical parent string
       parents = @parent.map do |par|
         NA::Color.template("#{template[:parent]}#{par}")
@@ -204,8 +193,6 @@ module NA
           tag_date = Time.parse(tag_date.strftime('%Y-%m-%d 12:00'))
           date = Time.parse(date.strftime('%Y-%m-%d 12:00'))
         end
-
-        # NA.notify("{dw}Comparing #{tag_date} #{tag[:comp]} #{date}{x}", debug: true)
 
         case tag[:comp]
         when /^>$/

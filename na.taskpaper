@@ -4,8 +4,8 @@ title: NA Todos
 Testing:
 	New Commands:
 Inbox: @inbox
+	- command to archive all done tasks @na @priority(2) @maybe @done(2023-09-02 15:17)
 	- Need to add some tests @priority(5) @na
-	- command to archive all done tasks @na @priority(2) @maybe
 na:
 	New Features:
 	Ideas:

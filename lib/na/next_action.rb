@@ -7,6 +7,10 @@ module NA
 
     attr_accessor :verbose, :extension, :na_tag, :command_line, :command, :globals, :global_file, :cwd_is, :cwd, :stdin
 
+    def theme
+      @theme ||= NA::Theme.load_theme
+    end
+
     ##
     ## Output to STDERR
     ##
@@ -19,7 +23,7 @@ module NA
       return if debug && !NA.verbose
 
       if debug
-        $stderr.puts NA::Color.template("{xdw}#{msg}{x}")
+        $stderr.puts NA::Color.template("{x}#{NA.theme[:debug]}#{msg}{x}")
       else
         $stderr.puts NA::Color.template("{x}#{msg}{x}")
       end
@@ -143,7 +147,7 @@ module NA
                             done: done })
 
       unless todo.actions.count.positive?
-        NA.notify("{r}No matching actions found in {bw}#{File.basename(target, ".#{NA.extension}")}")
+        NA.notify("#{NA.theme[:error]}No matching actions found in #{File.basename(target, ".#{NA.extension}").highlight_filename}")
         return
       end
 
@@ -152,7 +156,7 @@ module NA
       options = todo.actions.map { |action| "#{action.line} % #{action.parent.join('/')} : #{action.action}" }
       res = choose_from(options, prompt: 'Make a selection: ', multiple: true, sorted: true)
 
-      NA.notify('{r}Cancelled', exit_code: 1) unless res && res.length.positive?
+      NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1) unless res && res.length.positive?
 
       selected = NA::Actions.new
       res.each do |result|
@@ -251,7 +255,7 @@ module NA
           if res
             target_proj = insert_project(target, project, projects)
           else
-            NA.notify('{x}Cancelled', exit_code: 1)
+            NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
           end
         end
       end
@@ -270,7 +274,7 @@ module NA
                         projects.select { |proj| proj.project =~ /^#{add.parent.join(':')}$/ }.first
                       end
 
-        NA.notify("{r}Error parsing project #{target}", exit_code: 1) if target_proj.nil?
+        NA.notify("#{NA.theme[:error]}Error parsing project #{NA.theme[:filename]}#{target}", exit_code: 1) if target_proj.nil?
 
         indent = "\t" * target_proj.indent
         note = note.split("\n") unless note.is_a?(Array)
@@ -364,7 +368,7 @@ module NA
       backup_file(target)
       File.open(target, 'w') { |f| f.puts contents.join("\n") }
 
-      add ? notify("{by}Task added to {bw}#{target}") : notify("{by}Task updated in {bw}#{target}")
+      add ? notify("#{NA.theme[:success]}Task added to #{NA.theme[:filename]}#{target}") : notify("#{NA.theme[:error]}Task updated in #{NA.theme[:filename]}#{target}")
     end
 
     ##
@@ -519,7 +523,7 @@ module NA
     ##
     def match_working_dir(search, distance: 1, require_last: true)
       file = database_path
-      NA.notify('{r}No na database found', exit_code: 1) unless File.exist?(file)
+      NA.notify("#{NA.theme[:error]}No na database found", exit_code: 1) unless File.exist?(file)
 
       dirs = file.read_file.split("\n")
 
@@ -533,9 +537,9 @@ module NA
         optional = ['*']
       end
 
-      NA.notify("{dw}Optional directory regex: {x}#{optional.map { |t| t.dir_to_rx(distance: distance) }}", debug: true)
-      NA.notify("{dw}Required directory regex: {x}#{required.map { |t| t.dir_to_rx(distance: distance) }}", debug: true)
-      NA.notify("{dw}Negated directory regex: {x}#{negated.map { |t| t.dir_to_rx(distance: distance, require_last: false) }}", debug: true)
+      NA.notify("Optional directory regex: {x}#{optional.map { |t| t.dir_to_rx(distance: distance) }}", debug: true)
+      NA.notify("Required directory regex: {x}#{required.map { |t| t.dir_to_rx(distance: distance) }}", debug: true)
+      NA.notify("Negated directory regex: {x}#{negated.map { |t| t.dir_to_rx(distance: distance, require_last: false) }}", debug: true)
 
       if require_last
         dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required, none: negated) }
@@ -548,7 +552,7 @@ module NA
 
       dirs = dirs.sort.uniq
       if dirs.empty? && require_last
-        NA.notify('{y}No matches, loosening search', debug: true)
+        NA.notify("#{NA.theme[:warning]}No matches, loosening search", debug: true)
         match_working_dir(search, distance: 2, require_last: false)
       else
         dirs
@@ -605,7 +609,7 @@ module NA
       if file
         restore_modified_file(file)
       else
-        NA.notify('{br}No matching file found')
+        NA.notify("#{NA.theme[:error]}No matching file found")
       end
     end
 
@@ -618,9 +622,9 @@ module NA
       bak_file = File.join(File.dirname(file), ".#{File.basename(file)}.bak")
       if File.exist?(bak_file)
         FileUtils.mv(bak_file, file)
-        NA.notify("{bg}Backup restored for #{file}")
+        NA.notify("#{NA.theme[:success]}Backup restored for #{file.highlight_filename}")
       else
-        NA.notify("{br}Backup file for #{file} not found")
+        NA.notify("#{NA.theme[:error]}Backup file for #{file.highlight_filename} not found")
       end
     end
 
@@ -698,13 +702,13 @@ module NA
              else
                file = database_path
                content = File.exist?(file) ? file.read_file.strip : ''
-               notify('{br}Database empty', exit_code: 1) if content.empty?
+               notify("#{NA.theme[:error]}Database empty", exit_code: 1) if content.empty?
 
                content.split(/\n/)
              end
 
       dirs.map! do |dir|
-        "{xdg}#{dir.sub(/^#{ENV['HOME']}/, '~').sub(%r{/([^/]+)\.#{NA.extension}$}, '/{xby}\1{x}')}"
+        "#{NA.theme[:dirname]}#{dir.sub(/^#{ENV['HOME']}/, '~').sub(%r{/([^/]+)\.#{NA.extension}$}, "/#{NA.theme[:filename]}\\1{x}")}"
       end
 
       puts NA::Color.template(dirs.join("\n"))
@@ -717,13 +721,13 @@ module NA
 
       if searches.key?(title)
         res = yn('Overwrite existing definition?', default: true)
-        notify('{r}Cancelled', exit_code: 0) unless res
+        notify("#{NA.theme[:error]}Cancelled", exit_code: 0) unless res
 
       end
 
       searches[title] = search
       File.open(file, 'w') { |f| f.puts(YAML.dump(searches)) }
-      NA.notify("{y}Search #{title} saved", exit_code: 0)
+      NA.notify("#{NA.theme[:success]}Search #{NA.theme[:filename]}#{title}#{NA.theme[:success]} saved", exit_code: 0)
     end
 
     def load_searches
@@ -743,10 +747,10 @@ module NA
     end
 
     def delete_search(strings = nil)
-      NA.notify('{r}Name search required', exit_code: 1) if strings.nil? || strings.empty?
+      NA.notify("#{NA.theme[:error]}Name of search required", exit_code: 1) if strings.nil? || strings.empty?
 
       file = database_path(file: 'saved_searches.yml')
-      NA.notify('{r}No search definitions file found', exit_code: 1) unless File.exist?(file)
+      NA.notify("#{NA.theme[:error]}No search definitions file found", exit_code: 1) unless File.exist?(file)
 
       searches = YAML.safe_load(file.read_file)
       keys = searches.keys.delete_if { |k| k !~ /(#{strings.join('|')})/ }
@@ -754,26 +758,26 @@ module NA
       res = yn(NA::Color.template(%({y}Remove #{keys.count > 1 ? 'searches' : 'search'} {bw}"#{keys.join(', ')}"{x})),
                default: false)
 
-      NA.notify('{r}Cancelled', exit_code: 1) unless res
+      NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1) unless res
 
       searches.delete_if { |k| keys.include?(k) }
 
       File.open(file, 'w') { |f| f.puts(YAML.dump(searches)) }
 
-      NA.notify("{y}Deleted {bw}#{keys.count}{xy} #{keys.count > 1 ? 'searches' : 'search'}", exit_code: 0)
+      NA.notify("#{NA.theme[:warning]}Deleted {bw}#{keys.count}{x}#{NA.theme[:warning]} #{keys.count > 1 ? 'searches' : 'search'}", exit_code: 0)
     end
 
     def edit_searches
       file = database_path(file: 'saved_searches.yml')
       searches = load_searches
 
-      NA.notify('{r}No search definitions found', exit_code: 1) unless searches.count.positive?
+      NA.notify("#{NA.theme[:error]}No search definitions found", exit_code: 1) unless searches.count.positive?
 
-      editor = ENV['EDITOR']
-      NA.notify('{r}No $EDITOR defined', exit_code: 1) unless editor && TTY::Which.exist?(editor)
+      editor = NA.default_editor
+      NA.notify("#{NA.theme[:error]}No $EDITOR defined", exit_code: 1) unless editor && TTY::Which.exist?(editor)
 
       system %(#{editor} "#{file}")
-      NA.notify("Opened #{file} in #{editor}", exit_code: 0)
+      NA.notify("#{NA.theme[:success]}Opened #{file} in #{editor}", exit_code: 0)
     end
 
     ##
@@ -786,7 +790,7 @@ module NA
       backup = File.join(File.dirname(target), file)
       FileUtils.cp(target, backup)
       save_modified_file(target)
-      NA.notify("{dw}Backup file created at #{backup}", debug: true)
+      NA.notify("#{NA.theme[:warning]}Backup file created at #{backup.highlight_filename}", debug: true)
     end
 
     private
@@ -871,7 +875,7 @@ module NA
       if TTY::Which.exist?('xdg-open')
         `xdg-open #{Shellwords.escape(file)}`
       else
-        notify('{r}Unable to determine executable for `xdg-open`.')
+        notify("#{NA.theme[:error]}Unable to determine executable for `xdg-open`.")
       end
     end
   end

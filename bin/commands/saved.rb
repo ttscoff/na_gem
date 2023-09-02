@@ -25,8 +25,8 @@ class App
 
       if args.empty?
         searches = NA.load_searches
-        NA.notify("{bg}Saved searches stored in {bw}#{NA.database_path(file: 'saved_searches.yml')}")
-        NA.notify(searches.map { |k, v| "{y}#{k}: {w}#{v}" }.join("\n"), exit_code: 0)
+        NA.notify("#{NA.theme[:success]}Saved searches stored in #{NA.database_path(file: 'saved_searches.yml').highlight_filename}")
+        NA.notify(searches.map { |k, v| "#{NA.theme[:filename]}#{k}: #{NA.theme[:values]}#{v}" }.join("\n"))
       else
         args.each do |arg|
           searches = NA.load_searches
@@ -34,13 +34,12 @@ class App
           NA.delete_search(arg) if options[:delete]
 
           keys = searches.keys.delete_if { |k| k !~ /#{arg}/ }
-          NA.notify("{r}Search #{arg} not found", exit_code: 1) if keys.empty?
+          NA.notify("#{NA.theme[:error]}Search #{arg} not found", exit_code: 1) if keys.empty?
 
           key = keys[0]
           cmd = Shellwords.shellsplit(searches[key])
           run(cmd)
         end
-        exit
       end
     end
   end

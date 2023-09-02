@@ -44,7 +44,7 @@ module NA
           IO.select [input]
 
           begin
-            NA.notify("{dw}Pager #{pager}", debug: true)
+            NA.notify("#{NA.theme[:debug]}Pager #{pager}", debug: true)
             exec(pager)
           rescue SystemCallError => e
             raise Errors::DoingStandardError, "Pager error, #{e}"

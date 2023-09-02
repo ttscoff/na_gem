@@ -77,7 +77,7 @@ module NA
                    end
         template += '%note' if notes
 
-        files.map { |f| NA.notify("{dw}#{f}", debug: true) } if files
+        files.map { |f| NA.notify(f, debug: true) } if files
 
         output = map { |action| action.pretty(template: { output: template }, regexes: regexes, notes: notes) }
         NA::Pager.page(output.join("\n"))

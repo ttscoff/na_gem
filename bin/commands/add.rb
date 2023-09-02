@@ -103,7 +103,7 @@ class App
           unless File.exist?(target)
 
             res = NA.yn(NA::Color.template("{by}Specified file not found, create #{todo}"), default: true)
-            NA.notify('{r}Cancelled{x}', exit_code: 1) unless res
+            NA.notify("#{NA.theme[:error]}Cancelled{x}", exit_code: 1) unless res
 
             basename = File.basename(target, ".#{NA.extension}")
             NA.create_todo(target, basename, template: global_options[:template])
@@ -122,7 +122,7 @@ class App
           end
         end
         target = files.count > 1 ? NA.select_file(files) : files[0]
-        NA.notify('{r}Cancelled{x}', exit_code: 1) unless files.count.positive? && File.exist?(target)
+        NA.notify("#{NA.theme[:error]}Cancelled{x}", exit_code: 1) unless files.count.positive? && File.exist?(target)
 
       end
 

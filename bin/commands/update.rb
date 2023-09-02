@@ -188,7 +188,7 @@ class App
 
       if options[:file]
         file = File.expand_path(options[:file])
-        NA.notify('{r}File not found', exit_code: 1) unless File.exist?(file)
+        NA.notify("#{NA.theme[:error]}File not found", exit_code: 1) unless File.exist?(file)
 
         targets = [file]
       elsif options[:todo]
@@ -207,9 +207,9 @@ class App
           targets = [dirs[0]]
         elsif dirs.count.positive?
           targets = NA.select_file(dirs, multiple: true)
-          NA.notify('{r}Cancelled', exit_code: 1) unless targets && targets.count.positive?
+          NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1) unless targets && targets.count.positive?
         else
-          NA.notify('{r}Todo not found', exit_code: 1) unless targets && targets.count.positive?
+          NA.notify("#{NA.theme[:error]}Todo not found", exit_code: 1) unless targets && targets.count.positive?
 
         end
       else
@@ -222,10 +222,10 @@ class App
                                         search: tokens,
                                         tag: tags
                                       })
-        NA.notify('{r}No todo file found', exit_code: 1) if files.count.zero?
+        NA.notify("#{NA.theme[:error]}No todo file found", exit_code: 1) if files.count.zero?
 
         targets = files.count > 1 ? NA.select_file(files, multiple: true) : [files[0]]
-        NA.notify('{r}Cancelled{x}', exit_code: 1) unless files.count.positive?
+        NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1) unless files.count.positive?
 
       end
 
@@ -234,7 +234,7 @@ class App
         options[:project] = 'Archive'
       end
 
-      NA.notify('{r}No search terms provided', exit_code: 1) if tokens.nil? && options[:tagged].empty?
+      NA.notify("#{NA.theme[:error]}No search terms provided", exit_code: 1) if tokens.nil? && options[:tagged].empty?
 
       targets.each do |target|
         NA.update_action(target, tokens,

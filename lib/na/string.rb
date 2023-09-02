@@ -7,6 +7,26 @@ REGEX_TIME = /^#{REGEX_CLOCK}$/i.freeze
 # String helpers
 class ::String
   ##
+  ## Insert a comment character at the start of every line
+  ##
+  ## @param      char  [String] The character to insert (default #)
+  ##
+  def comment(char = "#")
+    split(/\n/).map { |l| "# #{l}" }.join("\n")
+  end
+
+  ##
+  ## Colorize the dirname and filename of a path
+  ##
+  ## @return     Colorized string
+  ##
+  def highlight_filename
+    dir = File.dirname(self)
+    file = File.basename(self, ".#{NA.extension}")
+    "#{NA.theme[:dirname]}#{dir}/#{NA.theme[:filename]}#{file}{x}"
+  end
+
+  ##
   ## Tests if object is nil or empty
   ##
   ## @return     [Boolean] true if object is defined and
@@ -108,7 +128,7 @@ class ::String
   ##
   def highlight_search(regexes, color: '{y}', last_color: '{xg}')
     string = dup
-    color = NA::Color.template(color)
+    color = NA::Color.template(color.dup)
     regexes.each do |rx|
       next if rx.nil?
 

@@ -5,7 +5,7 @@ module NA
   # Terminal output color functions.
   module Color
     # Regexp to match excape sequences
-    ESCAPE_REGEX = /(?<=\[)(?:(?:(?:[349]|10)[0-9]|[0-9])?;?)+(?=m)/.freeze
+    ESCAPE_REGEX = /(?<=\[)(?:(?:(?:[349]|10)[0-9]|[0-9])?;?)+(?=m)/
 
     # All available color names. Available as methods and string extensions.
     #
@@ -214,8 +214,14 @@ module NA
       ## m: magenta, r: red, b: bold, u: underline, i: italic,
       ## x: reset (remove background, color, emphasis)
       ##
+      ## Also accepts {#RGB} and {#RRGGBB} strings. Put a b before
+      ## the hash to make it a background color
+      ##
       ## @example Convert a templated string
       ##   Color.template('{Rwb}Warning:{x} {w}you look a little {g}ill{x}')
+      ##
+      ## @example Convert using RGB colors
+      ##   Color.template('{#f0a}This is an RGB color')
       ##
       ## @param      input  [String, Array] The template
       ##                    string. If this is an array, the
@@ -227,6 +233,11 @@ module NA
       def template(input)
         input = input.join(' ') if input.is_a? Array
         return input.gsub(/(?<!\\)\{(\w+)\}/i, '') unless NA::Color.coloring?
+
+        input = input.gsub(/(?<!\\)\{((?:[fb]g?)?#[a-f0-9]{3,6})\}/i) do
+                  hex = Regexp.last_match(1)
+                  rgb(hex)
+                end
 
         fmt = input.gsub(/%/, '%%')
         fmt = fmt.gsub(/(?<!\\)\{(\w+)\}/i) do
@@ -300,6 +311,17 @@ module NA
     def rgb(hex)
       is_bg = hex.match(/^bg?#/) ? true : false
       hex_string = hex.sub(/^([fb]g?)?#/, '')
+
+      if hex_string.length == 3
+        parts = hex_string.match(/(?<r>.)(?<g>.)(?<b>.)/)
+
+        t = []
+        %w[r g b].each do |e|
+          t << parts[e]
+          t << parts[e]
+        end
+        hex_string = t.join('')
+      end
 
       parts = hex_string.match(/(?<r>..)(?<g>..)(?<b>..)/)
       t = []

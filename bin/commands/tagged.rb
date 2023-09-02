@@ -133,7 +133,7 @@ class App
         end
       end
 
-      NA.notify('{br}No actions matched search', exit_code: 1) if tags.empty? && tokens.empty?
+      NA.notify("#{NA.theme[:error]}No actions matched search", exit_code: 1) if tags.empty? && tokens.empty?
 
       todo = NA::Todo.new({ depth: depth,
                             done: options[:done],
