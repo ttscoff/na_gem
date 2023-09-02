@@ -55,7 +55,7 @@ class App
                  reader.read_line(NA::Color.template('{by}> {bw}')).strip
                end
 
-      NA.notify('{br}Empty input{x}', exit_code: 1) unless action
+      NA.notify('{br}Empty input{x}', exit_code: 1) if (action.nil? || action.empty?) && options[:tagged].empty?
 
       if action
         tokens = nil

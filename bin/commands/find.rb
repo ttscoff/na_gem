@@ -112,7 +112,7 @@ class App
         tokens = Regexp.new(search, Regexp::IGNORECASE)
       else
         tokens = []
-        all_req = search !~ /[+!-]/ && !options[:or]
+        all_req = search !~ /(?<=[, ])[+!-]/ && !options[:or]
 
         search.split(/ /).each do |arg|
           m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)

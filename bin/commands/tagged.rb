@@ -79,9 +79,9 @@ class App
 
       tags = []
 
-      all_req = args.join(' ') !~ /[+!-]/ && !options[:or]
+      all_req = args.join(' ') !~ /(?<=[, ])[+!-]/ && !options[:or]
       args.join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?) *(?:(?<op>[=<>]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$\^]+?) *(?:(?<op>[=<>]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
         next if m.nil?
 
         tags.push({
@@ -106,7 +106,7 @@ class App
           tokens = Regexp.new(options[:search].join(' '), Regexp::IGNORECASE)
         else
           tokens = []
-          all_req = options[:search].join(' ') !~ /[+!-]/ && !options[:or]
+          all_req = options[:search].join(' ') !~ /(?<=[, ])[+!-]/ && !options[:or]
 
           options[:search].join(' ').split(/ /).each do |arg|
             m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
@@ -122,7 +122,7 @@ class App
       todos = nil
       if options[:in]
         todos = []
-        all_req = options[:in] !~ /[+!-]/ && !options[:or]
+        all_req = options[:in] !~ /(?<=[, ])[+!-]/ && !options[:or]
         options[:in].split(/ *, */).each do |a|
           m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
           todos.push({

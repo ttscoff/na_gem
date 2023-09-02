@@ -75,7 +75,7 @@ class App
                 options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
               end
 
-      all_req = options[:tagged].join(' ') !~ /[+!-]/ && !options[:or]
+      all_req = options[:tagged].join(' ') !~ /(?<=[, ])[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
         m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
@@ -91,7 +91,7 @@ class App
 
       args.concat(options[:in])
       if args.count.positive?
-        all_req = args.join(' ') !~ /[+!-]/
+        all_req = args.join(' ') !~ /(?<=[, ])[+!-]/
 
         tokens = []
         args.each do |arg|
@@ -114,7 +114,7 @@ class App
           search = Regexp.new(options[:search].join(' '), Regexp::IGNORECASE)
         else
           search = []
-          all_req = options[:search].join(' ') !~ /[+!-]/ && !options[:or]
+          all_req = options[:search].join(' ') !~ /(?<=[, ])[+!-]/ && !options[:or]
 
           options[:search].join(' ').split(/ /).each do |arg|
             m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
