@@ -8,7 +8,16 @@ class App
   /, :, or a space, e.g. `na todos code/marked`'
   arg_name 'QUERY', optional: true
   command %i[todos] do |c|
-    c.action do |_global_options, _options, args|
+    c.desc 'Open the todo database in an editor for manual modification'
+    c.switch %i[e edit]
+
+    c.action do |_global_options, options, args|
+      if options[:edit]
+        system("#{NA::Editor.editor_with_args} #{NA.database_path}")
+
+        Process.exit
+      end
+
       if args.count.positive?
         all_req = args.join(' ') !~ /(?<=[, ])[+!-]/
 

@@ -2,7 +2,7 @@ module NA
   module Editor
     class << self
       def default_editor
-        editor ||= ENV['NA_EDITOR'] || ENV['GIT_EDITOR'] || ENV['EDITOR']
+        editor ||= ENV['NA_EDITOR'] || ENV['EDITOR'] || ENV['GIT_EDITOR']
 
         if editor.good? && TTY::Which.exist?(editor)
           return editor
