@@ -37,6 +37,7 @@ class App
   default_command :next
 
   NA::Color.coloring = $stdin.isatty
+  NA::Pager.paginate = $stdin.isatty
 
   desc 'Add a next action (deprecated, for backwards compatibility)'
   switch %i[a add], negatable: false
@@ -84,7 +85,7 @@ class App
 
   pre do |global, _command, _options, _args|
     NA.verbose = global[:debug]
-    NA::Pager.paginate = global[:pager]
+    NA::Pager.paginate = global[:pager] && $stdout.isatty
     NA::Color.coloring = global[:color]
     NA.extension = global[:ext]
     NA.na_tag = global[:na_tag]
