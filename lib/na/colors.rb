@@ -334,7 +334,7 @@ module NA
 
     # Regular expression that is used to scan for ANSI-sequences while
     # uncoloring strings.
-    COLORED_REGEXP = /\e\[(?:(?:[349]|10)[0-7]|[0-9])?m/.freeze
+    COLORED_REGEXP = /\e\[(?:(?:(?:[349]|10)[0-9]|[0-9])?;?)+m/
 
     # Returns an uncolored version of the string, that is all
     # ANSI-sequences are stripped from the string.

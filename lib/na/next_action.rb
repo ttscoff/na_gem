@@ -800,8 +800,6 @@ module NA
       NA.notify("#{NA.theme[:warning]}Backup file created at #{backup.highlight_filename}", debug: true)
     end
 
-    private
-
     ##
     ## Generate a menu of options and allow user selection
     ##
@@ -826,29 +824,42 @@ module NA
               header = "esc: cancel,#{multiple ? ' tab: multi-select, ctrl-a: select all,' : ''} return: confirm"
               default_args << %(--header="#{header}")
               default_args.concat(fzf_args)
-              `echo #{Shellwords.escape(options.join("\n"))}|#{TTY::Which.which('fzf')} #{default_args.join(' ')}`.strip
+              options = NA::Color.uncolor(NA::Color.template(options.join("\n")))
+              `echo #{Shellwords.escape(options)}|#{TTY::Which.which('fzf')} #{default_args.join(' ')}`.strip
             elsif TTY::Which.exist?('gum')
               args = [
                 '--cursor.foreground="151"',
                 '--item.foreground=""'
               ]
               args.push '--no-limit' if multiple
-              puts NS::Color.template("#{NA.theme[:prompt]}#{prompt}{x}")
-              `echo #{Shellwords.escape(options.join("\n"))}|#{TTY::Which.which('gum')} choose #{args.join(' ')}`.strip
+              puts NA::Color.template("#{NA.theme[:prompt]}#{prompt}{x}")
+              options = NA::Color.uncolor(NA::Color.template(options.join("\n")))
+              `echo #{Shellwords.escape(options)}|#{TTY::Which.which('gum')} choose #{args.join(' ')}`.strip
             else
               reader = TTY::Reader.new
               puts
               options.each.with_index do |f, i|
-                puts NA::Color.template(format("#{NA.theme[:prompt]}%<idx> 2d{xw}) #{NA.theme[:file]}%<action>s{x}\n", idx: i + 1, action: f))
+                puts NA::Color.template(format("#{NA.theme[:prompt]}%<idx> 2d{xw}) #{NA.theme[:filename]}%<action>s{x}\n", idx: i + 1, action: f))
               end
               result = reader.read_line(NA::Color.template("#{NA.theme[:prompt]}#{prompt}{x}")).strip
-              result.to_i&.positive? ? options[result.to_i - 1] : nil
+              if multiple
+                mult_res = []
+                result = result.gsub(/,/, ' ').gsub(/ +/, ' ').split(/ /)
+                result.each do |r|
+                  mult_res << options[r.to_i - 1] if r.to_i&.positive?
+                end
+                mult_res.join("\n")
+              else
+                result.to_i&.positive? ? options[result.to_i - 1] : nil
+              end
             end
 
-      return false if res.strip.size.zero?
-
-      multiple ? res.split(/\n/) : res
+      return false if res&.strip&.size&.zero?
+      pp NA::Color.uncolor(NA::Color.template(res))
+      multiple ? NA::Color.uncolor(NA::Color.template(res)).split(/\n/) : NA::Color.uncolor(NA::Color.template(res))
     end
+
+    private
 
     ##
     ## macOS open command
