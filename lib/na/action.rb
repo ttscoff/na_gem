@@ -79,7 +79,7 @@ module NA
 
       # Create the hierarchical parent string
       parents = @parent.map do |par|
-        NA::Color.template("#{template[:parent]}#{par}")
+        NA::Color.template("{x}#{template[:parent]}#{par}")
       end.join(NA::Color.template(template[:parent_divider]))
       parents = "#{NA.theme[:bracket]}[#{NA.theme[:error]}#{parents}#{NA.theme[:bracket]}]{x} "
 
@@ -90,7 +90,7 @@ module NA
       file = @file.sub(%r{^\./}, '').sub(/#{ENV['HOME']}/, '~')
       file = file.sub(/\.#{extension}$/, '')
       # colorize the basename
-      file = file.sub(/#{File.basename(@file, ".#{extension}")}$/, "#{NA.theme[:file]}#{File.basename(@file, ".#{extension}")}{x}")
+      file = file.highlight_filename
       file_tpl = "#{template[:file]}#{file} {x}"
       filename = NA::Color.template(file_tpl)
 

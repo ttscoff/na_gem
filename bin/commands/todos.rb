@@ -28,7 +28,7 @@ class App
               tokens.push({
                             token: m['tok'],
                             required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                            negate: !m['req'].nil? && m['req'] =~ /[!-]/
+                            negate: (!m['req'].nil? && m['req'] =~ /[!-]/) ? true : false
                           })
             end
           end

@@ -16,17 +16,6 @@ class ::String
   end
 
   ##
-  ## Colorize the dirname and filename of a path
-  ##
-  ## @return     Colorized string
-  ##
-  def highlight_filename
-    dir = File.dirname(self).sub(/^#{ENV['HOME']}/, '~')
-    file = File.basename(self, ".#{NA.extension}")
-    "#{NA.theme[:dirname]}#{dir}/#{NA.theme[:filename]}#{file}{x}"
-  end
-
-  ##
   ## Tests if object is nil or empty
   ##
   ## @return     [Boolean] true if object is defined and
@@ -93,6 +82,17 @@ class ::String
 
   def na?
     self =~ /@#{NA.na_tag}\b/
+  end
+
+  ##
+  ## Colorize the dirname and filename of a path
+  ##
+  ## @return     Colorized string
+  ##
+  def highlight_filename
+    dir = File.dirname(self).shorten_path
+    file = File.basename(self, ".#{NA.extension}")
+    "#{NA.theme[:dirname]}#{dir}/#{NA.theme[:filename]}#{file}{x}"
   end
 
   ##

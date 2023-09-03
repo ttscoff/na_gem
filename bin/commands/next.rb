@@ -96,15 +96,17 @@ class App
         tokens = []
         args.each do |arg|
           arg.split(/ *, */).each do |a|
-            m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
+            m = a.match(/^(?<req>[+!-])?(?<tok>.*?)$/)
             tokens.push({
                           token: m['tok'],
                           required: !m['req'].nil? && m['req'] == '+',
-                          negate: !m['req'].nil? && m['req'] =~ /[!-]/
+                          negate: (!m['req'].nil? && m['req'] =~ /[!-]/) ? true : false
                         })
           end
         end
       end
+
+      pp tokens
 
       search = nil
       if options[:search]
@@ -121,7 +123,7 @@ class App
             search.push({
                           token: m['tok'],
                           required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                          negate: !m['req'].nil? && m['req'] =~ /[!-]/
+                          negate: (!m['req'].nil? && m['req'] =~ /[!-]/) ? true : false
                         })
           end
         end

@@ -528,7 +528,7 @@ module NA
       dirs = file.read_file.split("\n")
 
       optional = search.filter { |s| !s[:negate] }.map { |t| t[:token] }
-      required = search.filter { |s| s[:required] }.map { |t| t[:token] }
+      required = search.filter { |s| s[:required] && !s[:negate] }.map { |t| t[:token] }
       negated = search.filter { |s| s[:negate] }.map { |t| t[:token] }
 
       optional.push('*') if optional.count.zero? && required.count.zero? && negated.count.positive?
@@ -550,7 +550,7 @@ module NA
         end
       end
 
-      dirs = dirs.sort.uniq
+      dirs = dirs.sort_by { |d| File.basename(d) }.uniq
       if dirs.empty? && require_last
         NA.notify("#{NA.theme[:warning]}No matches, loosening search", debug: true)
         match_working_dir(search, distance: 2, require_last: false)
