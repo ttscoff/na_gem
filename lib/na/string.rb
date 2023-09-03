@@ -21,7 +21,7 @@ class ::String
   ## @return     Colorized string
   ##
   def highlight_filename
-    dir = File.dirname(self)
+    dir = File.dirname(self).sub(/^#{ENV['HOME']}/, '~')
     file = File.basename(self, ".#{NA.extension}")
     "#{NA.theme[:dirname]}#{dir}/#{NA.theme[:filename]}#{file}{x}"
   end
@@ -108,7 +108,7 @@ class ::String
   ##
   ## @return     [String] string with @tags highlighted
   ##
-  def highlight_tags(color: '{m}', value: '{y}', parens: '{m}', last_color: '{xg}')
+  def highlight_tags(color: NA.theme[:tags], value: NA.theme[:value], parens: NA.theme[:value_parens], last_color: NA.theme[:action])
     tag_color = NA::Color.template(color)
     paren_color = NA::Color.template(parens)
     value_color = NA::Color.template(value)
@@ -126,7 +126,7 @@ class ::String
   ## @param      last_color  [String] Color to restore after
   ##                         highlight
   ##
-  def highlight_search(regexes, color: '{y}', last_color: '{xg}')
+  def highlight_search(regexes, color: NA.theme[:search_highlight], last_color: NA.theme[:action])
     string = dup
     color = NA::Color.template(color.dup)
     regexes.each do |rx|

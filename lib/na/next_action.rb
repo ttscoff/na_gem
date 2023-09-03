@@ -104,7 +104,7 @@ module NA
         f.puts(content)
       end
       save_working_dir(target)
-      notify("{y}Created {bw}#{target}")
+      notify("#{NA.theme[:warning]}Created #{NA.theme[:file]}#{target}")
     end
 
     ##
@@ -120,7 +120,7 @@ module NA
     def select_file(files, multiple: false)
       res = choose_from(files, prompt: multiple ? 'Select files' : 'Select a file', multiple: multiple)
 
-      notify('{r}No file selected, cancelled', exit_code: 1) unless res && res.length.positive?
+      notify("#{NA.theme[:error]}No file selected, cancelled", exit_code: 1) unless res && res.length.positive?
 
       res
     end
@@ -251,7 +251,7 @@ module NA
         project = project.sub(/:$/, '')
         target_proj = projects.select { |pr| pr.project =~ /#{project.gsub(/:/, '.*?:.*?')}/i }.first
         if target_proj.nil?
-          res = NA.yn(NA::Color.template("{y}Project {bw}#{project}{xy} doesn't exist, add it"), default: true)
+          res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{project}#{NA.theme[:warning]} doesn't exist, add it"), default: true)
           if res
             target_proj = insert_project(target, project, projects)
           else
@@ -708,7 +708,7 @@ module NA
              end
 
       dirs.map! do |dir|
-        "#{NA.theme[:dirname]}#{dir.sub(/^#{ENV['HOME']}/, '~').sub(%r{/([^/]+)\.#{NA.extension}$}, "/#{NA.theme[:filename]}\\1{x}")}"
+        dir.highlight_filename
       end
 
       puts NA::Color.template(dirs.join("\n"))
@@ -755,7 +755,7 @@ module NA
       searches = YAML.safe_load(file.read_file)
       keys = searches.keys.delete_if { |k| k !~ /(#{strings.join('|')})/ }
 
-      res = yn(NA::Color.template(%({y}Remove #{keys.count > 1 ? 'searches' : 'search'} {bw}"#{keys.join(', ')}"{x})),
+      res = yn(NA::Color.template(%(#{NA.theme[:warning]}Remove #{keys.count > 1 ? 'searches' : 'search'} #{NA.theme[:file]}"#{keys.join(', ')}"{x})),
                default: false)
 
       NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1) unless res
@@ -826,15 +826,15 @@ module NA
                 '--item.foreground=""'
               ]
               args.push '--no-limit' if multiple
-              puts NS::Color.template("{bw}#{prompt}{x}")
+              puts NS::Color.template("#{NA.theme[:prompt]}#{prompt}{x}")
               `echo #{Shellwords.escape(options.join("\n"))}|#{TTY::Which.which('gum')} choose #{args.join(' ')}`.strip
             else
               reader = TTY::Reader.new
               puts
               options.each.with_index do |f, i|
-                puts NA::Color.template(format("{bw}%<idx> 2d{xw}) {y}%<action>s{x}\n", idx: i + 1, action: f))
+                puts NA::Color.template(format("#{NA.theme[:prompt]}%<idx> 2d{xw}) #{NA.theme[:file]}%<action>s{x}\n", idx: i + 1, action: f))
               end
-              result = reader.read_line(NA::Color.template("{bw}#{prompt}{x}")).strip
+              result = reader.read_line(NA::Color.template("#{NA.theme[:prompt]}#{prompt}{x}")).strip
               result.to_i&.positive? ? options[result.to_i - 1] : nil
             end
 

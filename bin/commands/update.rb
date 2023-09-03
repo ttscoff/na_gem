@@ -111,8 +111,8 @@ class App
                  ]
                  `gum input #{opts.join(' ')}`.strip
                elsif $stdin.isatty && options[:tagged].empty?
-                 puts NA::Color.template('{bm}Enter search string:{x}')
-                 reader.read_line(NA::Color.template('{by}> {bw}')).strip
+                 NA.notify("#{NA.theme[:prompt]}Enter search string:")
+                 reader.read_line(NA::Color.template("#{NA.theme[:file]}> #{NA.theme[:action]}")).strip
                end
 
       if action
@@ -170,7 +170,7 @@ class App
                       args << '--width $(tput cols)'
                       `gum write #{args.join(' ')}`.strip.split("\n")
                     else
-                      puts NA::Color.template('{bm}Enter a note, {bw}CTRL-d{bm} to end editing{bw}')
+                      NA.notify("#{NA.theme[:prompt]}Enter a note, {bw}CTRL-d#{NA.theme[:prompt]} to end editing:#{NA.theme[:action]}")
                       reader.read_multiline
                     end
                   end

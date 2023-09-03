@@ -81,7 +81,7 @@ module NA
       parents = @parent.map do |par|
         NA::Color.template("#{template[:parent]}#{par}")
       end.join(NA::Color.template(template[:parent_divider]))
-      parents = "{dc}[{x}#{parents}{dc}]{x} "
+      parents = "#{NA.theme[:bracket]}[#{NA.theme[:error]}#{parents}#{NA.theme[:bracket]}]{x} "
 
       # Create the project string
       project = NA::Color.template("#{template[:project]}#{@project}{x} ")
@@ -90,7 +90,7 @@ module NA
       file = @file.sub(%r{^\./}, '').sub(/#{ENV['HOME']}/, '~')
       file = file.sub(/\.#{extension}$/, '')
       # colorize the basename
-      file = file.sub(/#{File.basename(@file, ".#{extension}")}$/, "{dw}#{File.basename(@file, ".#{extension}")}{x}")
+      file = file.sub(/#{File.basename(@file, ".#{extension}")}$/, "#{NA.theme[:file]}#{File.basename(@file, ".#{extension}")}{x}")
       file_tpl = "#{template[:file]}#{file} {x}"
       filename = NA::Color.template(file_tpl)
 

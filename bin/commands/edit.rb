@@ -51,8 +51,8 @@ class App
                  ]
                  `gum input #{opts.join(' ')}`.strip
                elsif $stdin.isatty && options[:tagged].empty?
-                 puts NA::Color.template('{bm}Enter search string:{x}')
-                 reader.read_line(NA::Color.template('{by}> {bw}')).strip
+                 NA.notify("#{NA.theme[:prompt]}Enter search string:")
+                 reader.read_line(NA::Color.template("#{NA.theme[:warning]}> #{NA.theme[:action]}")).strip
                end
 
       NA.notify("#{NA.theme[:error]}Empty input", exit_code: 1) if (action.nil? || action.empty?) && options[:tagged].empty?

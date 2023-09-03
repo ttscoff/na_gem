@@ -62,25 +62,23 @@ class App
       if NA.global_file
         target = File.expand_path(NA.global_file)
         unless File.exist?(target)
-          res = NA.yn(NA::Color.template('{by}Specified file not found, create it'), default: true)
+          res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Specified file not found, create it"), default: true)
           if res
             basename = File.basename(target, ".#{NA.extension}")
             NA.create_todo(target, basename, template: global_options[:template])
           else
-            puts NA::Color.template('{r}Cancelled{x}')
-            Process.exit 1
+            NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
           end
         end
       elsif options[:file]
         target = File.expand_path(options[:file])
         unless File.exist?(target)
-          res = NA.yn(NA::Color.template('{by}Specified file not found, create it'), default: true)
+          res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Specified file not found, create it"), default: true)
           if res
             basename = File.basename(target, ".#{NA.extension}")
             NA.create_todo(target, basename, template: global_options[:template])
           else
-            puts NA::Color.template('{r}Cancelled{x}')
-            Process.exit 1
+            NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
           end
         end
       elsif options[:todo]
@@ -102,7 +100,7 @@ class App
           target = File.expand_path(todo)
           unless File.exist?(target)
 
-            res = NA.yn(NA::Color.template("{by}Specified file not found, create #{todo}"), default: true)
+            res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Specified file not found, create #{todo}"), default: true)
             NA.notify("#{NA.theme[:error]}Cancelled{x}", exit_code: 1) unless res
 
             basename = File.basename(target, ".#{NA.extension}")
@@ -113,7 +111,7 @@ class App
       else
         files = NA.find_files(depth: options[:depth])
         if files.count.zero?
-          res = NA.yn(NA::Color.template('{by}No todo file found, create one'), default: true)
+          res = NA.yn(NA::Color.template("#{NA.theme[:warning]}No todo file found, create one"), default: true)
           if res
             basename = File.expand_path('.').split('/').last
             target = "#{basename}.#{NA.extension}"
@@ -131,8 +129,8 @@ class App
                elsif $stdin.isatty && TTY::Which.exist?('gum')
                  `gum input --placeholder "Enter a task" --char-limit=500 --width=#{TTY::Screen.columns}`.strip
                elsif $stdin.isatty
-                 puts NA::Color.template('{bm}Enter task:{x}')
-                 reader.read_line(NA::Color.template('{by}> {bw}')).strip
+                 NA.notify("#{NA.theme[:prompt]}Enter task:")
+                 reader.read_line(NA::Color.template("#{NA.theme[:warning]}> #{NA.theme[:action]}")).strip
                end
 
       if action.nil? || action.empty?
@@ -171,7 +169,7 @@ class App
                       args << '--width $(tput cols)'
                       `gum write #{args.join(' ')}`.strip.split("\n")
                     else
-                      puts NA::Color.template('{bm}Enter a note, {bw}CTRL-d{bm} to end editing{bw}')
+                      NA.notify("#{NA.theme[:prompt]}Enter a note, {bw}CTRL-d#{NA.theme[:prompt]} to end editing#{NA.theme[:action]}")
                       reader.read_multiline
                     end
                   end
