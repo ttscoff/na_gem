@@ -57,6 +57,10 @@ class App
     c.desc 'Output actions nested by file and project'
     c.switch %i[omnifocus], negatable: false
 
+    c.desc 'Save this search for future use'
+    c.arg_name 'TITLE'
+    c.flag %i[save]
+
     c.action do |global_options, options, args|
       if global_options[:add]
         cmd = ['add']
@@ -65,6 +69,11 @@ class App
         cmd.push(NA.command_line) if NA.command_line.count > 1
         cmd.unshift(*NA.globals)
         exit run(cmd)
+      end
+
+      if options[:save]
+        title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
+        NA.save_search(title, "#{NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '').split(' ').map { |t| %("#{t}") }.join(' ')}")
       end
 
       options[:nest] = true if options[:omnifocus]
