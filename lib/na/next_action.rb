@@ -758,7 +758,7 @@ module NA
       strings = [strings] unless strings.is_a? Array
 
       searches = YAML.safe_load(file.read_file)
-      keys = searches.keys.delete_if { |k| k !~ /(#{strings.join('|')})/ }
+      keys = searches.keys.delete_if { |k| k !~ /(#{strings.map(&:wildcard_to_rx).join('|')})/ }
 
       NA.notify("#{NA.theme[:error]}No search named #{strings.join(', ')} found", exit_code: 1) if keys.empty?
 
