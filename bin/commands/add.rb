@@ -126,11 +126,8 @@ class App
 
       action = if args.count.positive?
                  args.join(' ').strip
-               elsif $stdin.isatty && TTY::Which.exist?('gum')
-                 `gum input --placeholder "Enter a task" --char-limit=500 --width=#{TTY::Screen.columns}`.strip
-               elsif $stdin.isatty
-                 NA.notify("#{NA.theme[:prompt]}Enter task:")
-                 reader.read_line(NA::Color.template("#{NA.theme[:warning]}> #{NA.theme[:action]}")).strip
+               else
+                 NA.request_input(options, prompt: 'Enter a task')
                end
 
       if action.nil? || action.empty?

@@ -103,18 +103,9 @@ class App
 
       action = if args.count.positive?
                  args.join(' ').strip
-               elsif $stdin.isatty && TTY::Which.exist?('gum') && options[:tagged].empty?
-                 opts = [
-                   %(--placeholder "Enter a task to search for"),
-                   '--char-limit=500',
-                   "--width=#{TTY::Screen.columns}"
-                 ]
-                 `gum input #{opts.join(' ')}`.strip
-               elsif $stdin.isatty && options[:tagged].empty?
-                 NA.notify("#{NA.theme[:prompt]}Enter search string:")
-                 reader.read_line(NA::Color.template("#{NA.theme[:filename]}> #{NA.theme[:action]}")).strip
+               else
+                 NA.request_input(options, prompt: 'Enter a task to search for')
                end
-
       if action
         tokens = nil
         if options[:exact]

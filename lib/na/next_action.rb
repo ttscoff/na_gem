@@ -800,6 +800,18 @@ module NA
       NA.notify("#{NA.theme[:warning]}Backup file created at #{backup.highlight_filename}", debug: true)
     end
 
+    def request_input(options, prompt: 'Enter text')
+      if $stdin.isatty && TTY::Which.exist?('gum') && options[:tagged].empty?
+        opts = [%(--placeholder "#{prompt}"),
+                '--char-limit=500',
+                "--width=#{TTY::Screen.columns}"]
+        `gum input #{opts.join(' ')}`.strip
+      elsif $stdin.isatty && options[:tagged].empty?
+        NA.notify("#{NA.theme[:prompt]}#{prompt}:")
+        reader.read_line(NA::Color.template("#{NA.theme[:filename]}> #{NA.theme[:action]}")).strip
+      end
+    end
+
     ##
     ## Generate a menu of options and allow user selection
     ##
