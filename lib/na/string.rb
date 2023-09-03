@@ -131,8 +131,7 @@ class ::String
     color = NA::Color.template(color.dup)
     regexes.each do |rx|
       next if rx.nil?
-
-      rx = Regexp.new(rx.wildcard_to_rx, Regexp::IGNORECASE) if rx.is_a?(String)
+      rx = Regexp.new(rx, Regexp::IGNORECASE) if rx.is_a?(String)
 
       string.gsub!(rx) do
         m = Regexp.last_match

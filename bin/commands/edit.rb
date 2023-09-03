@@ -77,7 +77,7 @@ class App
       all_req = options[:tagged].join(' ') !~ /[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>*$\^~]+?)(?:(?<op>[=<>~]{1,2}|[*$\^]=)(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^~]+?)(?:(?<op>[=<>~]{1,2}|[*$\^]=)(?<val>.*?))?$/)
 
         tags.push({
                     tag: m['tag'].wildcard_to_rx,

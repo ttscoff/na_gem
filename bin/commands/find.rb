@@ -95,7 +95,7 @@ class App
       all_req = options[:tagged].join(' ') !~ /[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$*~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
 
         tags.push({
                     tag: m['tag'].wildcard_to_rx,
@@ -121,8 +121,9 @@ class App
 
         search.split(/ /).each do |arg|
           m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
+          rx = m['tok'] =~ /[*?]/ ? m['tok'].wildcard_to_rx : Regexp.escape(m['tok'])
           tokens.push({
-                        token: Regexp.escape(m['tok']),
+                        token: rx,
                         required: all_req || (!m['req'].nil? && m['req'] == '+'),
                         negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
                       })

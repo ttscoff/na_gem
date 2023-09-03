@@ -800,6 +800,12 @@ module NA
       NA.notify("#{NA.theme[:warning]}Backup file created at #{backup.highlight_filename}", debug: true)
     end
 
+    ##
+    ## Request terminal input from user, readline style
+    ##
+    ## @param      options  [Hash] The options
+    ## @param      prompt   [String] The prompt
+    ##
     def request_input(options, prompt: 'Enter text')
       if $stdin.isatty && TTY::Which.exist?('gum') && options[:tagged].empty?
         opts = [%(--placeholder "#{prompt}"),
