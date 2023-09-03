@@ -112,7 +112,7 @@ class App
                  `gum input #{opts.join(' ')}`.strip
                elsif $stdin.isatty && options[:tagged].empty?
                  NA.notify("#{NA.theme[:prompt]}Enter search string:")
-                 reader.read_line(NA::Color.template("#{NA.theme[:file]}> #{NA.theme[:action]}")).strip
+                 reader.read_line(NA::Color.template("#{NA.theme[:filename]}> #{NA.theme[:action]}")).strip
                end
 
       if action
@@ -144,7 +144,7 @@ class App
       all_req = options[:tagged].join(' ') !~ /[+!\-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$*~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
 
         tags.push({
                     tag: m['tag'].wildcard_to_rx,

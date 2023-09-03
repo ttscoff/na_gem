@@ -81,7 +81,7 @@ class App
 
       all_req = args.join(' ') !~ /(?<=[, ])[+!-]/ && !options[:or]
       args.join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$\^]+?) *(?:(?<op>[=<>]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$*~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
         next if m.nil?
 
         tags.push({

@@ -82,25 +82,21 @@ class App
         NA.notify("#{NA.theme[:error]}Empty input, cancelled", exit_code: 1)
       end
 
-      all_req = options[:tagged].join(' ') !~ /[+!\-]/ && !options[:or]
+      all_req = options[:tagged].join(' ') !~ /[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^~]+?)(?:(?<op>[=<>~]{1,2}|[*$\^]=)(?<val>.*?))?$/)
 
         tags.push({
                     tag: m['tag'].wildcard_to_rx,
                     comp: m['op'],
                     value: m['val'],
                     required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                    negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                    negate: !m['req'].nil? && m['req'] =~ /[!-]/
                   })
       end
 
-      target_proj = if NA.cwd_is == :project
-                      NA.cwd
-                    else
-                      nil
-                    end
+      target_proj = NA.cwd_is == :project ? NA.cwd : nil
 
       if options[:file]
         file = File.expand_path(options[:file])
@@ -114,7 +110,7 @@ class App
           todo.push({
                       token: m['tok'],
                       required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                      negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                      negate: !m['req'].nil? && m['req'] =~ /[!-]/
                     })
         end
         dirs = NA.match_working_dir(todo)

@@ -189,6 +189,8 @@ module NA
         tag_date = Time.parse(tag_val)
         date = Chronic.parse(val)
 
+        raise ArgumentError if date.nil?
+
         unless val =~ /(\d:\d|a[mp]|now)/i
           tag_date = Time.parse(tag_date.strftime('%Y-%m-%d 12:00'))
           date = Time.parse(date.strftime('%Y-%m-%d 12:00'))
@@ -214,7 +216,7 @@ module NA
         else
           false
         end
-      rescue
+      rescue ArgumentError
         case tag[:comp]
         when /^>$/
           tag_val.to_f > val.to_f
@@ -226,12 +228,14 @@ module NA
           tag_val.to_f >= val.to_f
         when /^==?$/
           tag_val =~ /^#{val.wildcard_to_rx}$/
+        when /^=~$/
+          tag_val =~ Regexp.new(val, Regexp::IGNORECASE)
         when /^\$=$/
           tag_val =~ /#{val.wildcard_to_rx}$/i
         when /^\*=$/
-          tag_val =~ /#{val.wildcard_to_rx}/i
+          tag_val =~ /.*?#{val.wildcard_to_rx}.*?/i
         when /^\^=$/
-          tag_val =~ /^#{val.wildcard_to_rx}/
+          tag_val =~ /^#{val.wildcard_to_rx}/i
         else
           false
         end

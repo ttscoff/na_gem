@@ -37,7 +37,7 @@ class App
 
     c.desc 'Filter results using search terms'
     c.arg_name 'QUERY'
-    c.flag %i[search], multiple: true
+    c.flag %i[search find], multiple: true
 
     c.desc 'Search query is regular expression'
     c.switch %i[regex], negatable: false
@@ -75,17 +75,39 @@ class App
                 options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
               end
 
+      if options[:exact] || options[:regex]
+        search = options[:search].join(' ')
+      else
+        rx = [
+          '(?<=\A|[ ,])(?<req>[+!-])?@(?<tag>[^ *=<>$~\^,@(]+)',
+          '(?:\((?<value>.*?)\)| *(?<op>=~|[=<>~]{1,2}|[*$\^]=) *',
+          '(?<val>.*?(?=\Z|[,@])))?'
+        ].join('')
+        search = options[:search].join(' ').gsub(Regexp.new(rx)) do
+          m = Regexp.last_match
+          string = if m['value']
+                     "#{m['req']}#{m['tag']}=#{m['value']}"
+                   else
+                     m[0]
+                   end
+          options[:tagged] << string.sub(/@/, '')
+          ''
+        end
+      end
+
+      search = search.gsub(/,/, '').gsub(/ +/, ' ') unless search.nil?
+
       all_req = options[:tagged].join(' ') !~ /(?<=[, ])[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$*~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
 
         tags.push({
                     tag: m['tag'].wildcard_to_rx,
                     comp: m['op'],
                     value: m['val'],
                     required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                    negate: !m['req'].nil? && m['req'] =~ /[!-]/
+                    negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
                   })
       end
 
@@ -100,49 +122,53 @@ class App
             tokens.push({
                           token: m['tok'],
                           required: !m['req'].nil? && m['req'] == '+',
-                          negate: (!m['req'].nil? && m['req'] =~ /[!-]/) ? true : false
+                          negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
                         })
           end
         end
       end
 
-      pp tokens
+      search_for_done = false
+      tags.each { |tag| search_for_done = true if tag[:tag] =~ /done/ }
+      options[:done] = true if search_for_done
 
-      search = nil
-      if options[:search]
-        if options[:exact]
-          search = options[:search].join(' ')
-        elsif options[:regex]
-          search = Regexp.new(options[:search].join(' '), Regexp::IGNORECASE)
-        else
-          search = []
-          all_req = options[:search].join(' ') !~ /(?<=[, ])[+!-]/ && !options[:or]
+      search_tokens = nil
+      if options[:exact]
+        search_tokens = search
+      elsif options[:regex]
+        search_tokens = Regexp.new(search, Regexp::IGNORECASE)
+      else
+        search_tokens = []
+        all_req = search !~ /(?<=[, ])[+!-]/ && !options[:or]
 
-          options[:search].join(' ').split(/ /).each do |arg|
-            m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
-            search.push({
-                          token: m['tok'],
-                          required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                          negate: (!m['req'].nil? && m['req'] =~ /[!-]/) ? true : false
-                        })
-          end
+        search.split(/ /).each do |arg|
+          m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
+          search_tokens.push({
+                               token: m['tok'],
+                               required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                               negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
+                             })
         end
       end
 
       NA.na_tag = options[:tag] unless options[:tag].nil?
       require_na = true
 
-      tag = [{ tag: NA.na_tag, value: nil }]
+      tag = [{ tag: NA.na_tag, value: nil, required: true, negate: false }]
       tag << { tag: 'done', value: nil, negate: true } unless options[:done]
       tag.concat(tags)
+
       todo = NA::Todo.new({ depth: depth,
                             done: options[:done],
                             query: tokens,
                             tag: tag,
-                            search: search,
+                            search: search_tokens,
                             project: options[:project],
                             require_na: require_na })
-      NA.notify("#{NA.theme[:error]}No matches found for #{tokens[0][:token]}. Run `na todos` to see available todo files.") if todo.files.empty?
+      if todo.files.empty?
+        NA.notify("#{NA.theme[:error]}No matches found for #{tokens[0][:token]}.
+                  Run `na todos` to see available todo files.")
+      end
       NA::Pager.paginate = false if options[:omnifocus]
       todo.actions.output(depth,
                           files: todo.files,

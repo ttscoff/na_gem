@@ -73,7 +73,12 @@ class App
       if options[:exact] || options[:regex]
         search = args.join(' ')
       else
-        search = args.join(' ').gsub(/(?<=\A|[ ,])(?<req>[+\-!])?@(?<tag>[^ *=<>$\^,@(]+)(?:\((?<value>.*?)\)| *(?<op>[=<>]{1,2}|[*$\^]=) *(?<val>.*?(?=\Z|[,@])))?/) do |arg|
+        rx = [
+          '(?<=\A|[ ,])(?<req>[+!-])?@(?<tag>[^ *=<>$*\^,@(]+)',
+          '(?:\((?<value>.*?)\)| *(?<op>[=<>~]{1,2}|[*$\^]=) *',
+          '(?<val>.*?(?=\Z|[,@])))?'
+        ].join('')
+        search = args.join(' ').gsub(Regexp.new(rx)) do
           m = Regexp.last_match
           string = if m['value']
                      "#{m['req']}#{m['tag']}=#{m['value']}"
@@ -87,17 +92,17 @@ class App
 
       search = search.gsub(/ +/, ' ').strip
 
-      all_req = options[:tagged].join(' ') !~ /[+!\-]/ && !options[:or]
+      all_req = options[:tagged].join(' ') !~ /[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?) *(?:(?<op>[=<>]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$*~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
 
         tags.push({
                     tag: m['tag'].wildcard_to_rx,
                     comp: m['op'],
                     value: m['val'],
                     required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                    negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                    negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
                   })
       end
 
@@ -119,7 +124,7 @@ class App
           tokens.push({
                         token: Regexp.escape(m['tok']),
                         required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                        negate: !m['req'].nil? && m['req'] =~ /[!-]/
+                        negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
                       })
         end
       end
