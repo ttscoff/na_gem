@@ -755,10 +755,14 @@ module NA
       file = database_path(file: 'saved_searches.yml')
       NA.notify("#{NA.theme[:error]}No search definitions file found", exit_code: 1) unless File.exist?(file)
 
+      strings = [strings] unless strings.is_a? Array
+
       searches = YAML.safe_load(file.read_file)
       keys = searches.keys.delete_if { |k| k !~ /(#{strings.join('|')})/ }
 
-      res = yn(NA::Color.template(%(#{NA.theme[:warning]}Remove #{keys.count > 1 ? 'searches' : 'search'} #{NA.theme[:file]}"#{keys.join(', ')}"{x})),
+      NA.notify("#{NA.theme[:error]}No search named #{strings.join(', ')} found", exit_code: 1) if keys.empty?
+
+      res = yn(NA::Color.template(%(#{NA.theme[:warning]}Remove #{keys.count > 1 ? 'searches' : 'search'} #{NA.theme[:filename]}"#{keys.join(', ')}"{x})),
                default: false)
 
       NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1) unless res

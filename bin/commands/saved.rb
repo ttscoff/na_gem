@@ -28,10 +28,10 @@ class App
         NA.notify("#{NA.theme[:success]}Saved searches stored in #{NA.database_path(file: 'saved_searches.yml').highlight_filename}")
         NA.notify(searches.map { |k, v| "#{NA.theme[:filename]}#{k}: #{NA.theme[:values]}#{v}" }.join("\n"))
       else
+        NA.delete_search(args.join(',').split(/[ ,]/)) if options[:delete]
+
         args.each do |arg|
           searches = NA.load_searches
-
-          NA.delete_search(arg) if options[:delete]
 
           keys = searches.keys.delete_if { |k| k !~ /#{arg}/ }
           NA.notify("#{NA.theme[:error]}Search #{arg} not found", exit_code: 1) if keys.empty?
