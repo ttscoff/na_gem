@@ -6,7 +6,7 @@ class App
   long_desc 'Finds actions with tags matching the arguments. An action is shown if it
   contains all of the tags listed. Add a + before a tag to make it required
   and others optional. You can specify values using TAG=VALUE pairs.
-  Use <, >, and = for numeric comparisons, and *=, ^=, and $= for text comparisons.
+  Use <, >, and = for numeric comparisons, and *=, ^=, $=, or =~ (regex) for text comparisons.
   Date comparisons use natural language (`na tagged "due<=today"`) and
   are detected automatically.'
   arg_name 'TAG[=VALUE]'
@@ -38,7 +38,7 @@ class App
 
     c.desc 'Filter results using search terms'
     c.arg_name 'QUERY'
-    c.flag %i[search], multiple: true
+    c.flag %i[search find grep], multiple: true
 
     c.desc 'Search query is regular expression'
     c.switch %i[regex], negatable: false

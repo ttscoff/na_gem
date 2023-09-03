@@ -37,7 +37,7 @@ class App
 
     c.desc 'Filter results using search terms'
     c.arg_name 'QUERY'
-    c.flag %i[search find], multiple: true
+    c.flag %i[search find grep], multiple: true
 
     c.desc 'Search query is regular expression'
     c.switch %i[regex], negatable: false

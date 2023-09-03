@@ -368,7 +368,11 @@ module NA
       backup_file(target)
       File.open(target, 'w') { |f| f.puts contents.join("\n") }
 
-      add ? notify("#{NA.theme[:success]}Task added to #{NA.theme[:filename]}#{target}") : notify("#{NA.theme[:error]}Task updated in #{NA.theme[:filename]}#{target}")
+      if add
+        notify("#{NA.theme[:success]}Task added to #{NA.theme[:filename]}#{target}")
+      else
+        notify("#{NA.theme[:success]}Task updated in #{NA.theme[:filename]}#{target}")
+      end
     end
 
     ##
@@ -389,7 +393,6 @@ module NA
         else
           project = NA.cwd
         end
-        puts [add_tag, project]
       end
 
       action = Action.new(file, project, parent, action, nil, note)

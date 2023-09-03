@@ -26,15 +26,15 @@ module NA
         string += " @priority(#{priority})"
       end
 
+      remove_tag.each do |tag|
+        string.gsub!(/(?<=\A| )@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
+        string.strip!
+      end
+
       add_tag.each do |tag|
         string.gsub!(/(?<=\A| )@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
         string.strip!
         string += " @#{tag}"
-      end
-
-      remove_tag.each do |tag|
-        string.gsub!(/(?<=\A| )@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
-        string.strip!
       end
 
       string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})" if finish && string !~ /(?<=\A| )@done/

@@ -233,6 +233,16 @@ Mark an action as complete and move to archive, shortcut for `na update --archiv
 @cli(bundle exec bin/na help archive)
 ```
 
+##### tag
+
+Add, remove, or modify tags.
+
+Use `na tag TAGNAME --[search|tagged] SEARCH_STRING` to add a tag to matching action (use `--all` to apply to all matching actions). If you use `!TAGNAME` it will remove that tag (regardless of value). To change the value of an existing tag (or add it if it doesn't exist), use `~TAGNAME(NEW VALUE)`.
+
+```
+@cli(bundle exec bin/na help tag)
+```
+
 ##### undo
 
 Undoes the last file change resulting from an add or update command. If no argument is given, it undoes whatever the last change in history was. If an argument is provided, it's used to match against the change history, finding a specific file to restore from backup.

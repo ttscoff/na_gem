@@ -20,7 +20,7 @@ module NA
       return if files.nil?
 
       if nest
-        template = '%parent%action'
+        template = NA.theme[:templates][:default]
 
         parent_files = {}
         out = []
@@ -40,7 +40,7 @@ module NA
             out.concat(NA.output_children(projects, 0))
           end
         else
-          template = '%parent%action'
+          template = NA.theme[:templates][:default]
 
           each do |action|
             if parent_files.key?(action.file)
@@ -62,18 +62,18 @@ module NA
       else
         template = if files.count.positive?
                      if files.count == 1
-                       '%parent%action'
+                       NA.theme[:templates][:single_file]
                      else
-                       '%filename%parent%action'
+                       NA.theme[:templates][:multi_file]
                      end
                    elsif NA.find_files(depth: depth).count > 1
                      if depth > 1
-                       '%filename%parent%action'
+                       NA.theme[:templates][:multi_file]
                      else
-                       '%project%parent%action'
+                       NA.theme[:templates][:single_file]
                      end
                    else
-                     '%parent%action'
+                     NA.theme[:templates][:default]
                    end
         template += '%note' if notes
 

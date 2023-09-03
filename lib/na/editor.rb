@@ -8,21 +8,19 @@ module NA
           editor ||= ENV['NA_EDITOR'] || ENV['EDITOR'] || ENV['GIT_EDITOR']
         end
 
-        if editor.good? && TTY::Which.exist?(editor)
-          return editor
-        end
+        return editor if editor&.good? && TTY::Which.exist?(editor)
 
-        notify("No EDITOR environment variable, testing available editors", debug: true)
+        NA.notify("No EDITOR environment variable, testing available editors", debug: true)
         editors = %w[vim vi code subl mate mvim nano emacs]
         editors.each do |ed|
           try = TTY::Which.which(ed)
           if try
-            notify("Using editor #{try}", debug: true)
+            NA.notify("Using editor #{try}", debug: true)
             return try
           end
         end
 
-        notify("#{NA.theme[:error]}No editor found", exit_code: 5)
+        NA.notify("#{NA.theme[:error]}No editor found", exit_code: 5)
 
         nil
       end
@@ -53,7 +51,7 @@ module NA
       def fork_editor(input = '', message: :default)
         # raise NonInteractive, 'Non-interactive terminal' unless $stdout.isatty || ENV['DOING_EDITOR_TEST']
 
-        notify("#{NA.theme[:error]}No EDITOR variable defined in environment", exit_code: 5) if default_editor.nil?
+        NA.notify("#{NA.theme[:error]}No EDITOR variable defined in environment", exit_code: 5) if default_editor.nil?
 
         tmpfile = Tempfile.new(['na_temp', '.na'])
 
@@ -101,11 +99,11 @@ module NA
       ## @return     [Array] [[String]title, [Note]note]
       ##
       def format_input(input)
-        notify("#{NA.theme[:error]}No content in entry", exit_code: 1) if input.nil? || input.strip.empty?
+        NA.notify("#{NA.theme[:error]}No content in entry", exit_code: 1) if input.nil? || input.strip.empty?
 
         input_lines = input.split(/[\n\r]+/).delete_if(&:ignore?)
         title = input_lines[0]&.strip
-        notify("#{NA.theme[:error]}No content in first line", exit_code: 1) if title.nil? || title.strip.empty?
+        NA.notify("#{NA.theme[:error]}No content in first line", exit_code: 1) if title.nil? || title.strip.empty?
 
         title.expand_date_tags
 

@@ -25,7 +25,6 @@ module NA
       def load_theme(template: {})
         # Default colorization, can be overridden with full or partial template variable
         default_template = {
-          file: '{xbk}',
           parent: '{c}',
           bracket: '{dc}',
           parent_divider: '{xw}/',
@@ -34,7 +33,6 @@ module NA
           tags: '{m}',
           value_parens: '{m}',
           values: '{c}',
-          output: '%filename%parents| %action',
           search_highlight: '{y}',
           note: '{dw}',
           dirname: '{dw}',
@@ -43,7 +41,13 @@ module NA
           success: '{bg}',
           error: '{b}{#b61d2a}',
           warning: '{by}',
-          debug: '{dw}'
+          debug: '{dw}',
+          templates: {
+            output: '%filename%parents| %action',
+            default: '%parent%action',
+            single_file: '%parent%action',
+            multi_file: '%filename%parent%action'
+          }
         }
 
         # Load custom theme
