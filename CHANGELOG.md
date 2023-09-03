@@ -1,3 +1,25 @@
+### 1.2.38
+
+2023-09-03 11:25
+
+#### NEW
+
+- Open the todos database in an editor with `na todos --edit`
+- A theme file is written to ~/.local/share/na/theme.yaml where you can modify the colors used for all displays
+- Allow tag=~PATTERN comparison for regex matching
+
+#### IMPROVED
+
+- Better error message for `na next` when no todo is matched
+- If STDOUT isn't a TTY, don't enable pagination, regardless of global setting
+- Allow --find or --grep as synonyms for --search
+
+#### FIXED
+
+- Date tags containing hyphens triggered OR searches because they were initially interpreted as negative tag searches
+- Templating irregularities
+- Error thrown when running without $EDITOR variable defined in environment
+
 ### 1.2.37
 
 2023-09-01 12:42

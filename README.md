@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.37
+The current version of `na` is 1.2.38
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -77,7 +77,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.37
+    1.2.38
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -114,6 +114,7 @@ COMMANDS
     prompt              - Show or install prompt hooks for the current shell
     restore, unfinish   - Find and remove @done tag from an action
     saved               - Execute a saved search
+    tag                 - Add tags to matching action(s)
     tagged              - Find actions matching a tag
     todos               - Show list of known todo files
     undo                - Undo the last change
@@ -291,7 +292,7 @@ COMMAND OPTIONS
     --omnifocus                            - Output actions nested by file and project
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --regex                                - Search query is regular expression
-    --search=QUERY                         - Filter results using search terms (may be used more than once, default: none)
+    --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
     -t, --tag=TAG                          - Alternate tag to search for (default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
 
@@ -402,7 +403,7 @@ COMMAND OPTIONS
     --omnifocus                            - Output actions nested by file and project
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --regex                                - Search query is regular expression
-    --search=QUERY                         - Filter results using search terms (may be used more than once, default: none)
+    --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
     -t, --tag=TAG                          - Alternate tag to search for (default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
 
@@ -428,10 +429,13 @@ NAME
 
 SYNOPSIS
 
-    na [global options] todos [QUERY]
+    na [global options] todos [command options] [QUERY]
 
 DESCRIPTION
-    Arguments will be interpreted as a query against which the   list of todos will be fuzzy matched. Separate directories with   /, :, or a space, e.g. `na todos code/marked`
+    Arguments will be interpreted as a query against which the   list of todos will be fuzzy matched. Separate directories with   /, :, or a space, e.g. `na todos code/marked` 
+
+COMMAND OPTIONS
+    -e, --[no-]edit - Open the todo database in an editor for manual modification
 ```
 
 ##### update
@@ -587,6 +591,75 @@ EXAMPLE
 
     # Find "An existing task", mark @done if needed, and move to archive
     na archive "An existing task"
+```
+
+##### tag
+
+Add, remove, or modify tags.
+
+Use `na tag TAGNAME --[search|tagged] SEARCH_STRING` to add a tag to matching action (use `--all` to apply to all matching actions). If you use `!TAGNAME` it will remove that tag (regardless of value). To change the value of an existing tag (or add it if it doesn't exist), use `~TAGNAME(NEW VALUE)`.
+
+```
+NAME
+    tag - Add tags to matching action(s)
+
+SYNOPSIS
+
+    na [global options] tag [command options] TAG
+
+DESCRIPTION
+    Provides an easy way to tag existing actions.   Use !tag to remove a tag, use ~tag(new value) to change a tag or add a value.   If multiple todo files are found in the current directory, a menu will   allow you to pick which file to act on, or use --all to apply to all matches. 
+
+COMMAND OPTIONS
+    --all                          - Act on all matches immediately (no menu)
+    -d, --depth=DEPTH              - Search for files X directories deep (default: 1)
+    --[no-]done                    - Include @done actions
+    -e, --regex                    - Interpret search pattern as regular expression
+    --file=PATH                    - Specify the file to search for the task (default: none)
+    --in, --todo=TODO_FILE         - Use a known todo file, partial matches allowed (default: none)
+    --search, --find, --grep=QUERY - Filter results using search terms (may be used more than once, default: none)
+    --tagged=TAG                   - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
+    -x, --exact                    - Match pattern exactly
+
+EXAMPLES
+
+    # Find "An existing task" action and add @project(warpspeed) to it
+    na tag "project(warpspeed)" --search "An existing task"
+
+    # Find all actions tagged @project2 and remove @project1 from them
+    na tag "!project1" --tagged project2 --all
+
+    # Remove @project2 from all actions
+    na tag "!project2" --all
+
+    # Find "An existing task" and change (or add) its @project tag value to "dirt nap"
+    na tag "~project(dirt nap)" --search "An existing task"
+```
+
+##### undo
+
+Undoes the last file change resulting from an add or update command. If no argument is given, it undoes whatever the last change in history was. If an argument is provided, it's used to match against the change history, finding a specific file to restore from backup.
+
+Only the most recent change can be undone.
+
+```
+NAME
+    undo - Undo the last change
+
+SYNOPSIS
+
+    na [global options] undo [FILE]...
+
+DESCRIPTION
+    Run without argument to undo most recent change 
+
+EXAMPLES
+
+    # Undo the last change
+    na undo
+
+    # Undo the last change to a file matching "myproject"
+    na undo myproject
 ```
 
 ### Configuration
