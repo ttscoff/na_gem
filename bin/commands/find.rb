@@ -61,7 +61,8 @@ class App
 
       if options[:save]
         title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
-        NA.save_search(title, "#{NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '').split(' ').map { |t| %("#{t}") }.join(' ')}")
+        cmd = NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '').split(' ').map { |t| %("#{t}") }.join(' ')
+        NA.save_search(title, cmd)
       end
 
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
@@ -121,9 +122,9 @@ class App
 
         search.split(/ /).each do |arg|
           m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
-          rx = m['tok'] =~ /[*?]/ ? m['tok'].wildcard_to_rx : Regexp.escape(m['tok'])
+
           tokens.push({
-                        token: rx,
+                        token: m['tok'],
                         required: all_req || (!m['req'].nil? && m['req'] == '+'),
                         negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
                       })
@@ -156,7 +157,7 @@ class App
                           })
 
       regexes = if tokens.is_a?(Array)
-                  tokens.delete_if { |token| token[:negate] }.map { |token| token[:token] }
+                  tokens.delete_if { |token| token[:negate] }.map { |token| token[:token].wildcard_to_rx }
                 else
                   [tokens]
                 end

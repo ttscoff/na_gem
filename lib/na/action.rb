@@ -73,7 +73,7 @@ module NA
     ##                        highlight (searches)
     ## @param      notes      [Boolean] Include notes
     ##
-    def pretty(extension: 'taskpaper', template: {}, regexes: [], notes: false)
+    def pretty(extension: 'taskpaper', template: {}, regexes: [], notes: false, detect_width: true)
       theme = NA::Theme.load_theme
       template = theme.merge(template)
 
@@ -107,6 +107,13 @@ module NA
                                      parens: template[:value_parens],
                                      value: template[:values],
                                      last_color: template[:action])
+
+      if detect_width
+        width = TTY::Screen.columns
+        prefix = NA::Color.uncolor(pretty(template: { output: template[:output].sub(/%action/, '') }, detect_width: false))
+        indent = prefix.length
+        action = action.wrap(width, indent)
+      end
 
       # Replace variables in template string and output colorized
       NA::Color.template(template[:output].gsub(/%filename/, filename)

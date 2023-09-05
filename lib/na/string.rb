@@ -112,8 +112,14 @@ class ::String
     tag_color = NA::Color.template(color)
     paren_color = NA::Color.template(parens)
     value_color = NA::Color.template(value)
-    gsub(/(\s|m)(@[^ ("']+)(?:(\()(.*?)(\)))?/,
-         "\\1#{tag_color}\\2#{paren_color}\\3#{value_color}\\4#{paren_color}\\5#{last_color}")
+    gsub(/(?<pre>\s|m)(?<tag>@[^ ("']+)(?:(?<lparen>\()(?<val>.*?)(?<rparen>\)))?/) do
+      m = Regexp.last_match
+      if m['val']
+        "#{m['pre']}#{tag_color}#{m['tag']}#{paren_color}(#{value_color}#{m['val']}#{paren_color})#{last_color}"
+      else
+        "#{m['pre']}#{tag_color}#{m['tag']}#{last_color}"
+      end
+    end
   end
 
   ##
@@ -140,6 +146,25 @@ class ::String
       end
     end
     string
+  end
+
+  def wrap(width, indent)
+    output = []
+    line = []
+    length = indent
+    split(' ').each do |word|
+      uncolored = NA::Color.uncolor(word)
+      if (length + uncolored.length + 1) < width
+        line << word
+        length += uncolored.length + 1
+      else
+        output << line.join(' ')
+        line = [word]
+        length = indent + uncolored.length + 1
+      end
+    end
+    output << line.join(' ')
+    output.join("\n" + ' ' * (indent + 2))
   end
 
   # Returns the last escape sequence from a string.
