@@ -585,10 +585,14 @@ module NA
     def save_modified_file(file)
       db = database_path(file: 'last_modified.txt')
       file = File.expand_path(file)
-      files = IO.read(db).split(/\n/).map(&:strip)
-      files.delete(file)
-      files << file
-      File.open(db, 'w') { |f| f.puts(files.join("\n")) }
+      if File.exist? file
+        files = IO.read(db).split(/\n/).map(&:strip)
+        files.delete(file)
+        files << file
+        File.open(db, 'w') { |f| f.puts(files.join("\n")) }
+      else
+        File.open(db, 'w') { |f| f.puts(file) }
+      end
     end
 
     ##
@@ -598,6 +602,8 @@ module NA
     ##
     def last_modified_file(search: nil)
       db = database_path(file: 'last_modified.txt')
+      return nil unless File.exist?(db)
+
       files = IO.read(db).split(/\n/).map(&:strip)
       files.delete_if { |f| f !~ Regexp.new(search.dir_to_rx(require_last: true)) } if search
       files.last

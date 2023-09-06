@@ -1,3 +1,3 @@
 module Na
-  VERSION = '1.2.43'
+  VERSION = '1.2.44'
 end
