@@ -116,7 +116,7 @@ module NA
       end
 
       # Replace variables in template string and output colorized
-      NA::Color.template(template[:output].gsub(/%filename/, filename)
+      NA::Color.template(template[:templates][:output].gsub(/%filename/, filename)
                           .gsub(/%project/, project)
                           .gsub(/%parents?/, parents)
                           .gsub(/%action/, action.highlight_search(regexes))
