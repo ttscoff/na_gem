@@ -1,3 +1,15 @@
+### 1.2.41
+
+2023-09-06 08:13
+
+#### NEW
+
+- Tag command
+
+#### FIXED
+
+- Nil error in action.pretty
+
 ### 1.2.40
 
 2023-09-06 08:11
