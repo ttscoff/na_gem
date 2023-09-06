@@ -1,3 +1,11 @@
+### 1.2.44
+
+2023-09-06 11:19
+
+#### FIXED
+
+- Error when last_modified.txt hasn't been written yet
+
 ### 1.2.43
 
 2023-09-06 10:45
