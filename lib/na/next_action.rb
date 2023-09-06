@@ -585,7 +585,7 @@ module NA
     def save_modified_file(file)
       db = database_path(file: 'last_modified.txt')
       file = File.expand_path(file)
-      if File.exist? file
+      if File.exist? db
         files = IO.read(db).split(/\n/).map(&:strip)
         files.delete(file)
         files << file
