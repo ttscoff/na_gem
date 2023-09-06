@@ -1,3 +1,20 @@
+### 1.2.39
+
+2023-09-06 04:25
+
+#### NEW
+
+- Add `--save NAME` to `na next` to save more complex queries and run with `na saved NAME` (or just `na NAME`)
+- `na saved --select` flag to allow interactive selection of search(es)
+
+#### IMPROVED
+
+- Allow `na saved --delete` to handle multiple arguments
+- Allow wildcards when deleting saved searches
+- Refactor request for input, no change to user experience
+- Refined wildcard (?*) handling
+- When displaying actions wider than the screen, wrap at words and indent 2 spaces from start of action (after prefix)
+
 ### 1.2.38
 
 2023-09-03 11:25

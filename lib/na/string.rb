@@ -152,6 +152,8 @@ class ::String
     output = []
     line = []
     length = indent
+    gsub!(/(@\S+)\((.*?)\)/) { "#{Regexp.last_match(1)}(#{Regexp.last_match(2).gsub(/ /, '†')})" }
+
     split(' ').each do |word|
       uncolored = NA::Color.uncolor(word)
       if (length + uncolored.length + 1) < width
@@ -164,7 +166,7 @@ class ::String
       end
     end
     output << line.join(' ')
-    output.join("\n" + ' ' * (indent + 2))
+    output.join("\n" + ' ' * (indent + 2)).gsub(/†/, ' ')
   end
 
   # Returns the last escape sequence from a string.

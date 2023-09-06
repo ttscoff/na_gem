@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.38
+The current version of `na` is 1.2.39
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -77,7 +77,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.38
+    1.2.39
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -292,6 +292,7 @@ COMMAND OPTIONS
     --omnifocus                            - Output actions nested by file and project
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --regex                                - Search query is regular expression
+    --save=TITLE                           - Save this search for future use (default: none)
     --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
     -t, --tag=TAG                          - Alternate tag to search for (default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
@@ -353,6 +354,7 @@ DESCRIPTION
 COMMAND OPTIONS
     -d, --delete - Delete the specified search definition
     -e, --edit   - Open the saved search file in $EDITOR
+    -s, --select - Interactively select a saved search to run
 
 EXAMPLES
 
@@ -403,6 +405,7 @@ COMMAND OPTIONS
     --omnifocus                            - Output actions nested by file and project
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --regex                                - Search query is regular expression
+    --save=TITLE                           - Save this search for future use (default: none)
     --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
     -t, --tag=TAG                          - Alternate tag to search for (default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
