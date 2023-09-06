@@ -110,7 +110,7 @@ module NA
 
       if detect_width
         width = TTY::Screen.columns
-        prefix = NA::Color.uncolor(pretty(template: { output: template[:output].sub(/%action/, '') }, detect_width: false))
+        prefix = NA::Color.uncolor(pretty(template: { output: template[:templates][:output].sub(/%action/, '') }, detect_width: false))
         indent = prefix.length
         action = action.wrap(width, indent)
       end
