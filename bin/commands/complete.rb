@@ -22,7 +22,11 @@ class App
 
     c.desc 'Move action to specific project'
     c.arg_name 'PROJECT'
-    c.flag %i[to project proj]
+    c.flag %i[to move]
+
+    c.desc 'Affect actions from a specific project'
+    c.arg_name 'PROJECT[/SUBPROJECT]'
+    c.flag %i[proj project]
 
     c.desc 'Specify the file to search for the task'
     c.arg_name 'PATH'
@@ -52,7 +56,8 @@ class App
     c.action do |global, options, args|
       options[:finish] = true
       options[:f] = true
-      options[:project] = 'Archive' if options[:archive] && !options[:project]
+      options[:to] = 'Archive' if options[:archive] && !options[:to]
+      options[:move] = 'Archive' if options[:archive] && !options[:move]
 
       cmd = commands[:update]
       action = cmd.send(:get_action, nil)
