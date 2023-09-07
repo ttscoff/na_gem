@@ -55,6 +55,10 @@ class App
     c.arg_name 'TAG'
     c.flag %i[r remove], multiple: true
 
+    c.desc 'Use with --find to find and replace with new text. Enables --exact when used'
+    c.arg_name 'TEXT'
+    c.flag %i[replace]
+
     c.desc 'Add a @done tag to action'
     c.switch %i[f finish], negatable: false
 
@@ -79,6 +83,10 @@ class App
     c.arg_name 'DEPTH'
     c.flag %i[d depth], must_match: /^[1-9]$/, type: :integer, default_value: 1
 
+    c.desc 'Filter results using search terms'
+    c.arg_name 'QUERY'
+    c.flag %i[search find grep], multiple: true
+
     c.desc 'Match actions containing tag. Allows value comparisons'
     c.arg_name 'TAG'
     c.flag %i[tagged], multiple: true
@@ -95,6 +103,8 @@ class App
     c.action do |global_options, options, args|
       reader = TTY::Reader.new
 
+      args.concat(options[:search])
+
       append = options[:at] ? options[:at] =~ /^[ae]/i : global_options[:add_at] =~ /^[ae]/i
 
       if options[:restore] || (!options[:remove].nil? && options[:remove].include?('done'))
@@ -105,6 +115,8 @@ class App
       elsif options[:finish] && !options[:done]
         options[:tagged] << '-done'
       end
+
+      options[:exact] = true unless options[:replace].nil?
 
       action = if args.count.positive?
                  args.join(' ').strip
@@ -244,6 +256,7 @@ class App
                          priority: priority,
                          project: options[:project],
                          remove_tag: remove_tags,
+                         replace: options[:replace],
                          tagged: tags)
       end
     end

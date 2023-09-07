@@ -37,6 +37,10 @@ class App
     c.desc 'Act on all matches immediately (no menu)'
     c.switch %i[all], negatable: false
 
+    c.desc 'Filter results using search terms'
+    c.arg_name 'QUERY'
+    c.flag %i[search find grep], multiple: true
+
     c.desc 'Interpret search pattern as regular expression'
     c.switch %i[e regex], negatable: false
 
@@ -48,9 +52,13 @@ class App
     c.flag %i[in todo]
 
     c.action do |global, options, args|
+      args.concat(options[:search])
+
       if options[:done]
         options[:tagged] << 'done'
         options[:all] = true
+      else
+        options[:tagged] << '-done'
       end
 
       options[:done] = true

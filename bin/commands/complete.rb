@@ -40,6 +40,10 @@ class App
     c.arg_name 'DEPTH'
     c.flag %i[d depth], must_match: /^[1-9]$/, type: :integer, default_value: 1
 
+    c.desc 'Filter results using search terms'
+    c.arg_name 'QUERY'
+    c.flag %i[search find grep], multiple: true
+
     c.desc 'Match actions containing tag. Allows value comparisons'
     c.arg_name 'TAG'
     c.flag %i[tagged], multiple: true
@@ -54,6 +58,8 @@ class App
     c.switch %i[x exact], negatable: false
 
     c.action do |global, options, args|
+      args.concat(options[:search])
+
       options[:finish] = true
       options[:f] = true
       options[:to] = 'Archive' if options[:archive] && !options[:to]

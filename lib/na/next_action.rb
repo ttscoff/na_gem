@@ -244,6 +244,7 @@ module NA
                       project: nil,
                       move: nil,
                       remove_tag: [],
+                      replace: nil,
                       tagged: nil)
 
       projects = find_projects(target)
@@ -327,6 +328,9 @@ module NA
             action.action = new_action
             action.note = new_note
           end
+
+          # If replace is defined, use search to search and replace text in action
+          action.action.sub!(Regexp.new(Regexp.escape(search), Regexp::IGNORECASE), replace) if replace
 
           action.process(priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
 
