@@ -35,7 +35,7 @@ module NA
           values: '{c}',
           search_highlight: '{y}',
           note: '{dw}',
-          dirname: '{dw}',
+          dirname: '{xdw}',
           filename: '{xb}{#eccc87}',
           prompt: '{m}',
           success: '{bg}',
