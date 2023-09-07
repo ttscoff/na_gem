@@ -79,7 +79,7 @@ module NA
 
         files.map { |f| NA.notify(f, debug: true) } if files
 
-        output = map { |action| action.pretty(template: { output: template }, regexes: regexes, notes: notes) }
+        output = map { |action| action.pretty(template: { templates: { output: template } }, regexes: regexes, notes: notes) }
         NA::Pager.page(output.join("\n"))
       end
     end

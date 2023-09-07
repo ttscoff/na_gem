@@ -95,13 +95,6 @@ module NA
       file_tpl = "#{template[:file]}#{file} {x}"
       filename = NA::Color.template(file_tpl)
 
-      # Add notes if needed
-      note = if notes && @note.count.positive?
-               NA::Color.template("\n#{@note.map { |l| "  #{template[:note]}• #{l}{x}" }.join("\n")}")
-             else
-               ''
-             end
-
       # colorize the action and highlight tags
       @action.gsub!(/\{(.*?)\}/, '\\{\1\\}')
       action = NA::Color.template("#{template[:action]}#{@action.sub(/ @#{NA.na_tag}\b/, '')}{x}")
@@ -112,9 +105,27 @@ module NA
 
       if detect_width
         width = TTY::Screen.columns
-        prefix = NA::Color.uncolor(pretty(template: { templates: { output: template[:templates][:output].sub(/%action/, '') } }, detect_width: false))
+        prefix = NA::Color.uncolor(pretty(template: { templates: { output: template[:templates][:output].sub(/%action/, '').sub(/%note/, '') } }, detect_width: false))
         indent = prefix.length
+
+        # Add notes if needed
+        note = if notes && @note.count.positive?
+                 NA::Color.template(@note.wrap(width, indent, template[:note]))
+               elsif !notes && @note.count.positive?
+                 action += "#{template[:note]}*"
+               else
+                 ''
+               end
+
         action = action.wrap(width, indent)
+      else
+        note = if notes && @note.count.positive?
+                 NA::Color.template("\n#{@note.map { |l| "  #{template[:note]}• #{l.wrap(width, indent)}{x}" }.join("\n")}")
+               elsif !notes && @note.count.positive?
+                 action += "#{template[:note]}*"
+               else
+                 ''
+               end
       end
 
       # Replace variables in template string and output colorized
