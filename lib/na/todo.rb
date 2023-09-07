@@ -61,7 +61,7 @@ module NA
             required_tag.push(t) if t[:required] && t[:negate]
             negated_tag.push(t) unless t[:negate]
           else
-            optional_tag.push(t) unless t[:negate]
+            optional_tag.push(t) unless t[:negate] || t[:required]
             required_tag.push(t) if t[:required] && !t[:negate]
             negated_tag.push(t) if t[:negate]
           end
@@ -133,11 +133,9 @@ module NA
             next if settings[:require_na] && !line.na?
 
             has_search = !optional.empty? || !required.empty? || !negated.empty?
-
             next if has_search && !new_action.search_match?(any: optional,
                                                             all: required,
                                                             none: negated)
-
             if settings[:project]
               rx = settings[:project].split(%r{[/:]}).join('.*?/')
               next unless parent.join('/') =~ Regexp.new("#{rx}.*?", Regexp::IGNORECASE)

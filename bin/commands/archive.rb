@@ -41,11 +41,12 @@ class App
 
     c.action do |global, options, args|
       if options[:done]
-        options[:tagged] = ['done']
+        options[:tagged] << 'done'
         options[:all] = true
       end
 
       options[:done] = true
+      options['done'] = true
       options[:finish] = true
       options[:project] = 'Archive'
       options[:archive] = true

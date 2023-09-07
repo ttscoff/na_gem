@@ -90,6 +90,7 @@ class App
 
     c.action do |global_options, options, args|
       reader = TTY::Reader.new
+
       append = options[:at] ? options[:at] =~ /^[ae]/i : global_options[:add_at] =~ /^[ae]/i
 
       if options[:restore] || (!options[:remove].nil? && options[:remove].include?('done'))
@@ -97,7 +98,7 @@ class App
         options[:tagged] << '+done'
       elsif !options[:remove].nil? && !options[:remove].empty?
         options[:tagged].concat(options[:remove])
-      elsif options[:finish]
+      elsif options[:finish] && !options[:done]
         options[:tagged] << '-done'
       end
 
@@ -204,7 +205,6 @@ class App
         files = NA.find_files_matching({
                                          depth: options[:depth],
                                          done: options[:done],
-                                         project: target_proj,
                                          regex: options[:regex],
                                          require_na: false,
                                          search: tokens,

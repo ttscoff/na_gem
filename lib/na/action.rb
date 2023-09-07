@@ -59,6 +59,7 @@ module NA
       @project: #{@project}
       @parent: #{@parent.join('>')}
       @action: #{@action}
+      @tags: #{@tags}
       @note: #{@note}
       EOINSPECT
     end
@@ -184,7 +185,6 @@ module NA
       return false if keys.empty?
 
       key = keys[0]
-
       return true if tag[:comp].nil?
 
       tag_val = @tags[key]

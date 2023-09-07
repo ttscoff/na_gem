@@ -255,6 +255,7 @@ module NA
           res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{project}#{NA.theme[:warning]} doesn't exist, add it"), default: true)
           if res
             target_proj = insert_project(target, project, projects)
+            projects << target_proj
           else
             NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
           end
@@ -489,23 +490,22 @@ module NA
         tag: nil
       }
       opts = defaults.merge(options)
-
       files = find_files(depth: options[:depth])
-
       files.delete_if do |file|
-        todo = NA::Todo.new({
-                              depth: options[:depth],
-                              done: options[:done],
-                              file_path: file,
-                              negate: options[:negate],
-                              project: options[:project],
-                              query: options[:query],
-                              regex: options[:regex],
-                              require_na: options[:require_na],
-                              search: options[:search],
-                              tag: options[:tag]
-                            })
-        todo.actions.length.zero?
+        cmd_options = {
+          depth: options[:depth],
+          done: options[:done],
+          file_path: file,
+          negate: options[:negate],
+          project: options[:project],
+          query: options[:query],
+          regex: options[:regex],
+          require_na: options[:require_na],
+          search: options[:search],
+          tag: options[:tag]
+        }
+        todo = NA::Todo.new(cmd_options)
+        todo.actions.empty?
       end
 
       files
