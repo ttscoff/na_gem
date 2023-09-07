@@ -1,3 +1,16 @@
+### 1.2.47
+
+2023-09-07 10:47
+
+#### NEW
+
+- `na update --search OLD_TEXT --replace NEW_TEXT` (added --replace)
+
+#### IMPROVED
+
+- When not showing notes, add an asterisk in the template note
+- When showing notes, indent to the beginning of the action
+
 ### 1.2.46
 
 2023-09-06 21:25

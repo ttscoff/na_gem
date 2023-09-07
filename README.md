@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.46
+The current version of `na` is 1.2.47
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -77,7 +77,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.46
+    1.2.47
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -503,7 +503,9 @@ COMMAND OPTIONS
     -p, --priority=PRIO                    - Add/change a priority level 1-5 (default: 0)
     --proj, --project=PROJECT[/SUBPROJECT] - Affect actions from a specific project (default: none)
     -r, --remove=TAG                       - Remove a tag from the action, use multiple times or combine multiple tags with a comma,             wildcards (* and ?) allowed (may be used more than once, default: none)
+    --replace=TEXT                         - Use with --find to find and replace with new text. Enables --exact when used (default: none)
     --restore                              - Remove @done tag from action
+    --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
     -t, --tag=TAG                          - Add a tag to the action, @tag(values) allowed, use multiple times or combine multiple tags with a comma (may be used more than once, default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
     --to, --move=PROJECT                   - Move action to specific project (default: none)
@@ -556,6 +558,7 @@ COMMAND OPTIONS
     -n, --note                             - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
     -o, --overwrite                        - Overwrite note instead of appending
     --proj, --project=PROJECT[/SUBPROJECT] - Affect actions from a specific project (default: none)
+    --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
     --to, --move=PROJECT                   - Move action to specific project (default: none)
     -x, --exact                            - Match pattern exactly
@@ -591,6 +594,7 @@ COMMAND OPTIONS
     -n, --note                             - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
     -o, --overwrite                        - Overwrite note instead of appending
     --proj, --project=PROJECT[/SUBPROJECT] - Affect actions from a specific project (default: none)
+    --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
     -x, --exact                            - Match pattern exactly
 
