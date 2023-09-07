@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.45
+The current version of `na` is 1.2.46
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -77,7 +77,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.45
+    1.2.46
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -487,26 +487,27 @@ DESCRIPTION
     Provides an easy way to complete, prioritize, and tag existing actions.   If multiple todo files are found in the current directory, a menu will   allow you to pick which file to act on. 
 
 COMMAND OPTIONS
-    -a, --archive                   - Add a @done tag to action and move to Archive
-    --all                           - Act on all matches immediately (no menu)
-    --at=POSITION                   - When moving task, add at [s]tart or [e]nd of target project (default: none)
-    -d, --depth=DEPTH               - Search for files X directories deep (default: 1)
-    --delete                        - Delete an action
-    --[no-]done                     - Include @done actions
-    -e, --regex                     - Interpret search pattern as regular expression
-    --edit                          - Open action in editor (vim).             Natural language dates will be parsed and converted in date-based tags.
-    -f, --finish                    - Add a @done tag to action
-    --file=PATH                     - Specify the file to search for the task (default: none)
-    --in, --todo=TODO_FILE          - Use a known todo file, partial matches allowed (default: none)
-    -n, --note                      - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
-    -o, --overwrite                 - Overwrite note instead of appending
-    -p, --priority=PRIO             - Add/change a priority level 1-5 (default: 0)
-    -r, --remove=TAG                - Remove a tag from the action, use multiple times or combine multiple tags with a comma,             wildcards (* and ?) allowed (may be used more than once, default: none)
-    --restore                       - Remove @done tag from action
-    -t, --tag=TAG                   - Add a tag to the action, @tag(values) allowed, use multiple times or combine multiple tags with a comma (may be used more than once, default: none)
-    --tagged=TAG                    - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
-    --to, --project, --proj=PROJECT - Move action to specific project (default: none)
-    -x, --exact                     - Match pattern exactly
+    -a, --archive                          - Add a @done tag to action and move to Archive
+    --all                                  - Act on all matches immediately (no menu)
+    --at=POSITION                          - When moving task, add at [s]tart or [e]nd of target project (default: none)
+    -d, --depth=DEPTH                      - Search for files X directories deep (default: 1)
+    --delete                               - Delete an action
+    --[no-]done                            - Include @done actions
+    -e, --regex                            - Interpret search pattern as regular expression
+    --edit                                 - Open action in editor (vim).             Natural language dates will be parsed and converted in date-based tags.
+    -f, --finish                           - Add a @done tag to action
+    --file=PATH                            - Specify the file to search for the task (default: none)
+    --in, --todo=TODO_FILE                 - Use a known todo file, partial matches allowed (default: none)
+    -n, --note                             - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
+    -o, --overwrite                        - Overwrite note instead of appending
+    -p, --priority=PRIO                    - Add/change a priority level 1-5 (default: 0)
+    --proj, --project=PROJECT[/SUBPROJECT] - Affect actions from a specific project (default: none)
+    -r, --remove=TAG                       - Remove a tag from the action, use multiple times or combine multiple tags with a comma,             wildcards (* and ?) allowed (may be used more than once, default: none)
+    --restore                              - Remove @done tag from action
+    -t, --tag=TAG                          - Add a tag to the action, @tag(values) allowed, use multiple times or combine multiple tags with a comma (may be used more than once, default: none)
+    --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
+    --to, --move=PROJECT                   - Move action to specific project (default: none)
+    -x, --exact                            - Match pattern exactly
 
 EXAMPLES
 
@@ -546,17 +547,18 @@ SYNOPSIS
     na [global options] complete [command options] ACTION
 
 COMMAND OPTIONS
-    -a, --archive                   - Add a @done tag to action and move to Archive
-    --all                           - Act on all matches immediately (no menu)
-    -d, --depth=DEPTH               - Search for files X directories deep (default: 1)
-    -e, --regex                     - Interpret search pattern as regular expression
-    --file=PATH                     - Specify the file to search for the task (default: none)
-    --in, --todo=TODO_FILE          - Use a known todo file, partial matches allowed (default: none)
-    -n, --note                      - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
-    -o, --overwrite                 - Overwrite note instead of appending
-    --tagged=TAG                    - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
-    --to, --project, --proj=PROJECT - Move action to specific project (default: none)
-    -x, --exact                     - Match pattern exactly
+    -a, --archive                          - Add a @done tag to action and move to Archive
+    --all                                  - Act on all matches immediately (no menu)
+    -d, --depth=DEPTH                      - Search for files X directories deep (default: 1)
+    -e, --regex                            - Interpret search pattern as regular expression
+    --file=PATH                            - Specify the file to search for the task (default: none)
+    --in, --todo=TODO_FILE                 - Use a known todo file, partial matches allowed (default: none)
+    -n, --note                             - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
+    -o, --overwrite                        - Overwrite note instead of appending
+    --proj, --project=PROJECT[/SUBPROJECT] - Affect actions from a specific project (default: none)
+    --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
+    --to, --move=PROJECT                   - Move action to specific project (default: none)
+    -x, --exact                            - Match pattern exactly
 
 EXAMPLES
 
@@ -580,15 +582,17 @@ SYNOPSIS
     na [global options] archive [command options] ACTION
 
 COMMAND OPTIONS
-    --all             - Act on all matches immediately (no menu)
-    -d, --depth=DEPTH - Search for files X directories deep (default: 1)
-    --done            - Archive all done tasks
-    -e, --regex       - Interpret search pattern as regular expression
-    --file=PATH       - Specify the file to search for the task (default: none)
-    -n, --note        - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
-    -o, --overwrite   - Overwrite note instead of appending
-    --tagged=TAG      - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
-    -x, --exact       - Match pattern exactly
+    --all                                  - Act on all matches immediately (no menu)
+    -d, --depth=DEPTH                      - Search for files X directories deep (default: 1)
+    --done                                 - Archive all done tasks
+    -e, --regex                            - Interpret search pattern as regular expression
+    --file=PATH                            - Specify the file to search for the task (default: none)
+    --in, --todo=TODO_FILE                 - Use a known todo file, partial matches allowed (default: none)
+    -n, --note                             - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
+    -o, --overwrite                        - Overwrite note instead of appending
+    --proj, --project=PROJECT[/SUBPROJECT] - Affect actions from a specific project (default: none)
+    --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
+    -x, --exact                            - Match pattern exactly
 
 EXAMPLE
 

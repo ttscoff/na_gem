@@ -1,3 +1,16 @@
+### 1.2.46
+
+2023-09-06 21:25
+
+#### IMPROVED
+
+- Add `--project` to archive and update
+- Add `--project` flag to complete
+
+#### FIXED
+
+- Error when creating new project in todo file
+
 ### 1.2.45
 
 2023-09-06 19:19
