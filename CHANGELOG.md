@@ -1,3 +1,11 @@
+### 1.2.45
+
+2023-09-06 19:19
+
+#### IMPROVED
+
+- Change default :dirname coloring to fix an occasional highlighting issue
+
 ### 1.2.44
 
 2023-09-06 11:19
