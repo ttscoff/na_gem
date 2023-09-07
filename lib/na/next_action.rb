@@ -139,10 +139,11 @@ module NA
       todo.projects
     end
 
-    def find_actions(target, search, tagged = nil, all: false, done: false)
+    def find_actions(target, search, tagged = nil, all: false, done: false, project: nil)
       todo = NA::Todo.new({ search: search,
                             require_na: false,
                             file_path: target,
+                            project: project,
                             tag: tagged,
                             done: done })
 
@@ -241,6 +242,7 @@ module NA
                       overwrite: false,
                       priority: 0,
                       project: nil,
+                      move: nil,
                       remove_tag: [],
                       tagged: nil)
 
@@ -248,13 +250,13 @@ module NA
 
       target_proj = nil
 
-      if project
-        project = project.sub(/:$/, '')
-        target_proj = projects.select { |pr| pr.project =~ /#{project.gsub(/:/, '.*?:.*?')}/i }.first
+      if move
+        move = move.sub(/:$/, '')
+        target_proj = projects.select { |pr| pr.project =~ /#{move.gsub(/:/, '.*?:.*?')}/i }.first
         if target_proj.nil?
-          res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{project}#{NA.theme[:warning]} doesn't exist, add it"), default: true)
+          res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{move}#{NA.theme[:warning]} doesn't exist, add it"), default: true)
           if res
-            target_proj = insert_project(target, project, projects)
+            target_proj = insert_project(target, move, projects)
             projects << target_proj
           else
             NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
@@ -309,7 +311,7 @@ module NA
 
         notify(add.pretty)
       else
-        _, actions = find_actions(target, search, tagged, done: done, all: all)
+        _, actions = find_actions(target, search, tagged, done: done, all: all, project: project)
 
         return if actions.nil?
 

@@ -33,7 +33,11 @@ class App
 
     c.desc 'Move action to specific project'
     c.arg_name 'PROJECT'
-    c.flag %i[to project proj]
+    c.flag %i[to move]
+
+    c.desc 'Affect actions from a specific project'
+    c.arg_name 'PROJECT[/SUBPROJECT]'
+    c.flag %i[proj project]
 
     c.desc 'Use a known todo file, partial matches allowed'
     c.arg_name 'TODO_FILE'
@@ -169,8 +173,8 @@ class App
       note = stdin_note.empty? ? [] : stdin_note
       note.concat(line_note) unless line_note.nil? || line_note.empty?
 
-      target_proj = if options[:project]
-                      options[:project]
+      target_proj = if options[:move]
+                      options[:move]
                     elsif NA.cwd_is == :project
                       NA.cwd
                     end
@@ -205,6 +209,7 @@ class App
         files = NA.find_files_matching({
                                          depth: options[:depth],
                                          done: options[:done],
+                                         project: options[:project],
                                          regex: options[:regex],
                                          require_na: false,
                                          search: tokens,
@@ -219,7 +224,7 @@ class App
 
       if options[:archive]
         options[:finish] = true
-        options[:project] = 'Archive'
+        options[:move] = 'Archive'
       end
 
       NA.notify("#{NA.theme[:error]}No search terms provided", exit_code: 1) if tokens.nil? && options[:tagged].empty?
@@ -233,10 +238,11 @@ class App
                          done: options[:done],
                          edit: options[:edit],
                          finish: options[:finish],
+                         move: target_proj,
                          note: note,
                          overwrite: options[:overwrite],
                          priority: priority,
-                         project: target_proj,
+                         project: options[:project],
                          remove_tag: remove_tags,
                          tagged: tags)
       end

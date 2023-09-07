@@ -30,6 +30,10 @@ class App
     c.arg_name 'TAG'
     c.flag %i[tagged], multiple: true
 
+    c.desc 'Affect actions from a specific project'
+    c.arg_name 'PROJECT[/SUBPROJECT]'
+    c.flag %i[proj project]
+
     c.desc 'Act on all matches immediately (no menu)'
     c.switch %i[all], negatable: false
 
@@ -38,6 +42,10 @@ class App
 
     c.desc 'Match pattern exactly'
     c.switch %i[x exact], negatable: false
+
+    c.desc 'Use a known todo file, partial matches allowed'
+    c.arg_name 'TODO_FILE'
+    c.flag %i[in todo]
 
     c.action do |global, options, args|
       if options[:done]
@@ -48,7 +56,7 @@ class App
       options[:done] = true
       options['done'] = true
       options[:finish] = true
-      options[:project] = 'Archive'
+      options[:move] = 'Archive'
       options[:archive] = true
       options[:a] = true
 

@@ -103,6 +103,7 @@ module NA
              end
 
       # colorize the action and highlight tags
+      @action.gsub!(/\{(.*?)\}/, '\\{\1\\}')
       action = NA::Color.template("#{template[:action]}#{@action.sub(/ @#{NA.na_tag}\b/, '')}{x}")
       action = action.highlight_tags(color: template[:tags],
                                      parens: template[:value_parens],
