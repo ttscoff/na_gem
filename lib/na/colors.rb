@@ -84,7 +84,7 @@ module NA
     # Array of attribute keys only
     ATTRIBUTE_NAMES = ATTRIBUTES.transpose.first
 
-    # Returns true if NA::Color supports the +feature+.
+    # Returns true if Color supports the +feature+.
     #
     # The feature :clear, that is mixing the clear color attribute into String,
     # is only supported on ruby implementations, that do *not* already

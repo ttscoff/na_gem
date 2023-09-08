@@ -279,6 +279,15 @@ module NA
                         projects.select { |proj| proj.project =~ /^#{add.parent.join(':')}$/ }.first
                       end
 
+        res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{move}#{NA.theme[:warning]} doesn't exist, add it"), default: true)
+
+        if res
+          target_proj = insert_project(target, project, projects)
+          projects << target_proj
+        else
+          NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
+        end
+
         NA.notify("#{NA.theme[:error]}Error parsing project #{NA.theme[:filename]}#{target}", exit_code: 1) if target_proj.nil?
 
         indent = "\t" * target_proj.indent
