@@ -1,3 +1,11 @@
+### 1.2.49
+
+2023-09-08 13:34
+
+#### FIXED
+
+- New project not being added when requested
+
 ### 1.2.48
 
 2023-09-08 10:19
