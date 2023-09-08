@@ -192,6 +192,7 @@ module NA
       if final_match.nil?
         indent = 0
         input = []
+
         new_path.each do |part|
           input.push("#{"\t" * indent}#{part.cap_first}:")
           indent += 1
@@ -208,7 +209,7 @@ module NA
           content = "#{before}\n#{input.join("\n")}\n#{after}"
         end
 
-        new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, input.count - 1, input.count - 1)
+        new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, line, line + 1)
       else
         line = final_match.line + 1
         indent = final_match.indent + 1
@@ -274,21 +275,25 @@ module NA
         projects = find_projects(target)
 
         target_proj = if target_proj
-                        projects.select { |proj| proj.project =~ /^#{target_proj.project}$/ }.first
+                        projects.select { |proj| proj.project =~ /^#{target_proj.project}$/i }.first
                       else
-                        projects.select { |proj| proj.project =~ /^#{add.parent.join(':')}$/ }.first
+                        projects.select { |proj| proj.project =~ /^#{add.parent.join(':')}$/i }.first
                       end
 
-        res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{move}#{NA.theme[:warning]} doesn't exist, add it"), default: true)
+        if target_proj.nil?
+          res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{add.project}#{NA.theme[:warning]} doesn't exist, add it"), default: true)
 
-        if res
-          target_proj = insert_project(target, project, projects)
-          projects << target_proj
-        else
-          NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
+          if res
+            target_proj = insert_project(target, project, projects)
+            projects << target_proj
+          else
+            NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
+          end
+
+          NA.notify("#{NA.theme[:error]}Error parsing project #{NA.theme[:filename]}#{target}", exit_code: 1) if target_proj.nil?
+
+          contents = target.read_file.split("\n")
         end
-
-        NA.notify("#{NA.theme[:error]}Error parsing project #{NA.theme[:filename]}#{target}", exit_code: 1) if target_proj.nil?
 
         indent = "\t" * target_proj.indent
         note = note.split("\n") unless note.is_a?(Array)
