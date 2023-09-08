@@ -1,3 +1,11 @@
+### 1.2.48
+
+2023-09-08 10:19
+
+#### FIXED
+
+- Error when `na add --to PROJECT` was a project that didn't exist
+
 ### 1.2.47
 
 2023-09-07 10:47
