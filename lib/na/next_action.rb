@@ -203,15 +203,15 @@ module NA
           content = content.split(/\n/).insert(line, input.join("\n")).join("\n")
         else
           split = content.split(/\n/)
-          line = todo.projects.first&.line || 0
+          line = todo.projects.first&.last_line || 0
           before = split.slice(0, line).join("\n")
           after = split.slice(line, split.count - 0).join("\n")
           content = "#{before}\n#{input.join("\n")}\n#{after}"
         end
 
-        new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, line, line + 1)
+        new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, line, line)
       else
-        line = final_match.line + 1
+        line = final_match.last_line + 1
         indent = final_match.indent + 1
         input = []
         new_path.each do |part|
@@ -292,8 +292,11 @@ module NA
 
           NA.notify("#{NA.theme[:error]}Error parsing project #{NA.theme[:filename]}#{target}", exit_code: 1) if target_proj.nil?
 
+          projects = find_projects(target)
           contents = target.read_file.split("\n")
         end
+
+        pp projects.map(&:inspect)
 
         indent = "\t" * target_proj.indent
         note = note.split("\n") unless note.is_a?(Array)
