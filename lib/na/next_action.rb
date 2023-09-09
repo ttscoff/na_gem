@@ -5,7 +5,7 @@ module NA
   class << self
     include NA::Editor
 
-    attr_accessor :verbose, :extension, :na_tag, :command_line, :command, :globals, :global_file, :cwd_is, :cwd, :stdin
+    attr_accessor :verbose, :extension, :include_ext, :na_tag, :command_line, :command, :globals, :global_file, :cwd_is, :cwd, :stdin
 
     def theme
       @theme ||= NA::Theme.load_theme

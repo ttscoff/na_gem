@@ -232,7 +232,7 @@ module NA
       ##
       def template(input)
         input = input.join(' ') if input.is_a? Array
-        return input.gsub(/(?<!\\)\{(\w+)\}/i, '') unless NA::Color.coloring?
+        return input.gsub(/(?<!\\)\{#?(\w+)\}/i, '') unless NA::Color.coloring?
 
         input = input.gsub(/(?<!\\)\{((?:[fb]g?)?#[a-f0-9]{3,6})\}/i) do
                   hex = Regexp.last_match(1)

@@ -91,7 +91,7 @@ class ::String
   ##
   def highlight_filename
     dir = File.dirname(self).shorten_path
-    file = File.basename(self, ".#{NA.extension}")
+    file = NA.include_ext ? File.basename(self) : File.basename(self, ".#{NA.extension}")
     "#{NA.theme[:dirname]}#{dir}/#{NA.theme[:filename]}#{file}{x}"
   end
 

@@ -89,7 +89,7 @@ module NA
 
       # Create the source filename string, substituting ~ for HOME and removing extension
       file = @file.sub(%r{^\./}, '').sub(/#{ENV['HOME']}/, '~')
-      file = file.sub(/\.#{extension}$/, '')
+      file = file.sub(/\.#{extension}$/, '') unless NA.include_ext
       # colorize the basename
       file = file.highlight_filename
       file_tpl = "#{template[:file]}#{file} {x}"
