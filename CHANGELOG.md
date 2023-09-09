@@ -1,6 +1,14 @@
 ### 1.2.50
 
-2023-09-09 08:02
+2023-09-09 08:04
+
+#### NEW
+
+- Global option `--include_ext` can be configured to use full
+
+#### FIXED
+
+- `--no-color` wasn't stripping templated hex codes
 
 ### 1.2.49
 
