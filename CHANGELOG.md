@@ -1,3 +1,12 @@
+### 1.2.51
+
+2023-09-09 13:20
+
+#### FIXED
+
+- Ensure new actions are added within newly created projects
+- When creating a subproject, ensure new project gets inserted
+
 ### 1.2.50
 
 2023-09-09 08:04
