@@ -835,7 +835,7 @@ module NA
     ## @param      prompt   [String] The prompt
     ##
     def request_input(options, prompt: 'Enter text')
-      if $stdin.isatty && TTY::Which.exist?('gum') && options[:tagged].empty?
+      if $stdin.isatty && TTY::Which.exist?('gum') && (options[:tagged].nil? || options[:tagged].empty?)
         opts = [%(--placeholder "#{prompt}"),
                 '--char-limit=500',
                 "--width=#{TTY::Screen.columns}"]
