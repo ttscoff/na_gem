@@ -296,8 +296,6 @@ module NA
           contents = target.read_file.split("\n")
         end
 
-        pp projects.map(&:inspect)
-
         indent = "\t" * target_proj.indent
         note = note.split("\n") unless note.is_a?(Array)
         note = if note.empty?

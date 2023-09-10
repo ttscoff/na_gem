@@ -210,18 +210,20 @@ module NA
       ## Colors are specified with single letters inside
       ## curly braces. Uppercase changes background color.
       ##
-      ## w: white, k: black, g: green, l: blue, y: yellow, c: cyan,
-      ## m: magenta, r: red, b: bold, u: underline, i: italic,
-      ## x: reset (remove background, color, emphasis)
+      ## w: white, k: black, g: green, l: blue, y: yellow,
+      ## c: cyan, m: magenta, r: red, b: bold, u: underline,
+      ## i: italic, x: reset (remove background, color,
+      ## emphasis)
       ##
-      ## Also accepts {#RGB} and {#RRGGBB} strings. Put a b before
-      ## the hash to make it a background color
+      ## Also accepts {#RGB} and {#RRGGBB} strings. Put a b
+      ## before the hash to make it a background color
       ##
-      ## @example Convert a templated string
-      ##   Color.template('{Rwb}Warning:{x} {w}you look a little {g}ill{x}')
+      ## @example    Convert a templated string
+      ## Color.template('{Rwb}Warning:{x} {w}you look a
+      ## little {g}ill{x}')
       ##
-      ## @example Convert using RGB colors
-      ##   Color.template('{#f0a}This is an RGB color')
+      ## @example    Convert using RGB colors
+      ## Color.template('{#f0a}This is an RGB color')
       ##
       ## @param      input  [String, Array] The template
       ##                    string. If this is an array, the
