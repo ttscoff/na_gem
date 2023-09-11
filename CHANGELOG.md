@@ -1,3 +1,11 @@
+### 1.2.56
+
+2023-09-11 11:33
+
+#### FIXED
+
+- Write missing backup database if it doesn't exist
+
 ### 1.2.55
 
 2023-09-11 11:23
