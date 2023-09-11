@@ -174,7 +174,7 @@ class App
                             search: search_tokens,
                             project: options[:project],
                             require_na: require_na })
-      if todo.files.empty?
+      if todo.files.empty? && tokens
         NA.notify("#{NA.theme[:error]}No matches found for #{tokens[0][:token]}.
                   Run `na todos` to see available todo files.")
       end
