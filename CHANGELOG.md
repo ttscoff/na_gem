@@ -1,3 +1,11 @@
+### 1.2.55
+
+2023-09-11 11:23
+
+#### IMPROVED
+
+- Change minimum width for text wrapping to 80 columns
+
 ### 1.2.54
 
 2023-09-11 10:11
