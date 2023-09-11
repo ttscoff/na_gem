@@ -1,3 +1,12 @@
+### 1.2.54
+
+2023-09-11 10:11
+
+#### IMPROVED
+
+- Allow selection of action if no search text is provided for tag command
+- If the terminal is less than 60 columns wide, don't indent or wrap (for display on mobile devices)
+
 ### 1.2.53
 
 2023-09-10 08:26
