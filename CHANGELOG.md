@@ -1,3 +1,11 @@
+### 1.2.57
+
+2023-09-11 16:43
+
+#### FIXED
+
+- Error when no todo files are located
+
 ### 1.2.56
 
 2023-09-11 11:33
