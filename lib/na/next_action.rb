@@ -647,9 +647,14 @@ module NA
     ##
     def backup_files
       db = database_path(file: 'last_modified.txt')
-      NA.notify("#{NA.theme[:error]}Backup database not found", exit_code: 1) unless File.exist?(db)
+      if File.exist?(db)
+        IO.read(db).strip.split(/\n/).map(&:strip)
+      else
+        NA.notify("#{NA.theme[:error]}Backup database not found")
+        File.open(db, 'w') { |f| f.puts }
+        []
+      end
 
-      IO.read(db).strip.split(/\n/).map(&:strip)
     end
 
     def move_deprecated_backups
