@@ -149,7 +149,7 @@ class ::String
   end
 
   def wrap(width, indent)
-    return "\n#{self}" if width < 60
+    return "\n#{self}" if width <= 80
 
     output = []
     line = []
