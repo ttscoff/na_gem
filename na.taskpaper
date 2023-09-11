@@ -4,6 +4,8 @@ title: NA Todos
 Testing:
 	New Commands:
 Inbox: @inbox
+	- add --in "na" adds to Bunch, needs more exact matching @priority(4) @na
+	- Onlyin flag to search only in a specified directory @priority(3) @na
 	- command to archive all done tasks @na @priority(2) @maybe @done(2023-09-02 15:17)
 	- Need to add some tests @priority(5) @na
 na:

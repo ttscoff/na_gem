@@ -52,7 +52,7 @@ class ::String
     prefix = match(/(^[ \t]+)/)
     return 0 if prefix.nil?
 
-    prefix[1].gsub(/  /, "\t").scan(/\t/).count
+    prefix[1].gsub(/    /, "\t").scan(/\t/).count
   end
 
   def action?
@@ -149,6 +149,8 @@ class ::String
   end
 
   def wrap(width, indent)
+    return "\n#{self}" if width < 60
+
     output = []
     line = []
     length = indent

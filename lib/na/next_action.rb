@@ -410,7 +410,6 @@ module NA
       parent = project.split(%r{[:/]})
 
       if NA.global_file
-        puts NA.global_file
         if NA.cwd_is == :tag
           add_tag = [NA.cwd]
         else
@@ -622,10 +621,7 @@ module NA
     ## @param      search  The search
     ##
     def last_modified_file(search: nil)
-      db = database_path(file: 'last_modified.txt')
-      return nil unless File.exist?(db)
-
-      files = IO.read(db).split(/\n/).map(&:strip)
+      files = backup_files
       files.delete_if { |f| f !~ Regexp.new(search.dir_to_rx(require_last: true)) } if search
       files.last
     end
@@ -645,18 +641,71 @@ module NA
     end
 
     ##
+    ## Get list of backed up files
+    ##
+    ## @return     [Array] list of file paths
+    ##
+    def backup_files
+      db = database_path(file: 'last_modified.txt')
+      NA.notify("#{NA.theme[:error]}Backup database not found", exit_code: 1) unless File.exist?(db)
+
+      IO.read(db).strip.split(/\n/).map(&:strip)
+    end
+
+    def move_deprecated_backups
+      backup_files.each do |file|
+        if File.exist?(old_backup_path(file))
+          NA.notify("Moving deprecated backup to new backup folder (#{file})", debug: true)
+          backup_path(file)
+        end
+      end
+    end
+
+    def old_backup_path(file)
+      File.join(File.dirname(file), ".#{File.basename(file)}.bak")
+    end
+
+    ##
+    ## Get the backup file path for a file
+    ##
+    ## @param      file  The file
+    ##
+    def backup_path(file)
+      backup_home = File.expand_path('~/.local/share/na/backup')
+      backup = old_backup_path(file)
+      backup_dir = File.join(backup_home, File.dirname(backup))
+      FileUtils.mkdir_p(backup_dir) unless File.directory?(backup_dir)
+
+      backup_target = File.join(backup_home, backup)
+      FileUtils.mv(backup, backup_target) if File.exist?(backup)
+      backup_target
+    end
+
+    def weed_modified_files(file = nil)
+      files = backup_files
+
+      files.delete_if { |f| f =~ /#{file}/ } if file
+
+      files.delete_if { |f| !File.exist?(backup_path(f)) }
+
+      File.open(database_path(file: 'last_modified.txt'), 'w') { |f| f.puts files.join("\n") }
+    end
+
+    ##
     ## Restore a file from backup
     ##
     ## @param      file  The file
     ##
     def restore_modified_file(file)
-      bak_file = File.join(File.dirname(file), ".#{File.basename(file)}.bak")
+      bak_file = backup_path(file)
       if File.exist?(bak_file)
         FileUtils.mv(bak_file, file)
         NA.notify("#{NA.theme[:success]}Backup restored for #{file.highlight_filename}")
       else
         NA.notify("#{NA.theme[:error]}Backup file for #{file.highlight_filename} not found")
       end
+
+      weed_modified_files(file)
     end
 
     ##
@@ -821,11 +870,9 @@ module NA
     ## @param      target [String] The file to back up
     ##
     def backup_file(target)
-      file = ".#{File.basename(target)}.bak"
-      backup = File.join(File.dirname(target), file)
-      FileUtils.cp(target, backup)
+      FileUtils.cp(target, backup_path(target))
       save_modified_file(target)
-      NA.notify("#{NA.theme[:warning]}Backup file created at #{backup.highlight_filename}", debug: true)
+      NA.notify("#{NA.theme[:warning]}Backup file created for #{target.highlight_filename}", debug: true)
     end
 
     ##

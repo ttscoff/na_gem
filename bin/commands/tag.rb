@@ -89,10 +89,6 @@ class App
         end
       end
 
-      # if (tokens.nil? || tokens.empty?) && options[:tagged].empty?
-      #   NA.notify("#{NA.theme[:error]}Empty input, cancelled", exit_code: 1)
-      # end
-
       all_req = options[:tagged].join(' ') !~ /[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
