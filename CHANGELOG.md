@@ -1,3 +1,15 @@
+### 1.2.58
+
+2023-09-12 14:11
+
+#### NEW
+
+- `na next --all` to display next actions from all known todo files (any directory)
+
+#### IMPROVED
+
+- Middle truncate directory names longer than 1/3 of the screen width
+
 ### 1.2.57
 
 2023-09-11 16:43
