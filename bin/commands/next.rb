@@ -19,6 +19,9 @@ class App
     c.arg_name 'DEPTH'
     c.flag %i[d depth], type: :integer, must_match: /^[1-9]$/
 
+    c.desc 'Show next actions from all known todo files (in any directory)'
+    c.switch %i[all], negatable: false, default_value: false
+
     c.desc 'Display matches from a known todo file'
     c.arg_name 'TODO_FILE'
     c.flag %i[in todo], multiple: true
@@ -121,6 +124,7 @@ class App
       end
 
       args.concat(options[:in])
+      args << '*' if options[:all]
       if args.count.positive?
         all_req = args.join(' ') !~ /(?<=[, ])[+!-]/
 

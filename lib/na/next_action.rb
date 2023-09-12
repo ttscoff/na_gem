@@ -654,7 +654,6 @@ module NA
         File.open(db, 'w') { |f| f.puts }
         []
       end
-
     end
 
     def move_deprecated_backups
