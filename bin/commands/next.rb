@@ -137,9 +137,7 @@ class App
         end
       end
 
-      search_for_done = false
-      tags.each { |tag| search_for_done = true if tag[:tag] =~ /done/ }
-      options[:done] = true if search_for_done
+      options[:done] = true if tags.any? { |tag| tag[:tag] =~ /done/ }
 
       search_tokens = nil
       if options[:exact]

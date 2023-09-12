@@ -90,7 +90,7 @@ class ::String
   ## @return     Colorized string
   ##
   def highlight_filename
-    dir = File.dirname(self).shorten_path
+    dir = File.dirname(self).shorten_path.trunc_middle(TTY::Screen.columns / 3)
     file = NA.include_ext ? File.basename(self) : File.basename(self, ".#{NA.extension}")
     "#{NA.theme[:dirname]}#{dir}/#{NA.theme[:filename]}#{file}{x}"
   end
@@ -146,6 +146,16 @@ class ::String
       end
     end
     string
+  end
+
+  def trunc_middle(max)
+    return self unless length > max
+
+    half = (max / 2).floor - 3
+    chars = split('')
+    pre = chars.slice(0, half)
+    post = chars.reverse.slice(0, half).reverse
+    "#{pre.join('')}[...]#{post.join('')}"
   end
 
   def wrap(width, indent)
