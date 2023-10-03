@@ -39,6 +39,8 @@ class ::String
     file = File.expand_path(self)
     raise "Missing file #{file}" unless File.exist?(file)
 
+    NA.notify("#{NA.theme[:error]}#{file} is a directory", exit_code: 2) if File.directory?(file)
+
     # IO.read(file).force_encoding('ASCII-8BIT').encode('UTF-8', invalid: :replace, undef: :replace, replace: '?')
     IO.read(file).force_encoding('utf-8')
   end

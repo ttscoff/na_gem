@@ -87,6 +87,9 @@ class App
     c.arg_name 'QUERY'
     c.flag %i[search find grep], multiple: true
 
+    c.desc 'Include notes in search'
+    c.switch %i[search_notes], negatable: true, default_value: true
+
     c.desc 'Match actions containing tag. Allows value comparisons'
     c.arg_name 'TAG'
     c.flag %i[tagged], multiple: true
@@ -103,7 +106,7 @@ class App
     c.action do |global_options, options, args|
       reader = TTY::Reader.new
 
-      args.concat(options[:search])
+      args.concat(options[:search]) unless options[:search].nil?
 
       append = options[:at] ? options[:at] =~ /^[ae]/i : global_options[:add_at] =~ /^[ae]/i
 
@@ -257,6 +260,7 @@ class App
                          project: options[:project],
                          remove_tag: remove_tags,
                          replace: options[:replace],
+                         search_note: options[:search_notes],
                          tagged: tags)
       end
     end

@@ -39,6 +39,9 @@ class App
     c.desc 'Match pattern exactly'
     c.switch %i[x exact], negatable: false
 
+    c.desc 'Include notes in search'
+    c.switch %i[search_notes], negatable: true, default_value: true
+
     c.action do |global_options, options, args|
       options[:edit] = true
       action = if args.count.positive?
@@ -130,6 +133,7 @@ class App
       targets.each do |target|
         NA.update_action(target,
                          tokens,
+                         search_note: options[:search_notes],
                          done: options[:done],
                          edit: options[:edit],
                          project: target_proj,

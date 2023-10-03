@@ -23,7 +23,7 @@ class App
 
     c.desc 'Specify the file to search for the task'
     c.arg_name 'PATH'
-    c.flag %i[file]
+    c.flag %i[file in]
 
     c.desc 'Search for files X directories deep'
     c.arg_name 'DEPTH'
@@ -41,6 +41,9 @@ class App
 
     c.desc 'Match pattern exactly'
     c.switch %i[x exact], negatable: false
+
+    c.desc 'Include notes in search'
+    c.switch %i[search_notes], negatable: true, default_value: true
 
     c.action do |global, options, args|
       options[:remove] = ['done']

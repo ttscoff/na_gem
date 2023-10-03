@@ -139,8 +139,9 @@ module NA
       todo.projects
     end
 
-    def find_actions(target, search, tagged = nil, all: false, done: false, project: nil)
+    def find_actions(target, search, tagged = nil, all: false, done: false, project: nil, search_note: true)
       todo = NA::Todo.new({ search: search,
+                            search_note: search_note,
                             require_na: false,
                             file_path: target,
                             project: project,
@@ -231,6 +232,7 @@ module NA
 
     def update_action(target,
                       search,
+                      search_note: true,
                       add: nil,
                       add_tag: [],
                       all: false,
@@ -327,7 +329,7 @@ module NA
 
         notify(add.pretty)
       else
-        _, actions = find_actions(target, search, tagged, done: done, all: all, project: project)
+        _, actions = find_actions(target, search, tagged, done: done, all: all, project: project, search_note: search_note)
 
         return if actions.nil?
 
