@@ -42,6 +42,10 @@ class App
     c.arg_name 'TAG'
     c.flag %i[tagged], multiple: true
 
+    c.desc 'Match actions with priority, allows <>= comparison'
+    c.arg_name 'PRIORITY'
+    c.flag %i[p prio priority], multiple: true
+
     c.desc 'Filter results using search terms'
     c.arg_name 'QUERY'
     c.flag %i[search find grep], multiple: true
@@ -115,6 +119,20 @@ class App
       end
 
       search = search.gsub(/,/, '').gsub(/ +/, ' ') unless search.nil?
+
+      if options[:priority].count.positive?
+        prios = options[:priority].join(',').split(/,/)
+        options[:or] = true if prios.count > 1
+        prios.each do |p|
+          options[:tagged] << if p =~ /^[<>=]{1,2}/
+                                "priority#{p}"
+                              else
+                                "priority=#{p}"
+                              end
+        end
+      end
+
+      pp options[:tagged]
 
       all_req = options[:tagged].join(' ') !~ /(?<=[, ])[+!-]/ && !options[:or]
       tags = []
