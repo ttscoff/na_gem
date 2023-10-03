@@ -1,3 +1,15 @@
+### 1.2.59
+
+2023-10-03 07:43
+
+#### IMPROVED
+
+- Ignore all YAML headers, even with empty values (which can be mistaked for a project)
+
+#### FIXED
+
+- Inserting new project after first project or inside of existing project
+
 ### 1.2.58
 
 2023-09-12 14:11
