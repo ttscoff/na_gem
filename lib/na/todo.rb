@@ -99,9 +99,14 @@ module NA
         content = file.read_file
         indent_level = 0
         parent = []
+        in_yaml = false
         in_action = false
         content.split(/\n/).each.with_index do |line, idx|
-          if line.project?
+          if in_yaml && line !~ /^(---|~~~)\s*$/
+            NA.notify("YAML: #{line}", debug: true)
+          elsif line =~ /^(---|~~~)\s*$/
+            in_yaml = !in_yaml
+          elsif line.project? && !in_yaml
             in_action = false
             proj = line.project
             indent = line.indent_level

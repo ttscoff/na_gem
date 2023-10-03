@@ -203,7 +203,7 @@ module NA
           content = content.split(/\n/).insert(line, input.join("\n")).join("\n")
         else
           split = content.split(/\n/)
-          line = todo.projects.first&.last_line || 0
+          line = todo.projects.first&.line || 0
           before = split.slice(0, line).join("\n")
           after = split.slice(line, split.count - 0).join("\n")
           content = "#{before}\n#{input.join("\n")}\n#{after}"
