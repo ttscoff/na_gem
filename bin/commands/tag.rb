@@ -46,6 +46,9 @@ class App
     c.arg_name 'QUERY'
     c.flag %i[search find grep], multiple: true
 
+    c.desc 'Include notes in search'
+    c.switch %i[search_notes], negatable: true, default_value: true
+
     c.desc 'Interpret search pattern as regular expression'
     c.switch %i[e regex], negatable: false
 
@@ -152,6 +155,7 @@ class App
 
       targets.each do |target|
         NA.update_action(target, tokens,
+                         search_note: options[:search_notes],
                          add_tag: add_tags,
                          all: options[:all],
                          done: options[:done],
