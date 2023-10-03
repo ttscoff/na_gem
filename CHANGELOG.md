@@ -1,3 +1,11 @@
+### 1.2.61
+
+2023-10-03 12:44
+
+#### NEW
+
+- `--priority` (`-p`) flag for `na next`, allows you to only display actions matching a certain @priority value. Can be used multiple times, or combine multiple values with a comma. Allows <> comparisons, and if more than one value is provided, automatically does an OR search
+
 ### 1.2.60
 
 2023-10-03 12:31

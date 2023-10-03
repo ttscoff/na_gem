@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.60
+The current version of `na` is 1.2.61
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -77,7 +77,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.60
+    1.2.61
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -295,6 +295,7 @@ COMMAND OPTIONS
     --nest                                 - Output actions nested by file
     --[no-]notes                           - Include notes in output
     --omnifocus                            - Output actions nested by file and project
+    -p, --prio, --priority=PRIORITY        - Match actions with priority, allows <>= comparison (may be used more than once, default: none)
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --regex                                - Search query is regular expression
     --save=TITLE                           - Save this search for future use (default: none)
@@ -411,6 +412,7 @@ COMMAND OPTIONS
     --nest                                 - Output actions nested by file
     --[no-]notes                           - Include notes in output
     --omnifocus                            - Output actions nested by file and project
+    -p, --prio, --priority=PRIORITY        - Match actions with priority, allows <>= comparison (may be used more than once, default: none)
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --regex                                - Search query is regular expression
     --save=TITLE                           - Save this search for future use (default: none)
