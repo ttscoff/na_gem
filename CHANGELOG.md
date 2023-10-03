@@ -1,3 +1,18 @@
+### 1.2.60
+
+2023-10-03 12:31
+
+#### NEW
+
+- Added `--search_notes` to allow searching of notes when using `find` or `tagged --search`. Defaults to true, can be disabled with `--no-search_notes`
+
+#### IMPROVED
+
+- Added `--search_notes` to completed, restore, edit, and update
+- Add `--search_notes` to `tag`
+- Add `--search_notes` to `complete`
+- Add `--search_notes` to `next`
+
 ### 1.2.59
 
 2023-10-03 07:43

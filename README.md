@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.59
+The current version of `na` is 1.2.60
 .
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
@@ -77,7 +77,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.59
+    1.2.60
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -190,6 +190,7 @@ COMMAND OPTIONS
     -e, --regex            - Interpret search pattern as regular expression
     --file=PATH            - Specify the file to search for the task (default: none)
     --in, --todo=TODO_FILE - Use a known todo file, partial matches allowed (default: none)
+    --[no-]search_notes    - Include notes in search (default: enabled)
     --tagged=TAG           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
     -x, --exact            - Match pattern exactly
 
@@ -227,6 +228,7 @@ COMMAND OPTIONS
     --omnifocus                            - Output actions nested by file and project
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --save=TITLE                           - Save this search for future use (default: none)
+    --[no-]search_notes                    - Include notes in search (default: enabled)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
     -v, --invert                           - Show actions not matching search pattern
     -x, --exact                            - Match pattern exactly
@@ -288,7 +290,8 @@ COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
     --[no-]done                            - Include @done actions
     --exact                                - Search query is exact text match (not tokens)
-    --in, --todo=TODO_FILE                 - Display matches from a known todo file (may be used more than once, default: none)
+    --file=TODO_FILE                       - Display matches from specific todo file ([relative] path) (default: none)
+    --in, --todo=TODO                      - Display matches from a known todo file anywhere in history (short name) (may be used more than once, default: none)
     --nest                                 - Output actions nested by file
     --[no-]notes                           - Include notes in output
     --omnifocus                            - Output actions nested by file and project
@@ -296,6 +299,7 @@ COMMAND OPTIONS
     --regex                                - Search query is regular expression
     --save=TITLE                           - Save this search for future use (default: none)
     --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
+    --[no-]search_notes                    - Include notes in search (default: enabled)
     -t, --tag=TAG                          - Alternate tag to search for (default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
 
@@ -402,7 +406,8 @@ COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
     --[no-]done                            - Include @done actions
     --exact                                - Search query is exact text match (not tokens)
-    --in, --todo=TODO_FILE                 - Display matches from a known todo file (may be used more than once, default: none)
+    --file=TODO_FILE                       - Display matches from specific todo file ([relative] path) (default: none)
+    --in, --todo=TODO                      - Display matches from a known todo file anywhere in history (short name) (may be used more than once, default: none)
     --nest                                 - Output actions nested by file
     --[no-]notes                           - Include notes in output
     --omnifocus                            - Output actions nested by file and project
@@ -410,6 +415,7 @@ COMMAND OPTIONS
     --regex                                - Search query is regular expression
     --save=TITLE                           - Save this search for future use (default: none)
     --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
+    --[no-]search_notes                    - Include notes in search (default: enabled)
     -t, --tag=TAG                          - Alternate tag to search for (default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
 
@@ -509,6 +515,7 @@ COMMAND OPTIONS
     --replace=TEXT                         - Use with --find to find and replace with new text. Enables --exact when used (default: none)
     --restore                              - Remove @done tag from action
     --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
+    --[no-]search_notes                    - Include notes in search (default: enabled)
     -t, --tag=TAG                          - Add a tag to the action, @tag(values) allowed, use multiple times or combine multiple tags with a comma (may be used more than once, default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
     --to, --move=PROJECT                   - Move action to specific project (default: none)
@@ -562,6 +569,7 @@ COMMAND OPTIONS
     -o, --overwrite                        - Overwrite note instead of appending
     --proj, --project=PROJECT[/SUBPROJECT] - Affect actions from a specific project (default: none)
     --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
+    --[no-]search_notes                    - Include notes in search (default: enabled)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
     --to, --move=PROJECT                   - Move action to specific project (default: none)
     -x, --exact                            - Match pattern exactly
@@ -632,6 +640,7 @@ COMMAND OPTIONS
     --file=PATH                    - Specify the file to search for the task (default: none)
     --in, --todo=TODO_FILE         - Use a known todo file, partial matches allowed (default: none)
     --search, --find, --grep=QUERY - Filter results using search terms (may be used more than once, default: none)
+    --[no-]search_notes            - Include notes in search (default: enabled)
     --tagged=TAG                   - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
     -x, --exact                    - Match pattern exactly
 
