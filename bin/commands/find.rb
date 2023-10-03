@@ -29,6 +29,9 @@ class App
     c.desc 'Include notes in output'
     c.switch %i[notes], negatable: true, default_value: false
 
+    c.desc 'Include notes in search'
+    c.switch %i[search_notes], negatable: true, default_value: true
+
     c.desc 'Combine search tokens with OR, displaying actions matching ANY of the terms'
     c.switch %i[o or], negatable: false
 
@@ -93,7 +96,7 @@ class App
 
       search = search.gsub(/ +/, ' ').strip
 
-      all_req = options[:tagged].join(' ') !~ /[+!-]/ && !options[:or]
+      all_req = options[:tagged].join(' ') !~ /(?<=[, ])[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
         m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
@@ -149,6 +152,7 @@ class App
                             done: options[:done],
                             query: todos,
                             search: tokens,
+                            search_note: options[:search_notes],
                             tag: tags,
                             negate: options[:invert],
                             regex: options[:regex],

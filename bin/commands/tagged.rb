@@ -40,6 +40,9 @@ class App
     c.arg_name 'QUERY'
     c.flag %i[search find grep], multiple: true
 
+    c.desc 'Include notes in search'
+    c.switch %i[search_notes], negatable: true, default_value: true
+
     c.desc 'Search query is regular expression'
     c.switch %i[regex], negatable: false
 
@@ -139,6 +142,7 @@ class App
                             done: options[:done],
                             query: todos,
                             search: tokens,
+                            search_note: options[:search_notes],
                             tag: tags,
                             negate: options[:invert],
                             project: options[:project],

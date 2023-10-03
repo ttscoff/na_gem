@@ -37,6 +37,7 @@ module NA
         regex: false,
         require_na: true,
         search: nil,
+        search_note: true,
         tag: nil
       }
 
@@ -124,7 +125,7 @@ module NA
 
             indent_level = indent
           elsif line.blank?
-            in_action = false
+            in_action = false # Comment out to allow line breaks in of notes, which isn't TaskPaper-compatible
           elsif line.action?
             in_action = false
 
@@ -137,10 +138,6 @@ module NA
 
             next if settings[:require_na] && !line.na?
 
-            has_search = !optional.empty? || !required.empty? || !negated.empty?
-            next if has_search && !new_action.search_match?(any: optional,
-                                                            all: required,
-                                                            none: negated)
             if settings[:project]
               rx = settings[:project].split(%r{[/:]}).join('.*?/')
               next unless parent.join('/') =~ Regexp.new("#{rx}.*?", Regexp::IGNORECASE)
@@ -159,6 +156,14 @@ module NA
           end
         end
         projects = projects.dup
+      end
+
+      actions.delete_if do |new_action|
+        has_search = !optional.empty? || !required.empty? || !negated.empty?
+        has_search && !new_action.search_match?(any: optional,
+                                                all: required,
+                                                none: negated,
+                                                include_note: settings[:search_note])
       end
 
       [files, actions, projects]

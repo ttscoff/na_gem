@@ -140,31 +140,36 @@ module NA
       tag_matches_any(any) && tag_matches_all(all) && tag_matches_none(none)
     end
 
-    def search_match?(any: [], all: [], none: [])
-      search_matches_any(any) && search_matches_all(all) && search_matches_none(none)
+    def search_match?(any: [], all: [], none: [], include_note: true)
+      search_matches_any(any, include_note: include_note) &&
+        search_matches_all(all, include_note: include_note) &&
+        search_matches_none(none, include_note: include_note)
     end
 
     private
 
-    def search_matches_none(regexes)
+    def search_matches_none(regexes, include_note: true)
       regexes.each do |rx|
-        return false if @action.match(Regexp.new(rx, Regexp::IGNORECASE))
+        note_matches = include_note && @note.join(' ').match(Regexp.new(rx, Regexp::IGNORECASE))
+        return false if @action.match(Regexp.new(rx, Regexp::IGNORECASE)) || note_matches
       end
       true
     end
 
-    def search_matches_any(regexes)
+    def search_matches_any(regexes, include_note: true)
       return true if regexes.empty?
 
       regexes.each do |rx|
-        return true if @action.match(Regexp.new(rx, Regexp::IGNORECASE))
+        note_matches = include_note && @note.join(' ').match(Regexp.new(rx, Regexp::IGNORECASE))
+        return true if @action.match(Regexp.new(rx, Regexp::IGNORECASE)) || note_matches
       end
       false
     end
 
-    def search_matches_all(regexes)
+    def search_matches_all(regexes, include_note: true)
       regexes.each do |rx|
-        return false unless @action.match(Regexp.new(rx, Regexp::IGNORECASE))
+        note_matches = include_note && @note.join(' ').match(Regexp.new(rx, Regexp::IGNORECASE))
+        return false unless @action.match(Regexp.new(rx, Regexp::IGNORECASE)) || note_matches
       end
       true
     end
