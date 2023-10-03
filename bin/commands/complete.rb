@@ -44,6 +44,9 @@ class App
     c.arg_name 'QUERY'
     c.flag %i[search find grep], multiple: true
 
+    c.desc 'Include notes in search'
+    c.switch %i[search_notes], negatable: true, default_value: true
+
     c.desc 'Match actions containing tag. Allows value comparisons'
     c.arg_name 'TAG'
     c.flag %i[tagged], multiple: true

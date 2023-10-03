@@ -5,7 +5,7 @@ keywords:
 Other New Project:
 	- testing @na @butter
 Brand New Project:
-	- testing @na
+	- testing @na @done(2023-10-03 11:57)
 		A multi line (multiline) note
 		with a line break
 	- testing @na
