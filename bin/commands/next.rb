@@ -22,9 +22,13 @@ class App
     c.desc 'Show next actions from all known todo files (in any directory)'
     c.switch %i[all], negatable: false, default_value: false
 
-    c.desc 'Display matches from a known todo file'
-    c.arg_name 'TODO_FILE'
+    c.desc 'Display matches from a known todo file anywhere in history (short name)'
+    c.arg_name 'TODO'
     c.flag %i[in todo], multiple: true
+
+    c.desc 'Display matches from specific todo file ([relative] path)'
+    c.arg_name 'TODO_FILE'
+    c.flag %i[file]
 
     c.desc 'Alternate tag to search for'
     c.arg_name 'TAG'
@@ -41,6 +45,9 @@ class App
     c.desc 'Filter results using search terms'
     c.arg_name 'QUERY'
     c.flag %i[search find grep], multiple: true
+
+    c.desc 'Include notes in search'
+    c.switch %i[search_notes], negatable: true, default_value: true
 
     c.desc 'Search query is regular expression'
     c.switch %i[regex], negatable: false
@@ -169,13 +176,17 @@ class App
       tag << { tag: 'done', value: nil, negate: true } unless options[:done]
       tag.concat(tags)
 
+      file_path = options[:file] ? File.expand_path(options[:file]) : nil
+
       todo = NA::Todo.new({ depth: depth,
                             done: options[:done],
-                            query: tokens,
-                            tag: tag,
-                            search: search_tokens,
+                            file_path: file_path,
                             project: options[:project],
-                            require_na: require_na })
+                            query: tokens,
+                            require_na: require_na,
+                            search: search_tokens,
+                            search_note: options[:search_notes],
+                            tag: tag })
       if todo.files.empty? && tokens
         NA.notify("#{NA.theme[:error]}No matches found for #{tokens[0][:token]}.
                   Run `na todos` to see available todo files.")
@@ -183,9 +194,9 @@ class App
       NA::Pager.paginate = false if options[:omnifocus]
       todo.actions.output(depth,
                           files: todo.files,
-                          notes: options[:notes],
                           nest: options[:nest],
-                          nest_projects: options[:omnifocus])
+                          nest_projects: options[:omnifocus],
+                          notes: options[:notes])
     end
   end
 end
