@@ -1,3 +1,11 @@
+### 1.2.62
+
+2023-10-05 08:39
+
+#### FIXED
+
+- Return empty if `na projects QUERY` has no results
+
 ### 1.2.61
 
 2023-10-03 12:44
