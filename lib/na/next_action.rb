@@ -581,6 +581,7 @@ module NA
         NA.notify("#{NA.theme[:warning]}No matches, loosening search", debug: true)
         match_working_dir(search, distance: 2, require_last: false)
       else
+        NA.notify("Matched files: {x}#{dirs.join(', ')}", debug: true)
         dirs
       end
     end
@@ -767,7 +768,10 @@ module NA
               else
                 match_working_dir(query)
               end
+
       target = files.count > 1 ? NA.select_file(files) : files[0]
+      return if target.nil?
+
       projects = find_projects(target)
       projects.each do |proj|
         parts = proj.project.split(/:/)
