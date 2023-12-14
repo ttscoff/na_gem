@@ -1,3 +1,12 @@
+### 1.2.63
+
+2023-12-14 13:56
+
+#### FIXED
+
+- Frozen string issue in completed
+- Remove debug statement
+
 ### 1.2.62
 
 2023-10-05 08:39
