@@ -105,7 +105,7 @@ module NA
         title = input_lines[0]&.strip
         NA.notify("#{NA.theme[:error]}No content in first line", exit_code: 1) if title.nil? || title.strip.empty?
 
-        title.expand_date_tags
+        title = title.expand_date_tags
 
         note = if input_lines.length > 1
                  input_lines[1..-1]

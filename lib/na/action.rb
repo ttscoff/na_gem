@@ -39,8 +39,7 @@ module NA
 
       string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})" if finish && string !~ /(?<=\A| )@done/
 
-      @action = string
-      @action.expand_date_tags
+      @action = string.expand_date_tags
       @note = note unless note.empty?
     end
 

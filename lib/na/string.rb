@@ -294,7 +294,7 @@ class ::String
 
     done_rx = /(?<=^| )@(?<tag>#{watch_tags.join('|')})\((?<date>.*?)\)/i
 
-    gsub!(done_rx) do
+    dup.gsub(done_rx) do
       m = Regexp.last_match
       t = m['tag']
       d = m['date']

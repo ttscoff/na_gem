@@ -20,7 +20,7 @@ class App
     c.desc 'Add a @done tag to action and move to Archive'
     c.switch %i[a archive], negatable: false
 
-    c.desc 'Move action to specific project'
+    c.desc 'Add a @done tag and move action to specific project'
     c.arg_name 'PROJECT'
     c.flag %i[to move]
 

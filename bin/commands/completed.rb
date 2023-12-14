@@ -102,7 +102,7 @@ class App
         title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
         NA.save_search(title, cmd_string)
       end
-      puts cmd_string
+
       exit run(Shellwords.shellsplit(cmd_string))
     end
   end

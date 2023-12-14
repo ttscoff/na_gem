@@ -178,7 +178,8 @@ class App
                       args = ['--placeholder "Enter a note, CTRL-d to save"']
                       args << '--char-limit 0'
                       args << '--width $(tput cols)'
-                      `gum write #{args.join(' ')}`.strip.split("\n")
+                      gum = TTY::Which.which('gum')
+                      `#{gum} write #{args.join(' ')}`.strip.split("\n")
                     else
                       NA.notify("#{NA.theme[:prompt]}Enter a note, {bw}CTRL-d#{NA.theme[:prompt]} to end editing:#{NA.theme[:action]}")
                       reader.read_multiline

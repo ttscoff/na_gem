@@ -132,8 +132,6 @@ class App
         end
       end
 
-      pp options[:tagged]
-
       all_req = options[:tagged].join(' ') !~ /(?<=[, ])[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
