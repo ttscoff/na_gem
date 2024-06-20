@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is <!--VER-->1.2.62<!--END VER-->.
+The current version of `na` is <!--VER-->1.2.63<!--END VER-->.
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
 
@@ -110,6 +110,20 @@ Unless `--exact` is specified, search is tokenized and combined with AND, so `na
 
 ```
 @cli(bundle exec bin/na help init)
+```
+
+##### move
+
+Move an action between projects. Argument is a search term, if left blank a prompt will allow you to enter terms. If no `--to` project is specified, a menu will be shown of projects in the target file.
+
+Examples:
+
+- `na move` (enter a search term, select a file/destination)
+- `na move "Bug description"` (find matching action and show a menu of project destinations)
+- `na move "Bug description" --to Bugs (move matching action to Bugs project)
+
+```
+@cli(bundle exec bin/na help move)
 ```
 
 ##### next, show

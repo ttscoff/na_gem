@@ -1,3 +1,11 @@
+### 1.2.64
+
+2024-06-20 12:25
+
+#### NEW
+
+- `na move ACTION --to PROJECT` command to allow quickly moving actions around
+
 ### 1.2.63
 
 2023-12-14 13:56
