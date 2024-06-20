@@ -7,6 +7,15 @@ REGEX_TIME = /^#{REGEX_CLOCK}$/i.freeze
 # String helpers
 class ::String
   ##
+  ## Insert a comment character at the start of every line
+  ##
+  ## @param      char  [String] The character to insert (default #)
+  ##
+  def comment(char = "#")
+    split(/\n/).map { |l| "# #{l}" }.join("\n")
+  end
+
+  ##
   ## Tests if object is nil or empty
   ##
   ## @return     [Boolean] true if object is defined and
@@ -30,6 +39,8 @@ class ::String
     file = File.expand_path(self)
     raise "Missing file #{file}" unless File.exist?(file)
 
+    NA.notify("#{NA.theme[:error]}#{file} is a directory", exit_code: 2) if File.directory?(file)
+
     # IO.read(file).force_encoding('ASCII-8BIT').encode('UTF-8', invalid: :replace, undef: :replace, replace: '?')
     IO.read(file).force_encoding('utf-8')
   end
@@ -43,7 +54,7 @@ class ::String
     prefix = match(/(^[ \t]+)/)
     return 0 if prefix.nil?
 
-    prefix[1].gsub(/  /, "\t").scan(/\t/).count
+    prefix[1].gsub(/    /, "\t").scan(/\t/).count
   end
 
   def action?
@@ -76,6 +87,17 @@ class ::String
   end
 
   ##
+  ## Colorize the dirname and filename of a path
+  ##
+  ## @return     Colorized string
+  ##
+  def highlight_filename
+    dir = File.dirname(self).shorten_path.trunc_middle(TTY::Screen.columns / 3)
+    file = NA.include_ext ? File.basename(self) : File.basename(self, ".#{NA.extension}")
+    "#{NA.theme[:dirname]}#{dir}/#{NA.theme[:filename]}#{file}{x}"
+  end
+
+  ##
   ## Colorize @tags with ANSI escapes
   ##
   ## @param      color       [String] color (see #Color)
@@ -88,12 +110,18 @@ class ::String
   ##
   ## @return     [String] string with @tags highlighted
   ##
-  def highlight_tags(color: '{m}', value: '{y}', parens: '{m}', last_color: '{xg}')
+  def highlight_tags(color: NA.theme[:tags], value: NA.theme[:value], parens: NA.theme[:value_parens], last_color: NA.theme[:action])
     tag_color = NA::Color.template(color)
     paren_color = NA::Color.template(parens)
     value_color = NA::Color.template(value)
-    gsub(/(\s|m)(@[^ ("']+)(?:(\()(.*?)(\)))?/,
-         "\\1#{tag_color}\\2#{paren_color}\\3#{value_color}\\4#{paren_color}\\5#{last_color}")
+    gsub(/(?<pre>\s|m)(?<tag>@[^ ("']+)(?:(?<lparen>\()(?<val>.*?)(?<rparen>\)))?/) do
+      m = Regexp.last_match
+      if m['val']
+        "#{m['pre']}#{tag_color}#{m['tag']}#{paren_color}(#{value_color}#{m['val']}#{paren_color})#{last_color}"
+      else
+        "#{m['pre']}#{tag_color}#{m['tag']}#{last_color}"
+      end
+    end
   end
 
   ##
@@ -106,13 +134,12 @@ class ::String
   ## @param      last_color  [String] Color to restore after
   ##                         highlight
   ##
-  def highlight_search(regexes, color: '{y}', last_color: '{xg}')
+  def highlight_search(regexes, color: NA.theme[:search_highlight], last_color: NA.theme[:action])
     string = dup
-    color = NA::Color.template(color)
+    color = NA::Color.template(color.dup)
     regexes.each do |rx|
       next if rx.nil?
-
-      rx = Regexp.new(rx.wildcard_to_rx, Regexp::IGNORECASE) if rx.is_a?(String)
+      rx = Regexp.new(rx, Regexp::IGNORECASE) if rx.is_a?(String)
 
       string.gsub!(rx) do
         m = Regexp.last_match
@@ -121,6 +148,39 @@ class ::String
       end
     end
     string
+  end
+
+  def trunc_middle(max)
+    return self unless length > max
+
+    half = (max / 2).floor - 3
+    chars = split('')
+    pre = chars.slice(0, half)
+    post = chars.reverse.slice(0, half).reverse
+    "#{pre.join('')}[...]#{post.join('')}"
+  end
+
+  def wrap(width, indent)
+    return "\n#{self}" if width <= 80
+
+    output = []
+    line = []
+    length = indent
+    gsub!(/(@\S+)\((.*?)\)/) { "#{Regexp.last_match(1)}(#{Regexp.last_match(2).gsub(/ /, '†')})" }
+
+    split(' ').each do |word|
+      uncolored = NA::Color.uncolor(word)
+      if (length + uncolored.length + 1) < width
+        line << word
+        length += uncolored.length + 1
+      else
+        output << line.join(' ')
+        line = [word]
+        length = indent + uncolored.length + 1
+      end
+    end
+    output << line.join(' ')
+    output.join("\n" + ' ' * (indent + 2)).gsub(/†/, ' ')
   end
 
   # Returns the last escape sequence from a string.
@@ -234,7 +294,7 @@ class ::String
 
     done_rx = /(?<=^| )@(?<tag>#{watch_tags.join('|')})\((?<date>.*?)\)/i
 
-    gsub!(done_rx) do
+    dup.gsub(done_rx) do
       m = Regexp.last_match
       t = m['tag']
       d = m['date']

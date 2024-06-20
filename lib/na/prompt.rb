@@ -14,7 +14,7 @@ module NA
                   when :tag
                     'na tagged $(basename "$PWD")'
                   else
-                    NA.notify('When using a global file, a prompt hook requires `--cwd_as [tag|project]`', exit_code: 1)
+                    NA.notify("#{NA.theme[:error]}When using a global file, a prompt hook requires `--cwd_as [tag|project]`", exit_code: 1)
                   end
                 else
                   'na next'
@@ -31,7 +31,7 @@ module NA
                   when :tag
                     'na tagged (basename "$PWD")'
                   else
-                    NA.notify('When using a global file, a prompt hook requires `--cwd_as [tag|project]`', exit_code: 1)
+                    NA.notify("#{NA.theme[:error]}When using a global file, a prompt hook requires `--cwd_as [tag|project]`", exit_code: 1)
                   end
                 else
                   'na next'
@@ -50,7 +50,7 @@ module NA
                   when :tag
                     'na tagged $(basename "$PWD")'
                   else
-                    NA.notify('When using a global file, a prompt hook requires `--cwd_as [tag|project]`', exit_code: 1)
+                    NA.notify("#{NA.theme[:error]}When using a global file, a prompt hook requires `--cwd_as [tag|project]`", exit_code: 1)
                   end
                 else
                   'na next'
@@ -83,7 +83,7 @@ module NA
       def show_prompt_hook(shell)
         file = prompt_file(shell)
 
-        NA.notify("{bw}# Add this to {y}#{file}{x}")
+        NA.notify("#{NA.theme[:warning]}# Add this to #{NA.theme[:filename]}#{file}")
         puts prompt_hook(shell)
       end
 
@@ -91,8 +91,8 @@ module NA
         file = prompt_file(shell)
 
         File.open(File.expand_path(file), 'a') { |f| f.puts prompt_hook(shell) }
-        NA.notify("{y}Added {bw}#{shell}{xy} prompt hook to {bw}#{file}{xy}.{x}")
-        NA.notify("{y}You may need to close the current terminal and open a new one to enable the script.{x}")
+        NA.notify("#{NA.theme[:success]}Added #{NA.theme[:filename]}#{shell}{x}#{NA.theme[:success]} prompt hook to #{NA.theme[:filename]}#{file}#{NA.theme[:success]}.")
+        NA.notify("#{NA.theme[:warning]}You may need to close the current terminal and open a new one to enable the script.")
       end
     end
   end

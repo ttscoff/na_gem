@@ -44,6 +44,9 @@ class App
     c.desc 'Include notes in output'
     c.switch %i[notes], negatable: true, default_value: false
 
+    c.desc 'Include notes in search'
+    c.switch %i[search_notes], negatable: true, default_value: true
+
     c.desc 'Show actions from a specific project'
     c.arg_name 'PROJECT[/SUBPROJECT]'
     c.flag %i[proj project]
@@ -75,9 +78,9 @@ class App
       tag_string.concat(options[:tagged]) if options[:tagged]
 
       if args.empty?
-        cmd_string = %(tagged --done "#{tag_string.join(',')}")
+        cmd_string = %(tagged --done)
       else
-        cmd_string = %(find --tagged "#{tag_string.join(',')}" --done #{args.join(' ')})
+        cmd_string = %(find --tagged "#{tag_string.join(',')}" --done)
       end
 
       cmd_string += ' --or' if options[:or]
@@ -86,7 +89,14 @@ class App
       cmd_string += %( --depth #{options[:depth]}) if options[:depth]
       cmd_string += ' --nest' if options[:nest]
       cmd_string += ' --omnifocus' if options[:omnifocus]
+      cmd_string += " --#{options[:search_notes] ? 'search_notes' : 'no-search_notes'}"
       cmd_string += " --#{options[:notes] ? 'notes' : 'no-notes' }"
+
+      if args.empty?
+        cmd_string += " #{tag_string.join(',')}"
+      else
+        cmd_string += " #{args.join(' ')}"
+      end
 
       if options[:save]
         title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')

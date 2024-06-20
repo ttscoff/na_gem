@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is <!--VER-->1.2.34<!--END VER-->.
+The current version of `na` is <!--VER-->1.2.62<!--END VER-->.
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
 
@@ -207,6 +207,50 @@ See the help output for a list of all available actions.
 
 ```
 @cli(bundle exec bin/na help update)
+```
+
+##### changelog
+
+View recent changes with `na changelog` or `na changes`.
+
+```
+@cli(bundle exec bin/na help changelog)
+```
+
+##### complete
+
+Mark an action as complete, shortcut for `na update --finish`.
+
+```
+@cli(bundle exec bin/na help complete)
+```
+
+##### archive
+
+Mark an action as complete and move to archive, shortcut for `na update --archive`.
+
+```
+@cli(bundle exec bin/na help archive)
+```
+
+##### tag
+
+Add, remove, or modify tags.
+
+Use `na tag TAGNAME --[search|tagged] SEARCH_STRING` to add a tag to matching action (use `--all` to apply to all matching actions). If you use `!TAGNAME` it will remove that tag (regardless of value). To change the value of an existing tag (or add it if it doesn't exist), use `~TAGNAME(NEW VALUE)`.
+
+```
+@cli(bundle exec bin/na help tag)
+```
+
+##### undo
+
+Undoes the last file change resulting from an add or update command. If no argument is given, it undoes whatever the last change in history was. If an argument is provided, it's used to match against the change history, finding a specific file to restore from backup.
+
+Only the most recent change can be undone.
+
+```
+@cli(bundle exec bin/na help undo)
 ```
 
 ### Configuration

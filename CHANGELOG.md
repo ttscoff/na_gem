@@ -1,3 +1,286 @@
+### 1.2.63
+
+2023-12-14 13:56
+
+#### FIXED
+
+- Frozen string issue in completed
+- Remove debug statement
+
+### 1.2.62
+
+2023-10-05 08:39
+
+#### FIXED
+
+- Return empty if `na projects QUERY` has no results
+
+### 1.2.61
+
+2023-10-03 12:44
+
+#### NEW
+
+- `--priority` (`-p`) flag for `na next`, allows you to only display actions matching a certain @priority value. Can be used multiple times, or combine multiple values with a comma. Allows <> comparisons, and if more than one value is provided, automatically does an OR search
+
+### 1.2.60
+
+2023-10-03 12:31
+
+#### NEW
+
+- Added `--search_notes` to allow searching of notes when using `find` or `tagged --search`. Defaults to true, can be disabled with `--no-search_notes`
+
+#### IMPROVED
+
+- Added `--search_notes` to completed, restore, edit, and update
+- Add `--search_notes` to `tag`
+- Add `--search_notes` to `complete`
+- Add `--search_notes` to `next`
+
+### 1.2.59
+
+2023-10-03 07:43
+
+#### IMPROVED
+
+- Ignore all YAML headers, even with empty values (which can be mistaked for a project)
+
+#### FIXED
+
+- Inserting new project after first project or inside of existing project
+
+### 1.2.58
+
+2023-09-12 14:11
+
+#### NEW
+
+- `na next --all` to display next actions from all known todo files (any directory)
+
+#### IMPROVED
+
+- Middle truncate directory names longer than 1/3 of the screen width
+
+### 1.2.57
+
+2023-09-11 16:43
+
+#### FIXED
+
+- Error when no todo files are located
+
+### 1.2.56
+
+2023-09-11 11:33
+
+#### FIXED
+
+- Write missing backup database if it doesn't exist
+
+### 1.2.55
+
+2023-09-11 11:23
+
+#### IMPROVED
+
+- Change minimum width for text wrapping to 80 columns
+
+### 1.2.54
+
+2023-09-11 10:11
+
+#### IMPROVED
+
+- Allow selection of action if no search text is provided for tag command
+- If the terminal is less than 60 columns wide, don't indent or wrap (for display on mobile devices)
+
+### 1.2.53
+
+2023-09-10 08:26
+
+#### FIXED
+
+- Nil error when requesting input
+
+### 1.2.52
+
+2023-09-10 06:32
+
+#### FIXED
+
+- Remove debug statement
+
+### 1.2.51
+
+2023-09-09 13:20
+
+#### FIXED
+
+- Ensure new actions are added within newly created projects
+- When creating a subproject, ensure new project gets inserted
+
+### 1.2.50
+
+2023-09-09 08:04
+
+#### NEW
+
+- Global option `--include_ext` can be configured to use full
+
+#### FIXED
+
+- `--no-color` wasn't stripping templated hex codes
+
+### 1.2.49
+
+2023-09-08 13:34
+
+#### FIXED
+
+- New project not being added when requested
+
+### 1.2.48
+
+2023-09-08 10:19
+
+#### FIXED
+
+- Error when `na add --to PROJECT` was a project that didn't exist
+
+### 1.2.47
+
+2023-09-07 10:47
+
+#### NEW
+
+- `na update --search OLD_TEXT --replace NEW_TEXT` (added --replace)
+
+#### IMPROVED
+
+- When not showing notes, add an asterisk in the template note
+- When showing notes, indent to the beginning of the action
+
+### 1.2.46
+
+2023-09-06 21:25
+
+#### IMPROVED
+
+- Add `--project` to archive and update
+- Add `--project` flag to complete
+
+#### FIXED
+
+- Error when creating new project in todo file
+
+### 1.2.45
+
+2023-09-06 19:19
+
+#### IMPROVED
+
+- Change default :dirname coloring to fix an occasional highlighting issue
+
+### 1.2.44
+
+2023-09-06 11:19
+
+#### FIXED
+
+- Error when last_modified.txt hasn't been written yet
+
+### 1.2.43
+
+2023-09-06 10:45
+
+### 1.2.42
+
+2023-09-06 10:32
+
+### 1.2.41
+
+2023-09-06 08:13
+
+#### NEW
+
+- Tag command
+
+#### FIXED
+
+- Nil error in action.pretty
+
+### 1.2.40
+
+2023-09-06 08:11
+
+### 1.2.39
+
+2023-09-06 04:25
+
+#### NEW
+
+- Add `--save NAME` to `na next` to save more complex queries and run with `na saved NAME` (or just `na NAME`)
+- `na saved --select` flag to allow interactive selection of search(es)
+
+#### IMPROVED
+
+- Allow `na saved --delete` to handle multiple arguments
+- Allow wildcards when deleting saved searches
+- Refactor request for input, no change to user experience
+- Refined wildcard (?*) handling
+- When displaying actions wider than the screen, wrap at words and indent 2 spaces from start of action (after prefix)
+
+### 1.2.38
+
+2023-09-03 11:25
+
+#### NEW
+
+- Open the todos database in an editor with `na todos --edit`
+- A theme file is written to ~/.local/share/na/theme.yaml where you can modify the colors used for all displays
+- Allow tag=~PATTERN comparison for regex matching
+
+#### IMPROVED
+
+- Better error message for `na next` when no todo is matched
+- If STDOUT isn't a TTY, don't enable pagination, regardless of global setting
+- Allow --find or --grep as synonyms for --search
+
+#### FIXED
+
+- Date tags containing hyphens triggered OR searches because they were initially interpreted as negative tag searches
+- Templating irregularities
+- Error thrown when running without $EDITOR variable defined in environment
+
+### 1.2.37
+
+2023-09-01 12:42
+
+#### NEW
+
+- `na undo` command to undo last change or last change to file specified in arguments
+
+#### IMPROVED
+
+- Disable pagination when using --omnifocus
+- Refactoring codebase
+- `--in TODO` option for `na complete`
+
+### 1.2.36
+
+2023-09-01 12:41
+
+#### NEW
+
+- `na undo` command to undo last change or last change to file specified in arguments
+
+#### IMPROVED
+
+- Disable pagination when using --omnifocus
+- Refactoring codebase
+- `--in TODO` option for `na complete`
+
 ### 1.2.35
 
 2023-08-30 11:59

@@ -33,7 +33,11 @@ class App
 
     c.desc 'Move action to specific project'
     c.arg_name 'PROJECT'
-    c.flag %i[to project proj]
+    c.flag %i[to move]
+
+    c.desc 'Affect actions from a specific project'
+    c.arg_name 'PROJECT[/SUBPROJECT]'
+    c.flag %i[proj project]
 
     c.desc 'Use a known todo file, partial matches allowed'
     c.arg_name 'TODO_FILE'
@@ -51,6 +55,10 @@ class App
     c.arg_name 'TAG'
     c.flag %i[r remove], multiple: true
 
+    c.desc 'Use with --find to find and replace with new text. Enables --exact when used'
+    c.arg_name 'TEXT'
+    c.flag %i[replace]
+
     c.desc 'Add a @done tag to action'
     c.switch %i[f finish], negatable: false
 
@@ -63,7 +71,7 @@ class App
     c.desc 'Delete an action'
     c.switch %i[delete], negatable: false
 
-    c.desc "Open action in editor (#{NA.default_editor}).
+    c.desc "Open action in editor (#{NA::Editor.default_editor}).
             Natural language dates will be parsed and converted in date-based tags."
     c.switch %i[edit], negatable: false
 
@@ -74,6 +82,13 @@ class App
     c.desc 'Search for files X directories deep'
     c.arg_name 'DEPTH'
     c.flag %i[d depth], must_match: /^[1-9]$/, type: :integer, default_value: 1
+
+    c.desc 'Filter results using search terms'
+    c.arg_name 'QUERY'
+    c.flag %i[search find grep], multiple: true
+
+    c.desc 'Include notes in search'
+    c.switch %i[search_notes], negatable: true, default_value: true
 
     c.desc 'Match actions containing tag. Allows value comparisons'
     c.arg_name 'TAG'
@@ -90,6 +105,9 @@ class App
 
     c.action do |global_options, options, args|
       reader = TTY::Reader.new
+
+      args.concat(options[:search]) unless options[:search].nil?
+
       append = options[:at] ? options[:at] =~ /^[ae]/i : global_options[:add_at] =~ /^[ae]/i
 
       if options[:restore] || (!options[:remove].nil? && options[:remove].include?('done'))
@@ -97,22 +115,17 @@ class App
         options[:tagged] << '+done'
       elsif !options[:remove].nil? && !options[:remove].empty?
         options[:tagged].concat(options[:remove])
+      elsif options[:finish] && !options[:done]
+        options[:tagged] << '-done'
       end
+
+      options[:exact] = true unless options[:replace].nil?
 
       action = if args.count.positive?
                  args.join(' ').strip
-               elsif $stdin.isatty && TTY::Which.exist?('gum') && options[:tagged].empty?
-                 opts = [
-                   %(--placeholder "Enter a task to search for"),
-                   '--char-limit=500',
-                   "--width=#{TTY::Screen.columns}"
-                 ]
-                 `gum input #{opts.join(' ')}`.strip
-               elsif $stdin.isatty && options[:tagged].empty?
-                 puts NA::Color.template('{bm}Enter search string:{x}')
-                 reader.read_line(NA::Color.template('{by}> {bw}')).strip
+               else
+                 NA.request_input(options, prompt: 'Enter a task to search for')
                end
-
       if action
         tokens = nil
         if options[:exact]
@@ -121,35 +134,34 @@ class App
           tokens = Regexp.new(action, Regexp::IGNORECASE)
         else
           tokens = []
-          all_req = action !~ /[+!\-]/ && !options[:or]
+          all_req = action !~ /[+!-]/ && !options[:or]
 
           action.split(/ /).each do |arg|
             m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
             tokens.push({
                           token: m['tok'],
                           required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                          negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                          negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
                         })
           end
         end
       end
 
       if (action.nil? || action.empty?) && options[:tagged].empty?
-        puts 'Empty input, cancelled'
-        Process.exit 1
+        NA.notify("#{NA.theme[:error]}Empty input, cancelled", exit_code: 1)
       end
 
-      all_req = options[:tagged].join(' ') !~ /[+!\-]/ && !options[:or]
+      all_req = options[:tagged].join(' ') !~ /[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
 
         tags.push({
                     tag: m['tag'].wildcard_to_rx,
                     comp: m['op'],
                     value: m['val'],
                     required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                    negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                    negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
                   })
       end
 
@@ -166,9 +178,10 @@ class App
                       args = ['--placeholder "Enter a note, CTRL-d to save"']
                       args << '--char-limit 0'
                       args << '--width $(tput cols)'
-                      `gum write #{args.join(' ')}`.strip.split("\n")
+                      gum = TTY::Which.which('gum')
+                      `#{gum} write #{args.join(' ')}`.strip.split("\n")
                     else
-                      puts NA::Color.template('{bm}Enter a note, {bw}CTRL-d{bm} to end editing{bw}')
+                      NA.notify("#{NA.theme[:prompt]}Enter a note, {bw}CTRL-d#{NA.theme[:prompt]} to end editing:#{NA.theme[:action]}")
                       reader.read_multiline
                     end
                   end
@@ -176,17 +189,15 @@ class App
       note = stdin_note.empty? ? [] : stdin_note
       note.concat(line_note) unless line_note.nil? || line_note.empty?
 
-      target_proj = if options[:project]
-                      options[:project]
+      target_proj = if options[:move]
+                      options[:move]
                     elsif NA.cwd_is == :project
                       NA.cwd
-                    else
-                      nil
                     end
 
       if options[:file]
         file = File.expand_path(options[:file])
-        NA.notify('{r}File not found', exit_code: 1) unless File.exist?(file)
+        NA.notify("#{NA.theme[:error]}File not found", exit_code: 1) unless File.exist?(file)
 
         targets = [file]
       elsif options[:todo]
@@ -196,7 +207,7 @@ class App
           todo.push({
                       token: m['tok'],
                       required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                      negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                      negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
                     })
         end
         dirs = NA.match_working_dir(todo)
@@ -205,26 +216,34 @@ class App
           targets = [dirs[0]]
         elsif dirs.count.positive?
           targets = NA.select_file(dirs, multiple: true)
-          NA.notify('{r}Cancelled', exit_code: 1) unless targets && targets.count.positive?
+          NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1) unless targets && targets.count.positive?
         else
-          NA.notify('{r}Todo not found', exit_code: 1) unless targets && targets.count.positive?
+          NA.notify("#{NA.theme[:error]}Todo not found", exit_code: 1) unless targets && targets.count.positive?
 
         end
       else
-        files = NA.find_files(depth: options[:depth])
-        NA.notify('{r}No todo file found', exit_code: 1) if files.count.zero?
+        files = NA.find_files_matching({
+                                         depth: options[:depth],
+                                         done: options[:done],
+                                         project: options[:project],
+                                         regex: options[:regex],
+                                         require_na: false,
+                                         search: tokens,
+                                         tag: tags
+                                       })
+        NA.notify("#{NA.theme[:error]}No todo file found", exit_code: 1) if files.count.zero?
 
         targets = files.count > 1 ? NA.select_file(files, multiple: true) : [files[0]]
-        NA.notify('{r}Cancelled{x}', exit_code: 1) unless files.count.positive?
+        NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1) unless files.count.positive?
 
       end
 
       if options[:archive]
         options[:finish] = true
-        options[:project] = 'Archive'
+        options[:move] = 'Archive'
       end
 
-      NA.notify('{r}No search terms provided', exit_code: 1) if tokens.nil? && options[:tagged].empty?
+      NA.notify("#{NA.theme[:error]}No search terms provided", exit_code: 1) if tokens.nil? && options[:tagged].empty?
 
       targets.each do |target|
         NA.update_action(target, tokens,
@@ -235,11 +254,14 @@ class App
                          done: options[:done],
                          edit: options[:edit],
                          finish: options[:finish],
+                         move: target_proj,
                          note: note,
                          overwrite: options[:overwrite],
                          priority: priority,
-                         project: target_proj,
+                         project: options[:project],
                          remove_tag: remove_tags,
+                         replace: options[:replace],
+                         search_note: options[:search_notes],
                          tagged: tags)
       end
     end

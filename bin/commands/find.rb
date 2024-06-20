@@ -29,6 +29,9 @@ class App
     c.desc 'Include notes in output'
     c.switch %i[notes], negatable: true, default_value: false
 
+    c.desc 'Include notes in search'
+    c.switch %i[search_notes], negatable: true, default_value: true
+
     c.desc 'Combine search tokens with OR, displaying actions matching ANY of the terms'
     c.switch %i[o or], negatable: false
 
@@ -61,7 +64,8 @@ class App
 
       if options[:save]
         title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
-        NA.save_search(title, "#{NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '').split(' ').map { |t| %("#{t}") }.join(' ')}")
+        cmd = NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '').split(' ').map { |t| %("#{t}") }.join(' ')
+        NA.save_search(title, cmd)
       end
 
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
@@ -73,7 +77,12 @@ class App
       if options[:exact] || options[:regex]
         search = args.join(' ')
       else
-        search = args.join(' ').gsub(/(?<=\A|[ ,])(?<req>[+\-!])?@(?<tag>[^ *=<>$\^,@(]+)(?:\((?<value>.*?)\)| *(?<op>[=<>]{1,2}|[*$\^]=) *(?<val>.*?(?=\Z|[,@])))?/) do |arg|
+        rx = [
+          '(?<=\A|[ ,])(?<req>[+!-])?@(?<tag>[^ *=<>$*\^,@(]+)',
+          '(?:\((?<value>.*?)\)| *(?<op>[=<>~]{1,2}|[*$\^]=) *',
+          '(?<val>.*?(?=\Z|[,@])))?'
+        ].join('')
+        search = args.join(' ').gsub(Regexp.new(rx)) do
           m = Regexp.last_match
           string = if m['value']
                      "#{m['req']}#{m['tag']}=#{m['value']}"
@@ -87,17 +96,17 @@ class App
 
       search = search.gsub(/ +/, ' ').strip
 
-      all_req = options[:tagged].join(' ') !~ /[+!\-]/ && !options[:or]
+      all_req = options[:tagged].join(' ') !~ /(?<=[, ])[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?) *(?:(?<op>[=<>]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
 
         tags.push({
                     tag: m['tag'].wildcard_to_rx,
                     comp: m['op'],
                     value: m['val'],
                     required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                    negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                    negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
                   })
       end
 
@@ -112,47 +121,57 @@ class App
         tokens = Regexp.new(search, Regexp::IGNORECASE)
       else
         tokens = []
-        all_req = search !~ /[+!\-]/ && !options[:or]
+        all_req = search !~ /(?<=[, ])[+!-]/ && !options[:or]
 
         search.split(/ /).each do |arg|
           m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
+
           tokens.push({
-                        token: Regexp.escape(m['tok']),
+                        token: m['tok'],
                         required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                        negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                        negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
                       })
         end
       end
 
-      todo = nil
+      todos = nil
       if options[:in]
-        todo = []
+        todos = []
         options[:in].split(/ *, */).each do |a|
           m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
-          todo.push({
-                      token: m['tok'],
-                      required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                      negate: !m['req'].nil? && m['req'] =~ /[!\-]/
-                    })
+          todos.push({
+                       token: m['tok'],
+                       required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                       negate: !m['req'].nil? && m['req'] =~ /[!-]/
+                     })
         end
       end
 
-      files, actions, = NA.parse_actions(depth: depth,
-                                         done: options[:done],
-                                         query: todo,
-                                         search: tokens,
-                                         tag: tags,
-                                         negate: options[:invert],
-                                         regex: options[:regex],
-                                         project: options[:project],
-                                         require_na: false)
+      todo = NA::Todo.new({
+                            depth: depth,
+                            done: options[:done],
+                            query: todos,
+                            search: tokens,
+                            search_note: options[:search_notes],
+                            tag: tags,
+                            negate: options[:invert],
+                            regex: options[:regex],
+                            project: options[:project],
+                            require_na: false
+                          })
+
       regexes = if tokens.is_a?(Array)
-                  tokens.delete_if { |token| token[:negate] }.map { |token| token[:token] }
+                  tokens.delete_if { |token| token[:negate] }.map { |token| token[:token].wildcard_to_rx }
                 else
                   [tokens]
                 end
 
-      NA.output_actions(actions, depth, files: files, regexes: regexes, notes: options[:notes], nest: options[:nest], nest_projects: options[:omnifocus])
+      todo.actions.output(depth,
+                          files: todo.files,
+                          regexes: regexes,
+                          notes: options[:notes],
+                          nest: options[:nest],
+                          nest_projects: options[:omnifocus])
     end
   end
 end

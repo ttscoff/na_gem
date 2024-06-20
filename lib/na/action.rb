@@ -18,6 +18,31 @@ module NA
       @note = note
     end
 
+    def process(priority: 0, finish: false, add_tag: [], remove_tag: [], note: [])
+      string = @action.dup
+
+      if priority&.positive?
+        string.gsub!(/(?<=\A| )@priority\(\d+\)/, '').strip!
+        string += " @priority(#{priority})"
+      end
+
+      remove_tag.each do |tag|
+        string.gsub!(/(?<=\A| )@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
+        string.strip!
+      end
+
+      add_tag.each do |tag|
+        string.gsub!(/(?<=\A| )@#{tag.gsub(/([()*?])/, '\\\\1')}(\(.*?\))?/, '')
+        string.strip!
+        string += " @#{tag}"
+      end
+
+      string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})" if finish && string !~ /(?<=\A| )@done/
+
+      @action = string.expand_date_tags
+      @note = note unless note.empty?
+    end
+
     def to_s
       note = if @note.count.positive?
                "\n#{@note.join("\n")}"
@@ -33,6 +58,7 @@ module NA
       @project: #{@project}
       @parent: #{@parent.join('>')}
       @action: #{@action}
+      @tags: #{@tags}
       @note: #{@note}
       EOINSPECT
     end
@@ -47,54 +73,62 @@ module NA
     ##                        highlight (searches)
     ## @param      notes      [Boolean] Include notes
     ##
-    def pretty(extension: 'taskpaper', template: {}, regexes: [], notes: false)
-      # Default colorization, can be overridden with full or partial template variable
-      default_template = {
-        file: '{xbk}',
-        parent: '{c}',
-        parent_divider: '{xw}/',
-        action: '{bg}',
-        project: '{xbk}',
-        tags: '{m}',
-        value_parens: '{m}',
-        values: '{y}',
-        output: '%filename%parents| %action',
-        note: '{dw}'
-      }
-      template = default_template.merge(template)
+    def pretty(extension: 'taskpaper', template: {}, regexes: [], notes: false, detect_width: true)
+      theme = NA::Theme.load_theme
+      template = theme.merge(template)
+
       # Create the hierarchical parent string
       parents = @parent.map do |par|
-        NA::Color.template("#{template[:parent]}#{par}")
+        NA::Color.template("{x}#{template[:parent]}#{par}")
       end.join(NA::Color.template(template[:parent_divider]))
-      parents = "{dc}[{x}#{parents}{dc}]{x} "
+      parents = "#{NA.theme[:bracket]}[#{NA.theme[:error]}#{parents}#{NA.theme[:bracket]}]{x} "
 
       # Create the project string
       project = NA::Color.template("#{template[:project]}#{@project}{x} ")
 
       # Create the source filename string, substituting ~ for HOME and removing extension
       file = @file.sub(%r{^\./}, '').sub(/#{ENV['HOME']}/, '~')
-      file = file.sub(/\.#{extension}$/, '')
+      file = file.sub(/\.#{extension}$/, '') unless NA.include_ext
       # colorize the basename
-      file = file.sub(/#{File.basename(@file, ".#{extension}")}$/, "{dw}#{File.basename(@file, ".#{extension}")}{x}")
+      file = file.highlight_filename
       file_tpl = "#{template[:file]}#{file} {x}"
       filename = NA::Color.template(file_tpl)
 
-      # Add notes if needed
-      note = if notes && @note.count.positive?
-               NA::Color.template("\n#{@note.map { |l| "  #{template[:note]}• #{l}{x}" }.join("\n")}")
-             else
-               ''
-             end
-
       # colorize the action and highlight tags
+      @action.gsub!(/\{(.*?)\}/, '\\{\1\\}')
       action = NA::Color.template("#{template[:action]}#{@action.sub(/ @#{NA.na_tag}\b/, '')}{x}")
       action = action.highlight_tags(color: template[:tags],
                                      parens: template[:value_parens],
                                      value: template[:values],
                                      last_color: template[:action])
 
+      if detect_width
+        width = TTY::Screen.columns
+        prefix = NA::Color.uncolor(pretty(template: { templates: { output: template[:templates][:output].sub(/%action/, '').sub(/%note/, '') } }, detect_width: false))
+        indent = prefix.length
+
+        # Add notes if needed
+        note = if notes && @note.count.positive?
+                 NA::Color.template(@note.wrap(width, indent, template[:note]))
+               elsif !notes && @note.count.positive?
+                 action += "#{template[:note]}*"
+               else
+                 ''
+               end
+
+        action = action.wrap(width, indent)
+      else
+        note = if notes && @note.count.positive?
+                 NA::Color.template("\n#{@note.map { |l| "  #{template[:note]}• #{l.wrap(width, indent)}{x}" }.join("\n")}")
+               elsif !notes && @note.count.positive?
+                 action += "#{template[:note]}*"
+               else
+                 ''
+               end
+      end
+
       # Replace variables in template string and output colorized
-      NA::Color.template(template[:output].gsub(/%filename/, filename)
+      NA::Color.template(template[:templates][:output].gsub(/%filename/, filename)
                           .gsub(/%project/, project)
                           .gsub(/%parents?/, parents)
                           .gsub(/%action/, action.highlight_search(regexes))
@@ -105,31 +139,36 @@ module NA
       tag_matches_any(any) && tag_matches_all(all) && tag_matches_none(none)
     end
 
-    def search_match?(any: [], all: [], none: [])
-      search_matches_any(any) && search_matches_all(all) && search_matches_none(none)
+    def search_match?(any: [], all: [], none: [], include_note: true)
+      search_matches_any(any, include_note: include_note) &&
+        search_matches_all(all, include_note: include_note) &&
+        search_matches_none(none, include_note: include_note)
     end
 
     private
 
-    def search_matches_none(regexes)
+    def search_matches_none(regexes, include_note: true)
       regexes.each do |rx|
-        return false if @action.match(Regexp.new(rx, Regexp::IGNORECASE))
+        note_matches = include_note && @note.join(' ').match(Regexp.new(rx, Regexp::IGNORECASE))
+        return false if @action.match(Regexp.new(rx, Regexp::IGNORECASE)) || note_matches
       end
       true
     end
 
-    def search_matches_any(regexes)
+    def search_matches_any(regexes, include_note: true)
       return true if regexes.empty?
 
       regexes.each do |rx|
-        return true if @action.match(Regexp.new(rx, Regexp::IGNORECASE))
+        note_matches = include_note && @note.join(' ').match(Regexp.new(rx, Regexp::IGNORECASE))
+        return true if @action.match(Regexp.new(rx, Regexp::IGNORECASE)) || note_matches
       end
       false
     end
 
-    def search_matches_all(regexes)
+    def search_matches_all(regexes, include_note: true)
       regexes.each do |rx|
-        return false unless @action.match(Regexp.new(rx, Regexp::IGNORECASE))
+        note_matches = include_note && @note.join(' ').match(Regexp.new(rx, Regexp::IGNORECASE))
+        return false unless @action.match(Regexp.new(rx, Regexp::IGNORECASE)) || note_matches
       end
       true
     end
@@ -162,7 +201,6 @@ module NA
       return false if keys.empty?
 
       key = keys[0]
-
       return true if tag[:comp].nil?
 
       tag_val = @tags[key]
@@ -174,12 +212,12 @@ module NA
         tag_date = Time.parse(tag_val)
         date = Chronic.parse(val)
 
+        raise ArgumentError if date.nil?
+
         unless val =~ /(\d:\d|a[mp]|now)/i
           tag_date = Time.parse(tag_date.strftime('%Y-%m-%d 12:00'))
           date = Time.parse(date.strftime('%Y-%m-%d 12:00'))
         end
-
-        puts "Comparing #{tag_date} #{tag[:comp]} #{date}" if NA.verbose
 
         case tag[:comp]
         when /^>$/
@@ -201,7 +239,7 @@ module NA
         else
           false
         end
-      rescue
+      rescue ArgumentError
         case tag[:comp]
         when /^>$/
           tag_val.to_f > val.to_f
@@ -213,12 +251,14 @@ module NA
           tag_val.to_f >= val.to_f
         when /^==?$/
           tag_val =~ /^#{val.wildcard_to_rx}$/
+        when /^=~$/
+          tag_val =~ Regexp.new(val, Regexp::IGNORECASE)
         when /^\$=$/
           tag_val =~ /#{val.wildcard_to_rx}$/i
         when /^\*=$/
-          tag_val =~ /#{val.wildcard_to_rx}/i
+          tag_val =~ /.*?#{val.wildcard_to_rx}.*?/i
         when /^\^=$/
-          tag_val =~ /^#{val.wildcard_to_rx}/
+          tag_val =~ /^#{val.wildcard_to_rx}/i
         else
           false
         end

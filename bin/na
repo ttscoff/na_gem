@@ -26,6 +26,9 @@ class App
   arg_name 'EXT'
   flag :ext
 
+  desc 'Include file extension in display'
+  switch :include_ext, default_value: false, negatable: false
+
   desc 'Tag to consider a next action'
   default_value 'na'
   arg_name 'TAG'
@@ -37,6 +40,7 @@ class App
   default_command :next
 
   NA::Color.coloring = $stdin.isatty
+  NA::Pager.paginate = $stdin.isatty
 
   desc 'Add a next action (deprecated, for backwards compatibility)'
   switch %i[a add], negatable: false
@@ -83,10 +87,12 @@ class App
   end
 
   pre do |global, _command, _options, _args|
+    NA.move_deprecated_backups
     NA.verbose = global[:debug]
-    NA::Pager.paginate = global[:pager]
-    NA::Color.coloring = global[:color]
+    NA::Pager.paginate = global[:pager] && $stdout.isatty
+    NA::Color.coloring = global[:color] && $stdout.isatty
     NA.extension = global[:ext]
+    NA.include_ext = global[:include_ext]
     NA.na_tag = global[:na_tag]
     NA.global_file = global[:file]
     NA.cwd = File.basename(ENV['PWD'])

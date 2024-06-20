@@ -19,9 +19,16 @@ class App
     c.arg_name 'DEPTH'
     c.flag %i[d depth], type: :integer, must_match: /^[1-9]$/
 
-    c.desc 'Display matches from a known todo file'
-    c.arg_name 'TODO_FILE'
+    c.desc 'Show next actions from all known todo files (in any directory)'
+    c.switch %i[all], negatable: false, default_value: false
+
+    c.desc 'Display matches from a known todo file anywhere in history (short name)'
+    c.arg_name 'TODO'
     c.flag %i[in todo], multiple: true
+
+    c.desc 'Display matches from specific todo file ([relative] path)'
+    c.arg_name 'TODO_FILE'
+    c.flag %i[file]
 
     c.desc 'Alternate tag to search for'
     c.arg_name 'TAG'
@@ -35,9 +42,16 @@ class App
     c.arg_name 'TAG'
     c.flag %i[tagged], multiple: true
 
+    c.desc 'Match actions with priority, allows <>= comparison'
+    c.arg_name 'PRIORITY'
+    c.flag %i[p prio priority], multiple: true
+
     c.desc 'Filter results using search terms'
     c.arg_name 'QUERY'
-    c.flag %i[search], multiple: true
+    c.flag %i[search find grep], multiple: true
+
+    c.desc 'Include notes in search'
+    c.switch %i[search_notes], negatable: true, default_value: true
 
     c.desc 'Search query is regular expression'
     c.switch %i[regex], negatable: false
@@ -52,10 +66,14 @@ class App
     c.switch %i[done]
 
     c.desc 'Output actions nested by file'
-    c.switch %[nest], negatable: false
+    c.switch %i[nest], negatable: false
 
     c.desc 'Output actions nested by file and project'
-    c.switch %[omnifocus], negatable: false
+    c.switch %i[omnifocus], negatable: false
+
+    c.desc 'Save this search for future use'
+    c.arg_name 'TITLE'
+    c.flag %i[save]
 
     c.action do |global_options, options, args|
       if global_options[:add]
@@ -67,6 +85,11 @@ class App
         exit run(cmd)
       end
 
+      if options[:save]
+        title = options[:save].gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
+        NA.save_search(title, "#{NA.command_line.join(' ').sub(/ --save[= ]*\S+/, '').split(' ').map { |t| %("#{t}") }.join(' ')}")
+      end
+
       options[:nest] = true if options[:omnifocus]
 
       depth = if global_options[:recurse] && options[:depth].nil? && global_options[:depth] == 1
@@ -75,73 +98,121 @@ class App
                 options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
               end
 
-      all_req = options[:tagged].join(' ') !~ /[+!\-]/ && !options[:or]
+      if options[:exact] || options[:regex]
+        search = options[:search].join(' ')
+      else
+        rx = [
+          '(?<=\A|[ ,])(?<req>[+!-])?@(?<tag>[^ *=<>$~\^,@(]+)',
+          '(?:\((?<value>.*?)\)| *(?<op>=~|[=<>~]{1,2}|[*$\^]=) *',
+          '(?<val>.*?(?=\Z|[,@])))?'
+        ].join('')
+        search = options[:search].join(' ').gsub(Regexp.new(rx)) do
+          m = Regexp.last_match
+          string = if m['value']
+                     "#{m['req']}#{m['tag']}=#{m['value']}"
+                   else
+                     m[0]
+                   end
+          options[:tagged] << string.sub(/@/, '')
+          ''
+        end
+      end
+
+      search = search.gsub(/,/, '').gsub(/ +/, ' ') unless search.nil?
+
+      if options[:priority].count.positive?
+        prios = options[:priority].join(',').split(/,/)
+        options[:or] = true if prios.count > 1
+        prios.each do |p|
+          options[:tagged] << if p =~ /^[<>=]{1,2}/
+                                "priority#{p}"
+                              else
+                                "priority=#{p}"
+                              end
+        end
+      end
+
+      all_req = options[:tagged].join(' ') !~ /(?<=[, ])[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+\-!])?(?<tag>[^ =<>$\^]+?)(?:(?<op>[=<>]{1,2}|[*$\^]=)(?<val>.*?))?$/)
+        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
 
         tags.push({
                     tag: m['tag'].wildcard_to_rx,
                     comp: m['op'],
                     value: m['val'],
                     required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                    negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                    negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
                   })
       end
 
       args.concat(options[:in])
+      args << '*' if options[:all]
       if args.count.positive?
-        all_req = args.join(' ') !~ /[+!\-]/
+        all_req = args.join(' ') !~ /(?<=[, ])[+!-]/
 
         tokens = []
         args.each do |arg|
           arg.split(/ *, */).each do |a|
-            m = a.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
+            m = a.match(/^(?<req>[+!-])?(?<tok>.*?)$/)
             tokens.push({
                           token: m['tok'],
                           required: !m['req'].nil? && m['req'] == '+',
-                          negate: !m['req'].nil? && m['req'] =~ /[!\-]/
+                          negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
                         })
           end
         end
       end
 
-      search = nil
-      if options[:search]
-        if options[:exact]
-          search = options[:search].join(' ')
-        elsif options[:regex]
-          search = Regexp.new(options[:search].join(' '), Regexp::IGNORECASE)
-        else
-          search = []
-          all_req = options[:search].join(' ') !~ /[+!\-]/ && !options[:or]
+      options[:done] = true if tags.any? { |tag| tag[:tag] =~ /done/ }
 
-          options[:search].join(' ').split(/ /).each do |arg|
-            m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
-            search.push({
-                          token: m['tok'],
-                          required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                          negate: !m['req'].nil? && m['req'] =~ /[!\-]/
-                        })
-          end
+      search_tokens = nil
+      if options[:exact]
+        search_tokens = search
+      elsif options[:regex]
+        search_tokens = Regexp.new(search, Regexp::IGNORECASE)
+      else
+        search_tokens = []
+        all_req = search !~ /(?<=[, ])[+!-]/ && !options[:or]
+
+        search.split(/ /).each do |arg|
+          m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
+          search_tokens.push({
+                               token: m['tok'],
+                               required: all_req || (!m['req'].nil? && m['req'] == '+'),
+                               negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
+                             })
         end
       end
 
       NA.na_tag = options[:tag] unless options[:tag].nil?
       require_na = true
 
-      tag = [{ tag: NA.na_tag, value: nil }]
+      tag = [{ tag: NA.na_tag, value: nil, required: true, negate: false }]
       tag << { tag: 'done', value: nil, negate: true } unless options[:done]
       tag.concat(tags)
-      files, actions, = NA.parse_actions(depth: depth,
-                                         done: options[:done],
-                                         query: tokens,
-                                         tag: tag,
-                                         search: search,
-                                         project: options[:project],
-                                         require_na: require_na)
 
-      NA.output_actions(actions, depth, files: files, notes: options[:notes], nest: options[:nest], nest_projects: options[:omnifocus])
+      file_path = options[:file] ? File.expand_path(options[:file]) : nil
+
+      todo = NA::Todo.new({ depth: depth,
+                            done: options[:done],
+                            file_path: file_path,
+                            project: options[:project],
+                            query: tokens,
+                            require_na: require_na,
+                            search: search_tokens,
+                            search_note: options[:search_notes],
+                            tag: tag })
+      if todo.files.empty? && tokens
+        NA.notify("#{NA.theme[:error]}No matches found for #{tokens[0][:token]}.
+                  Run `na todos` to see available todo files.")
+      end
+      NA::Pager.paginate = false if options[:omnifocus]
+      todo.actions.output(depth,
+                          files: todo.files,
+                          nest: options[:nest],
+                          nest_projects: options[:omnifocus],
+                          notes: options[:notes])
     end
   end
 end

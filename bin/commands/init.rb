@@ -14,7 +14,7 @@ class App
         project = args.join(' ')
       elsif
         project = File.expand_path('.').split('/').last
-        project = reader.read_line(NA::Color.template('{y}Project name {bw}> {x}'), value: project).strip if $stdin.isatty
+        project = reader.read_line(NA::Color.template("#{NA.theme[:prompt]}Project name #{NA.theme[:filename]}> "), value: project).strip if $stdin.isatty
       end
 
       target = "#{project}.#{NA.extension}"
