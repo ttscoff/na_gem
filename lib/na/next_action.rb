@@ -544,7 +544,7 @@ module NA
     end
 
     def project_hierarchy(actions)
-      parents = { actions: []}
+      parents = { actions: [] }
       actions.each do |a|
         parent = a.parent
         current_parent = parents
