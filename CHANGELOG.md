@@ -1,3 +1,11 @@
+### 1.2.64
+
+2024-06-22 12:06
+
+#### FIXED
+
+- Handle file searches where the filename matches the dirname and previously returned a "FILE is a directory" error by testing with an extension or a DIRNAME/BASENAME/BASENAME.EXT
+
 ### 1.2.63
 
 2023-12-14 13:56
