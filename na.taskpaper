@@ -4,15 +4,15 @@ title: NA Todos
 Testing:
 	New Commands:
 Inbox: @inbox
-	- add --in "na" adds to Bunch, needs more exact matching @priority(4) @na
-	- Onlyin flag to search only in a specified directory @priority(3) @na
 	- command to archive all done tasks @na @priority(2) @maybe @done(2023-09-02 15:17)
-	- Need to add some tests @priority(5) @na
 na:
 	New Features:
 	Ideas:
+		- Onlyin flag to search only in a specified directory @priority(3) @na
 	Bugs:
 		- No todo file found when using archive command in curlyq project @na @done(2024-01-17 10:06)
+		- add --in "na" adds to Bunch, needs more exact matching @priority(4) @na
+		- Need to add some tests @priority(5) @na
 Archive:
 	- Ability to remove na tag, mark done, or archive @idea @maybe @done (23-06-14 18:42)
 		Searching for "na" should not select .../na_gem/na/marked, only na_gem/na/na

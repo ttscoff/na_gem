@@ -83,7 +83,7 @@ GLOBAL OPTIONS
     --add_at=POSITION       - Add all new/moved entries at [s]tart or [e]nd of target project (default: start)
     --[no-]color            - Colorize output (default: enabled)
     --cwd_as=TYPE           - Use current working directory as [p]roject, [t]ag, or [n]one (default: none)
-    -d, --depth=DEPTH       - Recurse to depth (default: 3)
+    -d, --depth=DEPTH       - Recurse to depth (default: 1)
     --[no-]debug            - Display verbose output
     --ext=EXT               - File extension to consider a todo file (default: taskpaper)
     -f, --file=PATH         - Use a single file as global todo, use initconfig to make permanent (default: none)
@@ -108,6 +108,7 @@ COMMANDS
     help                - Shows a list of commands or help for one command
     init, create        - Create a new todo file in the current directory
     initconfig          - Initialize the config file using current global options
+    move                - Move an existing action to a different section
     next, show          - Show next actions
     open                - Open a todo file in the default editor
     projects            - Show list of projects for a file
@@ -261,6 +262,48 @@ EXAMPLES
 
     # Generate a new todo for a project called warpspeed
     na init warpspeed
+```
+
+##### move
+
+Move an action between projects. Argument is a search term, if left blank a prompt will allow you to enter terms. If no `--to` project is specified, a menu will be shown of projects in the target file.
+
+Examples:
+
+- `na move` (enter a search term, select a file/destination)
+- `na move "Bug description"` (find matching action and show a menu of project destinations)
+- `na move "Bug description" --to Bugs (move matching action to Bugs project)
+
+```
+NAME
+    move - Move an existing action to a different section
+
+SYNOPSIS
+
+    na [global options] move [command options] ACTION
+
+DESCRIPTION
+    Provides an easy way to move an action.   If multiple todo files are found in the current directory, a menu will   allow you to pick which file to act on. 
+
+COMMAND OPTIONS
+    --all                       - Act on all matches immediately (no menu)
+    --at=POSITION               - When moving task, add at [s]tart or [e]nd of target project (default: none)
+    -d, --depth=DEPTH           - Search for files X directories deep (default: 1)
+    -e, --regex                 - Interpret search pattern as regular expression
+    --file=PATH                 - Specify the file to search for the task (default: none)
+    --from=PROJECT[/SUBPROJECT] - Search for actions in a specific project (default: none)
+    --in, --todo=TODO_FILE      - Use a known todo file, partial matches allowed (default: none)
+    -n, --note                  - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
+    -o, --overwrite             - Overwrite note instead of appending
+    --[no-]search_notes         - Include notes in search (default: enabled)
+    --tagged=TAG                - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
+    --to=PROJECT                - Move action to specific project. If not provided, a menu will be shown (default: none)
+    -x, --exact                 - Match pattern exactly
+
+EXAMPLE
+
+    # Find "A bug in inbox" action and move it to section Bugs
+    na move "A bug in inbox" --to Bugs
 ```
 
 ##### next, show

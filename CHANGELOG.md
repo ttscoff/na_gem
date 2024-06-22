@@ -6,6 +6,10 @@
 
 - Handle file searches where the filename matches the dirname and previously returned a "FILE is a directory" error by testing with an extension or a DIRNAME/BASENAME/BASENAME.EXT
 
+#### NEW
+
+- `na move ACTION --to PROJECT` command to allow quickly moving actions around
+
 ### 1.2.63
 
 2023-12-14 13:56

@@ -425,7 +425,7 @@ module NA
     end
 
     def project_hierarchy(actions)
-      parents = { actions: []}
+      parents = { actions: [] }
       actions.each do |a|
         parent = a.parent
         current_parent = parents
@@ -959,7 +959,7 @@ module NA
             end
 
       return false if res&.strip&.size&.zero?
-      pp NA::Color.uncolor(NA::Color.template(res))
+      # pp NA::Color.uncolor(NA::Color.template(res))
       multiple ? NA::Color.uncolor(NA::Color.template(res)).split(/\n/) : NA::Color.uncolor(NA::Color.template(res))
     end
 

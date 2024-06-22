@@ -112,6 +112,20 @@ Unless `--exact` is specified, search is tokenized and combined with AND, so `na
 @cli(bundle exec bin/na help init)
 ```
 
+##### move
+
+Move an action between projects. Argument is a search term, if left blank a prompt will allow you to enter terms. If no `--to` project is specified, a menu will be shown of projects in the target file.
+
+Examples:
+
+- `na move` (enter a search term, select a file/destination)
+- `na move "Bug description"` (find matching action and show a menu of project destinations)
+- `na move "Bug description" --to Bugs (move matching action to Bugs project)
+
+```
+@cli(bundle exec bin/na help move)
+```
+
 ##### next, show
 
 Examples:
