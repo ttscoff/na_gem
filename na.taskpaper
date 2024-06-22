@@ -12,6 +12,7 @@ na:
 	New Features:
 	Ideas:
 	Bugs:
+		- No todo file found when using archive command in curlyq project @na @done(2024-01-17 10:06)
 Archive:
 	- Ability to remove na tag, mark done, or archive @idea @maybe @done (23-06-14 18:42)
 		Searching for "na" should not select .../na_gem/na/marked, only na_gem/na/na

@@ -28,6 +28,23 @@ Rake::TestTask.new do |t|
   t.test_files = FileList['test/*_test.rb']
 end
 
+desc 'Install current gem in all versions of asdf-controlled ruby'
+task :install do
+  Rake::Task['clobber'].invoke
+  Rake::Task['package'].invoke
+  Dir.chdir 'pkg'
+  file = Dir.glob('*.gem').last
+
+  current_ruby = `asdf current ruby`.match(/(\d.\d+.\d+)/)[1]
+
+  `asdf list ruby`.split.map { |ruby| ruby.strip.sub(/^*/, '') }.each do |ruby|
+    `asdf shell ruby #{ruby}`
+    puts `gem install #{file}`
+  end
+
+  `asdf shell ruby #{current_ruby}`
+end
+
 desc 'Development version check'
 task :ver do
   gver = `git ver`
