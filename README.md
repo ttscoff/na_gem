@@ -76,14 +76,14 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.64
+    1.2.65
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
     --add_at=POSITION       - Add all new/moved entries at [s]tart or [e]nd of target project (default: start)
     --[no-]color            - Colorize output (default: enabled)
     --cwd_as=TYPE           - Use current working directory as [p]roject, [t]ag, or [n]one (default: none)
-    -d, --depth=DEPTH       - Recurse to depth (default: 1)
+    -d, --depth=DEPTH       - Recurse to depth (default: 3)
     --[no-]debug            - Display verbose output
     --ext=EXT               - File extension to consider a todo file (default: taskpaper)
     -f, --file=PATH         - Use a single file as global todo, use initconfig to make permanent (default: none)
