@@ -579,7 +579,7 @@ module NA
 
       dirs = dirs.sort_by { |d| File.basename(d) }.uniq
 
-      dirs = find_exact_dir(dirs, search)
+      dirs = find_exact_dir(dirs, search) unless optional == ['*']
 
       if dirs.empty? && require_last
         NA.notify("#{NA.theme[:warning]}No matches, loosening search", debug: true)

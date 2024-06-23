@@ -94,6 +94,7 @@ module NA
               else
                 NA.match_working_dir(settings[:query])
               end
+
       NA.notify("Files: #{files.join(', ')}", debug: true)
       files.each do |file|
         NA.save_working_dir(File.expand_path(file))
