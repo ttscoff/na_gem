@@ -4,6 +4,9 @@ title: NA Todos
 Testing:
 	New Commands:
 Inbox: @inbox
+	- Would be nice if file matching preferred exact matches, ignoring other matches if there is one @priority(4) @na
+	- File matching is working on FILE/FILE matches, but now it's doubling output @priority(4) @na
+		Try `na next na` to see.
 	- command to archive all done tasks @na @priority(2) @maybe @done(2023-09-02 15:17)
 na:
 	New Features:

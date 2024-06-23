@@ -578,6 +578,9 @@ module NA
       end
 
       dirs = dirs.sort_by { |d| File.basename(d) }.uniq
+
+      dirs = find_exact_dir(dirs, search)
+
       if dirs.empty? && require_last
         NA.notify("#{NA.theme[:warning]}No matches, loosening search", debug: true)
         match_working_dir(search, distance: 2, require_last: false)
@@ -585,6 +588,18 @@ module NA
         NA.notify("Matched files: {x}#{dirs.join(', ')}", debug: true)
         dirs
       end
+    end
+
+    def find_exact_dir(dirs, search)
+      terms = search.filter { |s| !s[:negate] }.map { |t| t[:token] }.join(' ')
+      out = dirs
+      dirs.each do |dir|
+        if File.basename(dir).sub(/\.#{NA.extension}$/, '') =~ /^#{terms}$/
+          out = [dir]
+          break
+        end
+      end
+      out
     end
 
     ##
