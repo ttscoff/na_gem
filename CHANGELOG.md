@@ -1,3 +1,11 @@
+### 1.2.66
+
+2024-06-23 10:56
+
+#### IMPROVED
+
+- When passing a query to `next`, prefer exact matches when available
+
 ### 1.2.64
 
 2024-06-22 12:06
