@@ -1,3 +1,12 @@
+### 1.2.70
+
+2024-09-28 11:10
+
+#### FIXED
+
+- - @fixed Matching parenthetical notes at the end of a task entry was too greedy
+- - - @fixed Matching parenthetical notes at the end of a task entry was too greedy
+
 ### 1.2.69
 
 2024-09-28 11:09
