@@ -133,11 +133,11 @@ class App
       end
 
       note_rx = /^(.+) \(([^)]+)\)$/
-split_note = if action =~ note_rx
-    n = Regexp.last_match(2)
-    action.sub!(note_rx, '\1').strip!
-    n
-  end
+      split_note = if action =~ note_rx
+          n = Regexp.last_match(2)
+          action.sub!(note_rx, '\1').strip!
+          n
+        end
 
       if options[:priority]&.to_i&.positive?
         action = "#{action.gsub(/@priority\(\d+\)/, "")} @priority(#{options[:priority]})"
@@ -170,7 +170,7 @@ split_note = if action =~ note_rx
 
       note = stdin_note.empty? ? [] : stdin_note
       note.<< split_note unless split_note.nil?
-      note << line_note unless line_note.nil?
+      note.concat(line_note) unless line_note.nil?
 
       NA.add_action(target, options[:project], action, note, finish: options[:finish], append: append)
     end
