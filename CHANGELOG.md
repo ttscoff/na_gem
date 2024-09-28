@@ -1,3 +1,11 @@
+### 1.2.69
+
+2024-09-28 11:09
+
+#### FIXED
+
+- - @fixed Matching parenthetical notes at the end of a task entry was too greedy
+
 ### 1.2.68
 
 2024-06-23 14:30
