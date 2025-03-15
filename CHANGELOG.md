@@ -10,12 +10,6 @@
 
 - --priority in `na next` and `na add` accepts "h", "m", or "l" to equal 5, 3, 1
 
-#### FIXED
-
-- - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy
-- - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy - Error in concat for line notes
-- - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy
-- - - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy - Error in concat for line notes
 
 ### 1.2.71
 
@@ -23,26 +17,8 @@
 
 #### FIXED
 
-- - - @fixed Matching parenthetical notes at the end of a task entry was too greedy
-- - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy
+- Matching parenthetical notes at the end of a task entry was too greedy
 - Error in concat for line notes
-
-### 1.2.70
-
-2024-09-28 11:10
-
-#### FIXED
-
-- - @fixed Matching parenthetical notes at the end of a task entry was too greedy
-- - - @fixed Matching parenthetical notes at the end of a task entry was too greedy
-
-### 1.2.69
-
-2024-09-28 11:09
-
-#### FIXED
-
-- - @fixed Matching parenthetical notes at the end of a task entry was too greedy
 
 ### 1.2.68
 
