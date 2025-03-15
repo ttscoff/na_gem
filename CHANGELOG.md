@@ -1,3 +1,20 @@
+### 1.2.72
+
+2025-03-15 07:39
+
+#### NEW
+
+- --no_file option for `na next` to display without filename (instead of editing templates)
+
+#### IMPROVED
+
+- --priority in `na next` and `na add` accepts "h", "m", or "l" to equal 5, 3, 1
+
+#### FIXED
+
+- - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy
+- - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy - Error in concat for line notes
+
 ### 1.2.71
 
 2024-09-28 11:12
