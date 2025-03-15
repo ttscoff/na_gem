@@ -16,11 +16,12 @@ module NA
     ## @param      files    [Array] The files actions originally came from
     ## @param      regexes  [Array] The regexes used to gather actions
     ##
-    def output(depth, files: nil, regexes: [], notes: false, nest: false, nest_projects: false)
+    def output(depth, files: nil, regexes: [], notes: false, nest: false, nest_projects: false, no_files: false)
       return if files.nil?
 
       if nest
         template = NA.theme[:templates][:default]
+        template = NA.theme[:templates][:no_file] if no_files
 
         parent_files = {}
         out = []
@@ -41,6 +42,7 @@ module NA
           end
         else
           template = NA.theme[:templates][:default]
+          template = NA.theme[:templates][:no_file] if no_files
 
           each do |action|
             if parent_files.key?(action.file)
@@ -60,7 +62,10 @@ module NA
         end
         NA::Pager.page out.join("\n")
       else
-        template = if files.count.positive?
+        template =
+                    if no_files
+                      NA.theme[:templates][:no_file]
+                    elsif files.count.positive?
                      if files.count == 1
                        NA.theme[:templates][:single_file]
                      else

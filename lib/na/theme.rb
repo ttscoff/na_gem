@@ -46,7 +46,8 @@ module NA
             output: '%filename%parents| %action',
             default: '%parent%action',
             single_file: '%parent%action',
-            multi_file: '%filename%parent%action'
+            multi_file: '%filename%parent%action',
+            no_file: '%parent%action'
           }
         }
 
@@ -57,7 +58,7 @@ module NA
                 else
                   {}
                 end
-        theme = default_template.merge(theme)
+        theme = default_template.deep_merge(theme)
 
         File.open(theme_file, 'w') do |f|
           f.puts template_help.comment

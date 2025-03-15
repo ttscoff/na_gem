@@ -4,8 +4,8 @@ title: NA Todos
 Testing:
 	New Commands:
 Inbox: @inbox
-	- Accept (h)igh (m)edium (l)ow as arguments to next -p @priority(2) @na
-		show 1-2, 3, 4-5, or >-x?
+	- Accept (h)igh (m)edium (l)ow as arguments to next -p @priority(2) @na @done
+		just translates l=1 m=3 h=5
 	- Would be nice if file matching preferred exact matches, ignoring other matches if there is one @priority(4) @na
 na:
 	New Features:

@@ -30,6 +30,14 @@ module NA
       Process.exit exit_code if exit_code
     end
 
+    def priority_map
+      {
+        'h' => 5,
+        'm' => 3,
+        'l' => 1
+      }
+    end
+
     ##
     ## Display and read a Yes/No prompt
     ##

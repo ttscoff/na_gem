@@ -68,6 +68,9 @@ class App
     c.desc 'Output actions nested by file'
     c.switch %i[nest], negatable: false
 
+    c.desc 'No filename in output'
+    c.switch %i[no_file], negatable: false
+
     c.desc 'Output actions nested by file and project'
     c.switch %i[omnifocus], negatable: false
 
@@ -76,6 +79,7 @@ class App
     c.flag %i[save]
 
     c.action do |global_options, options, args|
+      # For backward compatibility with na -a
       if global_options[:add]
         cmd = ['add']
         cmd.push('--note') if global_options[:note]
@@ -101,11 +105,17 @@ class App
       if options[:exact] || options[:regex]
         search = options[:search].join(' ')
       else
+        #  This regex matches the following:
+        #  @tag(value)
+        #  @tag=value (or > < >= <=)
+        #  @tag=~value
+        #  @tag ^= value (or *=, $=)
         rx = [
           '(?<=\A|[ ,])(?<req>[+!-])?@(?<tag>[^ *=<>$~\^,@(]+)',
           '(?:\((?<value>.*?)\)| *(?<op>=~|[=<>~]{1,2}|[*$\^]=) *',
           '(?<val>.*?(?=\Z|[,@])))?'
         ].join('')
+        # convert tag(value) to tag=value
         search = options[:search].join(' ').gsub(Regexp.new(rx)) do
           m = Regexp.last_match
           string = if m['value']
@@ -123,6 +133,18 @@ class App
       if options[:priority].count.positive?
         prios = options[:priority].join(',').split(/,/)
         options[:or] = true if prios.count > 1
+        prios.map! do |p|
+          p.sub(/([hml])$/) do
+            case Regexp.last_match[1]
+            when 'h'
+              NA.priority_map['h']
+            when 'm'
+              NA.priority_map['m']
+            when 'l'
+              NA.priority_map['l']
+            end
+          end
+        end
         prios.each do |p|
           options[:tagged] << if p =~ /^[<>=]{1,2}/
                                 "priority#{p}"
@@ -212,7 +234,8 @@ class App
                           files: todo.files,
                           nest: options[:nest],
                           nest_projects: options[:omnifocus],
-                          notes: options[:notes])
+                          notes: options[:notes],
+                          no_files: options[:no_file])
     end
   end
 end

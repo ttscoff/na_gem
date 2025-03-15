@@ -20,9 +20,9 @@ class App
     c.desc "Prompt for additional notes. STDIN input (piped) will be treated as a note if present."
     c.switch %i[n note], negatable: false
 
-    c.desc "Add a priority level 1-5"
+    c.desc "Add a priority level 1-5 or h, m, l"
     c.arg_name "PRIO"
-    c.flag %i[p priority], must_match: /[1-5]/, type: :integer, default_value: 0
+    c.flag %i[p priority], must_match: /[1-5hml]/, default_value: 0
 
     c.desc "Add action to specific project"
     c.arg_name "PROJECT"
@@ -58,6 +58,15 @@ class App
     c.action do |global_options, options, args|
       reader = TTY::Reader.new
       append = options[:at] ? options[:at] =~ /^[ae]/i : global_options[:add_at] =~ /^[ae]/
+
+      priority = options[:priority]
+      if priority =~ /^[1-5]$/
+        priority = priority.to_i
+      elsif priority =~ /^[hml]$/
+        priority = NA.priority_map[priority]
+      else
+        priority = 0
+      end
 
       if NA.global_file
         target = File.expand_path(NA.global_file)
@@ -139,8 +148,8 @@ class App
           n
         end
 
-      if options[:priority]&.to_i&.positive?
-        action = "#{action.gsub(/@priority\(\d+\)/, "")} @priority(#{options[:priority]})"
+      if priority&.to_i&.positive?
+        action = "#{action.gsub(/@priority\(\d+\)/, "")} @priority(#{priority})"
       end
 
       na_tag = NA.na_tag
