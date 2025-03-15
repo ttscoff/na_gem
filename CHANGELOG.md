@@ -1,3 +1,14 @@
+### 1.2.73
+
+2025-03-15 08:28
+
+#### FIXED
+
+- - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy
+- - - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy - Error in concat for line notes
+- - - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy
+- - - - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy - Error in concat for line notes
+
 ### 1.2.72
 
 2025-03-15 08:13
