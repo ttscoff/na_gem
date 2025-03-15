@@ -1,5 +1,6 @@
 # Ensure we require the local version and not one we might have installed already
-require File.join([File.dirname(__FILE__),'lib','na','version.rb'])
+require './lib/na/version.rb'
+
 spec = Gem::Specification.new do |s|
   s.name = 'na'
   s.version = Na::VERSION
@@ -14,9 +15,7 @@ spec = Gem::Specification.new do |s|
     'Add prompt hooks to display your next actions automatically when cd\'ing into a directory.'
   ].join(' ')
   s.license = 'MIT'
-  s.files = Dir.chdir(File.expand_path('..', __FILE__)) do
-    `git ls-files -z`.split("\x0").reject { |f| f.strip =~ %r{^((test|spec|features)/|\.git|buildnotes|.*\.taskpaper)} }
-  end
+  s.files =`git ls-files -z`.split("\x0").reject { |f| f.strip =~ %r{^((test|spec|features)/|\.git|buildnotes|.*\.taskpaper)} }
   s.require_paths << 'lib'
   s.extra_rdoc_files = ['README.md','na.rdoc']
   s.rdoc_options << '--title' << 'na' << '--main' << 'README.md' << '--markup' << 'markdown'

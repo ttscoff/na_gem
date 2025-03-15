@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.71.
+The current version of `na` is 1.2.72.
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
 
@@ -76,14 +76,14 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.71
+    1.2.72
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
     --add_at=POSITION       - Add all new/moved entries at [s]tart or [e]nd of target project (default: start)
     --[no-]color            - Colorize output (default: enabled)
     --cwd_as=TYPE           - Use current working directory as [p]roject, [t]ag, or [n]one (default: none)
-    -d, --depth=DEPTH       - Recurse to depth (default: 3)
+    -d, --depth=DEPTH       - Recurse to depth (default: 1)
     --[no-]debug            - Display verbose output
     --ext=EXT               - File extension to consider a todo file (default: taskpaper)
     -f, --file=PATH         - Use a single file as global todo, use initconfig to make permanent (default: none)
@@ -154,7 +154,7 @@ COMMAND OPTIONS
     --finish, --done                - Mark task as @done with date
     --in, --todo=TODO_FILE          - Add to a known todo file, partial matches allowed (default: none)
     -n, --note                      - Prompt for additional notes. STDIN input (piped) will be treated as a note if present.
-    -p, --priority=PRIO             - Add a priority level 1-5 (default: 0)
+    -p, --priority=PRIO             - Add a priority level 1-5 or h, m, l (default: 0)
     -t, --tag=TAG                   - Use a tag other than the default next action tag (default: none)
     --to, --project, --proj=PROJECT - Add action to specific project (default: Inbox)
     -x                              - Don't add next action tag to new entry
@@ -335,6 +335,7 @@ COMMAND OPTIONS
     --file=TODO_FILE                       - Display matches from specific todo file ([relative] path) (default: none)
     --in, --todo=TODO                      - Display matches from a known todo file anywhere in history (short name) (may be used more than once, default: none)
     --nest                                 - Output actions nested by file
+    --no_file                              - No filename in output
     --[no-]notes                           - Include notes in output
     --omnifocus                            - Output actions nested by file and project
     -p, --prio, --priority=PRIORITY        - Match actions with priority, allows <>= comparison (may be used more than once, default: none)
@@ -452,6 +453,7 @@ COMMAND OPTIONS
     --file=TODO_FILE                       - Display matches from specific todo file ([relative] path) (default: none)
     --in, --todo=TODO                      - Display matches from a known todo file anywhere in history (short name) (may be used more than once, default: none)
     --nest                                 - Output actions nested by file
+    --no_file                              - No filename in output
     --[no-]notes                           - Include notes in output
     --omnifocus                            - Output actions nested by file and project
     -p, --prio, --priority=PRIORITY        - Match actions with priority, allows <>= comparison (may be used more than once, default: none)
