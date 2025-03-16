@@ -59,7 +59,7 @@ class App
       reader = TTY::Reader.new
       append = options[:at] ? options[:at] =~ /^[ae]/i : global_options[:add_at] =~ /^[ae]/
 
-      priority = options[:priority]
+      priority = options[:priority].to_s || "0"
       if priority =~ /^[1-5]$/
         priority = priority.to_i
       elsif priority =~ /^[hml]$/

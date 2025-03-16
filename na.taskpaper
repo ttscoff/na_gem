@@ -4,6 +4,9 @@ title: NA Todos
 Testing:
 	New Commands:
 Inbox: @inbox
+	- OmniFocus linking and sync @na
+		Link directory to OmniFocus project
+		option to merge in output or mirror projects
 	- Accept (h)igh (m)edium (l)ow as arguments to next -p @priority(2) @na @done
 		just translates l=1 m=3 h=5
 	- Would be nice if file matching preferred exact matches, ignoring other matches if there is one @priority(4) @na

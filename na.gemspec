@@ -17,19 +17,19 @@ spec = Gem::Specification.new do |s|
   s.license = 'MIT'
   s.files =`git ls-files -z`.split("\x0").reject { |f| f.strip =~ %r{^((test|spec|features)/|\.git|buildnotes|.*\.taskpaper)} }
   s.require_paths << 'lib'
-  s.extra_rdoc_files = ['README.md','na.rdoc']
+  s.extra_rdoc_files = ['README.md', 'na.rdoc']
   s.rdoc_options << '--title' << 'na' << '--main' << 'README.md' << '--markup' << 'markdown'
   s.bindir = 'bin'
   s.executables << 'na'
+  s.add_development_dependency('minitest', '~> 5.14')
   s.add_development_dependency('rake','~> 0.9.2')
   s.add_development_dependency('rdoc', '~> 4.3')
-  s.add_development_dependency('minitest', '~> 5.14')
-  s.add_development_dependency('yard', '~> 0.9', '>= 0.9.26')
   s.add_development_dependency('rubocop', '~> 1.74')
+  s.add_development_dependency('yard', '~> 0.9', '>= 0.9.26')
+  s.add_runtime_dependency('chronic', '~> 0.10', '>= 0.10.2')
   s.add_runtime_dependency('gli','~> 2.21.0')
+  s.add_runtime_dependency('mdless', '~> 1.0', '>= 1.0.32')
   s.add_runtime_dependency('tty-reader', '~> 0.9', '>= 0.9.0')
   s.add_runtime_dependency('tty-screen', '~> 0.8', '>= 0.8.1')
   s.add_runtime_dependency('tty-which', '~> 0.5', '>= 0.5.0')
-  s.add_runtime_dependency('chronic', '~> 0.10', '>= 0.10.2')
-  s.add_runtime_dependency('mdless', '~> 1.0', '>= 1.0.32')
 end
