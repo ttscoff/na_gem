@@ -1,3 +1,22 @@
+### 1.2.75
+
+2025-03-17 07:47
+
+#### NEW
+
+- Script to generate fish completions
+
+#### IMPROVED
+
+- Code cleanup
+
+#### FIXED
+
+- Matching parenthetical notes at the end of a task entry was too greedy
+- Matching parenthetical notes at the end of a task entry was too greedy - Error in concat for line notes
+- Matching parenthetical notes at the end of a task entry was too greedy
+- Matching parenthetical notes at the end of a task entry was too greedy - Error in concat for line notes - Failure on priority compare when priority is integer
+
 ### 1.2.74
 
 2025-03-16 07:06
