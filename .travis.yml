@@ -6,6 +6,6 @@ cache: bundler
 rvm:
   - ruby-3.1.0
 install:
-  - gem install bundler --version '2.2.29'
+  - gem install bundler --version '2.6.6'
   - bundle install
 script: "bundle exec rake test"

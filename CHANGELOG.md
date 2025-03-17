@@ -4,10 +4,6 @@
 
 #### FIXED
 
-- - - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy
-- - - - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy - Error in concat for line notes
-- - - - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy
-- - - - - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy - Error in concat for line notes
 - Failure on priority compare when priority is integer
 
 ### 1.2.73
@@ -16,10 +12,8 @@
 
 #### FIXED
 
-- - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy
-- - - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy - Error in concat for line notes
-- - - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy
-- - - - - - - @fixed Matching parenthetical notes at the end of a task entry was too greedy - Error in concat for line notes
+- Error in concat for line notes
+- @fixed Matching parenthetical notes at the end of a task entry was too greedy
 
 ### 1.2.72
 

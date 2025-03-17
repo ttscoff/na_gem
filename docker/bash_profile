@@ -1,0 +1,17 @@
+#!/bin/bash
+export GLI_DEBUG=true
+export EDITOR="/usr/bin/vim"
+alias b="bundle exec bin/na"
+alias be="bundle exec"
+alias quit="exit"
+
+shopt -s nocaseglob
+shopt -s histappend
+shopt -s histreedit
+shopt -s histverify
+shopt -s cmdhist
+
+cd /na
+bundle update
+gem update --system
+gem install pkg/*.gem

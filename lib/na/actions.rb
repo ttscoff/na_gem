@@ -11,80 +11,82 @@ module NA
     ##
     ## Pretty print a list of actions
     ##
-    ## @param      actions  [Array] The actions
-    ## @param      depth    [Number] The depth
-    ## @param      files    [Array] The files actions originally came from
-    ## @param      regexes  [Array] The regexes used to gather actions
+    ## @param depth [Integer] The depth of the action
+    ## @param config [Hash] The configuration options
     ##
-    def output(depth, files: nil, regexes: [], notes: false, nest: false, nest_projects: false, no_files: false)
-      return if files.nil?
+    ## @option config [Array] :files The files to include in the output
+    ## @option config [Array] :regexes The regexes to match against
+    ## @option config [Boolean] :notes Whether to include notes in the output
+    ## @option config [Boolean] :nest Whether to nest the output
+    ## @option config [Boolean] :nest_projects Whether to nest projects in the output
+    ## @option config [Boolean] :no_files Whether to include files in the output
+    ##
+    ## @return [String] The output string
+    ##
+    def output(depth, config = {})
+      defaults = {
+        files: nil,
+        regexes: [],
+        notes: false,
+        nest: false,
+        nest_projects: false,
+        no_files: false,
+      }
+      config = defaults.merge(config)
 
-      if nest
+      return if config[:files].nil?
+
+      if config[:nest]
         template = NA.theme[:templates][:default]
-        template = NA.theme[:templates][:no_file] if no_files
+        template = NA.theme[:templates][:no_file] if config[:no_files]
 
         parent_files = {}
         out = []
 
-        if nest_projects
+        if config[:nest_projects]
           each do |action|
-            if parent_files.key?(action.file)
-              parent_files[action.file].push(action)
-            else
-              parent_files[action.file] = [action]
-            end
+            parent_files[action.file] ||= []
+            parent_files[action.file].push(action)
           end
 
           parent_files.each do |file, acts|
             projects = NA.project_hierarchy(acts)
-            out.push("#{file.sub(%r{^./}, '').shorten_path}:")
+            out.push("#{file.sub(%r{^./}, "").shorten_path}:")
             out.concat(NA.output_children(projects, 0))
           end
         else
           template = NA.theme[:templates][:default]
-          template = NA.theme[:templates][:no_file] if no_files
+          template = NA.theme[:templates][:no_file] if config[:no_files]
 
           each do |action|
-            if parent_files.key?(action.file)
-              parent_files[action.file].push(action)
-            else
-              parent_files[action.file] = [action]
-            end
+            parent_files[action.file] ||= []
+            parent_files[action.file].push(action)
           end
 
-          parent_files.each do |k, v|
-            out.push("#{k.sub(%r{^\./}, '')}:")
-            v.each do |a|
-              out.push("\t- [#{a.parent.join('/')}] #{a.action}")
+          parent_files.each do |file, acts|
+            out.push("#{file.sub(%r{^\./}, "")}:")
+            acts.each do |a|
+              out.push("\t- [#{a.parent.join("/")}] #{a.action}")
               out.push("\t\t#{a.note.join("\n\t\t")}") unless a.note.empty?
             end
           end
         end
         NA::Pager.page out.join("\n")
       else
-        template =
-                    if no_files
-                      NA.theme[:templates][:no_file]
-                    elsif files.count.positive?
-                     if files.count == 1
-                       NA.theme[:templates][:single_file]
-                     else
-                       NA.theme[:templates][:multi_file]
-                     end
-                   elsif NA.find_files(depth: depth).count > 1
-                     if depth > 1
-                       NA.theme[:templates][:multi_file]
-                     else
-                       NA.theme[:templates][:single_file]
-                     end
-                   else
-                     NA.theme[:templates][:default]
-                   end
-        template += '%note' if notes
+        template = if config[:no_files]
+            NA.theme[:templates][:no_file]
+          elsif config[:files].count.positive?
+            config[:files].count == 1 ? NA.theme[:templates][:single_file] : NA.theme[:templates][:multi_file]
+          elsif NA.find_files(depth: depth).count > 1
+            depth > 1 ? NA.theme[:templates][:multi_file] : NA.theme[:templates][:single_file]
+          else
+            NA.theme[:templates][:default]
+          end
+        template += "%note" if config[:notes]
 
-        files.map { |f| NA.notify(f, debug: true) } if files
+        config[:files].map { |f| NA.notify(f, debug: true) } if config[:files]
 
-        output = map { |action| action.pretty(template: { templates: { output: template } }, regexes: regexes, notes: notes) }
+        output = map { |action| action.pretty(template: { templates: { output: template } }, regexes: config[:regexes], notes: config[:notes]) }
         NA::Pager.page(output.join("\n"))
       end
     end

@@ -22,14 +22,12 @@ spec = Gem::Specification.new do |s|
   s.bindir = 'bin'
   s.executables << 'na'
   s.add_development_dependency('minitest', '~> 5.14')
-  s.add_development_dependency('rake','~> 0.9.2')
   s.add_development_dependency('rdoc', '~> 4.3')
-  s.add_development_dependency('rubocop', '~> 1.74')
-  s.add_development_dependency('yard', '~> 0.9', '>= 0.9.26')
   s.add_runtime_dependency('chronic', '~> 0.10', '>= 0.10.2')
   s.add_runtime_dependency('gli','~> 2.21.0')
   s.add_runtime_dependency('mdless', '~> 1.0', '>= 1.0.32')
   s.add_runtime_dependency('tty-reader', '~> 0.9', '>= 0.9.0')
   s.add_runtime_dependency('tty-screen', '~> 0.8', '>= 0.8.1')
   s.add_runtime_dependency('tty-which', '~> 0.5', '>= 0.5.0')
+  s.add_development_dependency('tty-spinner', '~> 0.9', '>= 0.9.0')
 end

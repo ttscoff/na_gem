@@ -519,7 +519,7 @@ module NA
         search: nil,
         tag: nil
       }
-      opts = defaults.merge(options)
+      options = defaults.merge(options)
       files = find_files(depth: options[:depth])
 
       files.delete_if do |file|
