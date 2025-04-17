@@ -108,27 +108,31 @@ class App
     if global[:repo]
       begin
         require 'git'
-        g = Git.open('.', log: Logger.new(File::NULL)) # Silence Git logs
-        repo_root = g.dir.path
-        repo_name = File.basename(repo_root)
-        taskpaper_file = File.join(repo_root, "#{repo_name}.#{NA.extension}")
 
-        NA.notify("Using repository taskpaper file: #{taskpaper_file}", debug: true)
-        NA.global_file = taskpaper_file
+        # Check if we're in a git repo first
+        in_git_repo = system('git rev-parse --is-inside-work-tree >/dev/null 2>&1')
 
-        # Add this block to create the file if it doesn't exist
-        unless File.exist?(taskpaper_file)
-          res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Repository file not found, create #{taskpaper_file}"), default: true)
-          if res
-            NA.create_todo(taskpaper_file, repo_name, template: global[:template])
-          else
-            NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
+        if in_git_repo
+          g = Git.open('.', log: Logger.new(File::NULL)) # Silence Git logs
+          repo_root = g.dir.path
+          repo_name = File.basename(repo_root)
+          taskpaper_file = File.join(repo_root, "#{repo_name}.#{NA.extension}")
+          NA.notify("Using repository taskpaper file: #{taskpaper_file}", debug: true)
+          NA.global_file = taskpaper_file
+          # Add this block to create the file if it doesn't exist
+          unless File.exist?(taskpaper_file)
+            res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Repository file not found, create #{taskpaper_file}"), default: true)
+            if res
+              NA.create_todo(taskpaper_file, repo_name, template: global[:template])
+            else
+              NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
+            end
           end
+        else
+          NA.notify("#{NA.theme[:warning]}Not in a git repository, using default file location logic.", debug: true)
         end
       rescue LoadError
         NA.notify("#{NA.theme[:error]}Git gem not installed. Run 'gem install git' to use --repo option.", exit_code: 1)
-      rescue Git::GitExecuteError
-        NA.notify("#{NA.theme[:warning]}Not in a git repository, using default file location logic.", debug: true)
       end
     end
 
