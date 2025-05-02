@@ -8,6 +8,25 @@ require 'na'
 require 'fcntl'
 require 'tempfile'
 
+# Search for XDG compliant config first. Default to ~/.na.rc for compatibility
+def self.find_config_file
+  home = ENV['HOME']
+  xdg_config_home = ENV['XDG_CONFIG_HOME'] || File.join(home, '.config')
+
+  rc_paths = [
+    File.join(xdg_config_home, 'na', 'na.rc'),  # Check $XDG_CONFIG_HOME/na/na.rc first
+    File.join(xdg_config_home, 'na.rc'),        # Then check $XDG_CONFIG_HOME/na.rc
+    File.join(home, '.na.rc')                   # Finally check ~/.na.rc for compatibility
+  ]
+
+  # Return the first path that exists
+  existing_path = rc_paths.find { |path| File.exist?(path) }
+
+  # If none exist, return XDG-compliant path for creation
+  existing_path || File.join(xdg_config_home, 'na', 'na.rc')
+end
+
+
 # Main application
 class App
   extend GLI::App
@@ -56,8 +75,11 @@ class App
   arg_name 'PATH'
   flag %i[f file]
 
+  desc 'Use a taskpaper file named after the git repository'
+  arg_name 'REPO'
+  switch %i[repo], negatable: true, default_value: true
+
   desc 'Provide a template for new/blank todo files, use initconfig to make permanent'
-  arg_name 'PATH'
   flag %[template]
 
   desc 'Use current working directory as [p]roject, [t]ag, or [n]one'
@@ -101,6 +123,41 @@ class App
                 else
                   global[:cwd_as] =~ /^p/ ? :project : :tag
                 end
+
+    # start of git repo addition ==================================
+    # defaut to git repo if in a git managed directory
+    if global[:repo]
+      begin
+        require 'git'
+
+        # Check if we're in a git repo first
+        in_git_repo = system('git rev-parse --is-inside-work-tree >/dev/null 2>&1')
+
+        if in_git_repo
+          g = Git.open('.', log: Logger.new(File::NULL)) # Silence Git logs
+          repo_root = g.dir.path
+          repo_name = File.basename(repo_root)
+          taskpaper_file = File.join(repo_root, "#{repo_name}.#{NA.extension}")
+          NA.notify("Using repository taskpaper file: #{taskpaper_file}", debug: true)
+          NA.global_file = taskpaper_file
+          # Add this block to create the file if it doesn't exist
+          unless File.exist?(taskpaper_file)
+            res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Repository file not found, create #{taskpaper_file}"), default: true)
+            if res
+              NA.create_todo(taskpaper_file, repo_name, template: global[:template])
+            else
+              NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
+            end
+          end
+        else
+          NA.notify("#{NA.theme[:warning]}Not in a git repository, using default file location logic.", debug: true)
+        end
+      rescue LoadError
+        NA.notify("#{NA.theme[:error]}Git gem not installed. Run 'gem install git' to use --repo option.", exit_code: 1)
+      end
+    end
+    # end of git repo addition ====================================
+
     NA.weed_cache_file
     NA.notify("{dw}{ globals: #{NA.globals}, command_line: #{NA.command_line}, command: #{NA.command}}", debug: true)
     true

@@ -1,2 +1,5 @@
 html/
 *.bak
+na*gem
+*~
+.*~
