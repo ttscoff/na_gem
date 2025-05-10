@@ -62,6 +62,9 @@ class App
     c.desc "Output actions nested by file"
     c.switch %i[nest], negatable: false
 
+    c.desc "No filename in output"
+    c.switch %i[no_file], negatable: false
+
     c.desc "Output actions nested by file and project"
     c.switch %i[omnifocus], negatable: false
 
@@ -158,7 +161,8 @@ class App
                             regexes: regexes,
                             notes: options[:notes],
                             nest: options[:nest],
-                            nest_projects: options[:omnifocus] })
+                            nest_projects: options[:omnifocus],
+                            no_files: options[:no_files] })
     end
   end
 end
