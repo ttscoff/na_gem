@@ -1,3 +1,11 @@
+### 1.2.77
+
+2025-05-10 12:10
+
+#### FIXED
+
+- Quick fix for missing --no_file on tagged
+
 ### 1.2.76
 
 2025-05-10 11:43
