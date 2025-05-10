@@ -1,10 +1,6 @@
 ### 1.2.76
 
-2025-05-10 11:42
-
-#### NEW
-
-- Added no_file flag to find and tagged commands
+2025-05-10 11:43
 
 ### 1.2.75
 

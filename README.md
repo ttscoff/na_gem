@@ -93,8 +93,9 @@ GLOBAL OPTIONS
     -p, --priority=PRIORITY - Set a priority 0-5 (deprecated, for backwards compatibility) (default: none)
     --[no-]pager            - Enable pagination (default: enabled)
     -r, --[no-]recurse      - Recurse 3 directories deep (deprecated, for backwards compatability)
+    --[no-]repo             - Use a taskpaper file named after the git repository (default: enabled)
     -t, --na_tag=TAG        - Tag to consider a next action (default: na)
-    --template=PATH         - Provide a template for new/blank todo files, use initconfig to make permanent (default: none)
+    --template=arg          - Provide a template for new/blank todo files, use initconfig to make permanent (default: none)
     --version               - Display the program version
 
 COMMANDS
