@@ -162,7 +162,7 @@ class App
                             notes: options[:notes],
                             nest: options[:nest],
                             nest_projects: options[:omnifocus],
-                            no_files: options[:no_files] })
+                            no_files: options[:no_file] })
     end
   end
 end
