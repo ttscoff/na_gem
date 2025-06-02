@@ -22,7 +22,8 @@ module NA
       string = @action.dup
 
       if priority&.positive?
-        string.gsub!(/(?<=\A| )@priority\(\d+\)/, '').strip!
+        string.gsub!(/(?<=\A| )@priority\(\d+\)/, '')
+        string.strip!
         string += " @priority(#{priority})"
       end
 

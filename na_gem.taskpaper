@@ -4,7 +4,7 @@ title: NA Todos
 Testing:
 	New Commands:
 Inbox: @inbox
-	- OmniFocus linking and sync @na
+	- OmniFocus linking and sync @na @priority(1)
 		Link directory to OmniFocus project
 		option to merge in output or mirror projects
 	- Accept (h)igh (m)edium (l)ow as arguments to next -p @priority(2) @na @done

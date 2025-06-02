@@ -30,5 +30,6 @@ spec = Gem::Specification.new do |s|
   s.add_runtime_dependency('tty-screen', '~> 0.8', '>= 0.8.1')
   s.add_runtime_dependency('tty-which', '~> 0.5', '>= 0.5.0')
 	s.add_runtime_dependency('git', '~> 3.0.0')
+  s.add_runtime_dependency('ostruct', '~> 0.6', '>= 0.6.1')
   s.add_development_dependency('tty-spinner', '~> 0.9', '>= 0.9.0')
 end
