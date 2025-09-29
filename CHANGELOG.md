@@ -1,6 +1,21 @@
 ### 1.2.79
 
-2025-09-29 06:47
+2025-09-29 06:51
+
+#### NEW
+
+- Track affected actions in `update_action` and output per-action summaries
+
+#### IMPROVED
+
+- Prompt to select a project when multiple suffix matches are found
+- Distinguish summaries: Task deleted vs Task updated/added
+- Display affected actions using `action.to_s_pretty` with colored change descriptions
+
+#### FIXED
+
+- Resolve project matching for `na add --to Ideas` by supporting unique suffix matches (e.g. `rnkd:Ideas`)
+- Validate `na update` requires at least one actionable option; error with No action specified, see `na help update`
 
 ### 1.2.78
 
