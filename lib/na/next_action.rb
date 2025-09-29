@@ -259,6 +259,7 @@ module NA
                       tagged: nil)
 
       projects = find_projects(target)
+      affected_actions = []
 
       target_proj = nil
 
@@ -287,8 +288,21 @@ module NA
         target_proj = if target_proj
                         projects.select { |proj| proj.project =~ /^#{target_proj.project}$/i }.first
                       else
+                        # First try exact full-path match
                         projects.select { |proj| proj.project =~ /^#{add.parent.join(':')}$/i }.first
                       end
+
+        # If no exact match, try unique suffix match (e.g., :Ideas at end)
+        if target_proj.nil?
+          leaf = Regexp.escape(add.parent.join(':'))
+          suffix_matches = projects.select { |proj| proj.project =~ /(^|:)#{leaf}$/i }
+          if suffix_matches.count == 1
+            target_proj = suffix_matches.first
+          elsif suffix_matches.count > 1 && $stdout.isatty
+            choice = choose_from(suffix_matches.map(&:project), prompt: 'Select a target project: ', multiple: false)
+            target_proj = projects.select { |proj| proj.project == choice }.first if choice
+          end
+        end
 
         if target_proj.nil?
           res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{add.project}#{NA.theme[:warning]} doesn't exist, add it"), default: true)
@@ -336,6 +350,15 @@ module NA
         contents.insert(target_line, "#{indent}\t- #{add.action}#{note}")
 
         notify(add.pretty)
+
+        # Track affected action and description
+        changes = ["added"]
+        changes << "finished" if finish
+        changes << "priority=#{priority}" if priority.to_i.positive?
+        changes << "tags+#{add_tag.join(',')}" unless add_tag.nil? || add_tag.empty?
+        changes << "tags-#{remove_tag.join(',')}" unless remove_tag.nil? || remove_tag.empty?
+        changes << "note updated" unless note.nil? || note.empty?
+        affected_actions << { action: add, desc: changes.join(', ') }
       else
         _, actions = find_actions(target, search, tagged, done: done, all: all, project: project, search_note: search_note)
 
@@ -343,7 +366,11 @@ module NA
 
         actions.sort_by(&:line).reverse.each do |action|
           contents.slice!(action.line, action.note.count + 1)
-          next if delete
+          if delete
+            # Track deletion before skipping re-insert
+            affected_actions << { action: action, desc: 'deleted' }
+            next
+          end
 
           projects = shift_index_after(projects, action.line, action.note.count + 1)
 
@@ -395,16 +422,44 @@ module NA
           contents.insert(target_line, "#{indent}\t- #{action.action}#{note}")
 
           notify(action.pretty)
+
+          # Track affected action and description
+          changes = []
+          changes << "finished" if finish
+          changes << "edited" if edit
+          changes << "priority=#{priority}" if priority.to_i.positive?
+          changes << "tags+#{add_tag.join(',')}" unless add_tag.nil? || add_tag.empty?
+          changes << "tags-#{remove_tag.join(',')}" unless remove_tag.nil? || remove_tag.empty?
+          changes << "text replaced" if replace
+          changes << "moved to #{target_proj.project}" if target_proj
+          changes << "note updated" unless note.nil? || note.empty?
+          changes = ["updated"] if changes.empty?
+          affected_actions << { action: action, desc: changes.join(', ') }
         end
       end
 
       backup_file(target)
       File.open(target, 'w') { |f| f.puts contents.join("\n") }
 
-      if add
-        notify("#{NA.theme[:success]}Task added to #{NA.theme[:filename]}#{target}")
+      if affected_actions.any?
+        if affected_actions.all? { |e| e[:desc] =~ /^deleted/ }
+          notify("#{NA.theme[:success]}Task deleted in #{NA.theme[:filename]}#{target}")
+        elsif add
+          notify("#{NA.theme[:success]}Task added to #{NA.theme[:filename]}#{target}")
+        else
+          notify("#{NA.theme[:success]}Task updated in #{NA.theme[:filename]}#{target}")
+        end
+
+        affected_actions.reverse.each do |entry|
+          action_color = delete ? NA.theme[:error] : NA.theme[:success]
+          notify("  #{entry[:action].to_s_pretty} — #{action_color}#{entry[:desc]}")
+        end
       else
-        notify("#{NA.theme[:success]}Task updated in #{NA.theme[:filename]}#{target}")
+        if add
+          notify("#{NA.theme[:success]}Task added to #{NA.theme[:filename]}#{target}")
+        else
+          notify("#{NA.theme[:success]}Task updated in #{NA.theme[:filename]}#{target}")
+        end
       end
     end
 

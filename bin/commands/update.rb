@@ -189,6 +189,23 @@ class App
       note = stdin_note.empty? ? [] : stdin_note
       note.concat(line_note) unless line_note.nil? || line_note.empty?
 
+      # Require at least one actionable option to be provided
+      actionable = [
+        options[:note],
+        (options[:priority].to_i if options[:priority]).to_i > 0,
+        !options[:move].to_s.empty?,
+        !(options[:tag].nil? || options[:tag].empty?),
+        !(options[:remove].nil? || options[:remove].empty?),
+        !options[:replace].to_s.empty?,
+        options[:finish],
+        options[:archive],
+        options[:restore],
+        options[:delete],
+        options[:edit]
+      ].any?
+
+      NA.notify("#{NA.theme[:error]}No action specified, see `na help update`", exit_code: 1) unless actionable
+
       target_proj = if options[:move]
                       options[:move]
                     elsif NA.cwd_is == :project

@@ -53,6 +53,15 @@ module NA
       "(#{@file}:#{@line}) #{@project}:#{@parent.join('>')} | #{@action}#{note}"
     end
 
+    def to_s_pretty
+      note = if @note.count.positive?
+               "\n#{@note.join("\n")}"
+             else
+               ''
+             end
+      "#{NA.theme[:filename]}#{File.basename(@file)}:#{@line}#{NA.theme[:bracket]}[#{NA.theme[:project]}#{@project}:#{@parent.join(">")}#{NA.theme[:bracket]}]{x} | #{NA.theme[:action]}#{@action}#{NA.theme[:note]}#{note}"
+    end
+
     def inspect
       <<~EOINSPECT
       @file: #{@file}
