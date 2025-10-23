@@ -355,6 +355,7 @@ class ::String
       date_string = 'today' if date_string.match(REGEX_DAY) && now.strftime('%a') =~ /^#{Regexp.last_match(1)}/i
       date_string = "#{options[:context].to_s} #{date_string}" if date_string =~ REGEX_TIME && options[:context]
 
+      require 'chronic' unless defined?(Chronic)
       res = Chronic.parse(date_string, {
                             guess: options.fetch(:guess, :begin),
                             context: options.fetch(:future, false) ? :future : :past,

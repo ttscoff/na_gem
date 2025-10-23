@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
+require 'na/benchmark'
 require 'na/version'
 require 'na/pager'
 require 'time'
 require 'fileutils'
 require 'shellwords'
-require 'chronic'
+# Lazy load heavy gems - only load when needed
+# require 'chronic'  # Loaded in action.rb and string.rb when needed
 require 'tty-screen'
 require 'tty-reader'
 require 'tty-which'

@@ -23,8 +23,9 @@ module NA
       end
 
       def load_theme(template: {})
-        # Default colorization, can be overridden with full or partial template variable
-        default_template = {
+        NA::Benchmark.measure('Theme.load_theme') do
+          # Default colorization, can be overridden with full or partial template variable
+          default_template = {
           parent: '{c}',
           bracket: '{dc}',
           parent_divider: '{xw}/',
@@ -58,14 +59,15 @@ module NA
                 else
                   {}
                 end
-        theme = default_template.deep_merge(theme)
+          theme = default_template.deep_merge(theme)
 
-        File.open(theme_file, 'w') do |f|
-          f.puts template_help.comment
-          f.puts YAML.dump(theme)
+          File.open(theme_file, 'w') do |f|
+            f.puts template_help.comment
+            f.puts YAML.dump(theme)
+          end
+
+          theme.merge(template)
         end
-
-        theme.merge(template)
       end
     end
   end

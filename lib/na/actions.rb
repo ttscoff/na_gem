@@ -24,15 +24,16 @@ module NA
     ## @return [String] The output string
     ##
     def output(depth, config = {})
-      defaults = {
-        files: nil,
-        regexes: [],
-        notes: false,
-        nest: false,
-        nest_projects: false,
-        no_files: false,
-      }
-      config = defaults.merge(config)
+      NA::Benchmark.measure('Actions.output') do
+        defaults = {
+          files: nil,
+          regexes: [],
+          notes: false,
+          nest: false,
+          nest_projects: false,
+          no_files: false,
+        }
+        config = defaults.merge(config)
 
       return if config[:files].nil?
 
@@ -73,21 +74,43 @@ module NA
         end
         NA::Pager.page out.join("\n")
       else
-        template = if config[:no_files]
-            NA.theme[:templates][:no_file]
-          elsif config[:files].count.positive?
-            config[:files].count == 1 ? NA.theme[:templates][:single_file] : NA.theme[:templates][:multi_file]
-          elsif NA.find_files(depth: depth).count > 1
-            depth > 1 ? NA.theme[:templates][:multi_file] : NA.theme[:templates][:single_file]
-          else
-            NA.theme[:templates][:default]
-          end
+        # Optimize template selection
+        template = case
+        when config[:no_files]
+          NA.theme[:templates][:no_file]
+        when config[:files]&.count&.positive?
+          config[:files].count == 1 ? NA.theme[:templates][:single_file] : NA.theme[:templates][:multi_file]
+        when depth > 1
+          NA.theme[:templates][:multi_file]
+        else
+          NA.theme[:templates][:default]
+        end
         template += "%note" if config[:notes]
 
-        config[:files].map { |f| NA.notify(f, debug: true) } if config[:files]
+        # Skip debug output if not verbose
+        config[:files]&.each { |f| NA.notify(f, debug: true) } if config[:files] && NA.verbose
 
-        output = map { |action| action.pretty(template: { templates: { output: template } }, regexes: config[:regexes], notes: config[:notes]) }
-        NA::Pager.page(output.join("\n"))
+        # Optimize output generation - compile all output first, then apply regexes
+        output = String.new
+        NA::Benchmark.measure('Generate action strings') do
+          each_with_index do |action, idx|
+            # Generate raw output without regex processing
+            output << action.pretty(template: { templates: { output: template } }, regexes: [], notes: config[:notes])
+            output << "\n" unless idx == size - 1
+          end
+        end
+
+        # Apply regex highlighting to the entire output at once
+        if config[:regexes].any?
+          NA::Benchmark.measure('Apply regex highlighting') do
+            output = output.highlight_search(config[:regexes])
+          end
+        end
+
+        NA::Benchmark.measure('Pager.page call') do
+          NA::Pager.page(output)
+        end
+      end
       end
     end
   end

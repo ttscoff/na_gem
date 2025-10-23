@@ -27,21 +27,22 @@ module NA
     ## @option      file_path   [String] file path to parse
     ##
     def parse(options)
-      defaults = {
-        depth: 1,
-        done: false,
-        file_path: nil,
-        negate: false,
-        project: nil,
-        query: nil,
-        regex: false,
-        require_na: true,
-        search: nil,
-        search_note: true,
-        tag: nil
-      }
+      NA::Benchmark.measure('Todo.parse') do
+        defaults = {
+          depth: 1,
+          done: false,
+          file_path: nil,
+          negate: false,
+          project: nil,
+          query: nil,
+          regex: false,
+          require_na: true,
+          search: nil,
+          search_note: true,
+          tag: nil
+        }
 
-      settings = defaults.merge(options)
+        settings = defaults.merge(options)
 
       actions = NA::Actions.new
       required = []
@@ -107,14 +108,15 @@ module NA
                         Regexp.new("#{rx}.*?", Regexp::IGNORECASE)
                       end
 
-      files.each do |file|
-        NA.save_working_dir(File.expand_path(file))
-        content = file.read_file
-        indent_level = 0
-        parent = []
-        in_yaml = false
-        in_action = false
-        content.split(/\n/).each.with_index do |line, idx|
+        files.each do |file|
+          NA::Benchmark.measure("Parse file: #{File.basename(file)}") do
+            NA.save_working_dir(File.expand_path(file))
+            content = file.read_file
+            indent_level = 0
+            parent = []
+            in_yaml = false
+            in_action = false
+            content.split(/\n/).each.with_index do |line, idx|
           if in_yaml && line !~ /^(---|~~~)\s*$/
             NA.notify("YAML: #{line}", debug: true)
           elsif line =~ /^(---|~~~)\s*$/
@@ -168,19 +170,23 @@ module NA
             actions[-1].note.push(line.strip) if actions.count.positive?
             projects[-1].last_line = idx if projects.count.positive?
           end
+            end
+            projects = projects.dup
+          end
         end
-        projects = projects.dup
-      end
 
-      actions.delete_if do |new_action|
-        has_search = !optional.empty? || !required.empty? || !negated.empty?
-        has_search && !new_action.search_match?(any: optional,
-                                                all: required,
-                                                none: negated,
-                                                include_note: settings[:search_note])
-      end
+        NA::Benchmark.measure('Filter actions by search') do
+          actions.delete_if do |new_action|
+            has_search = !optional.empty? || !required.empty? || !negated.empty?
+            has_search && !new_action.search_match?(any: optional,
+                                                   all: required,
+                                                   none: negated,
+                                                   include_note: settings[:search_note])
+          end
+        end
 
-      [files, actions, projects]
+        [files, actions, projects]
+      end
     end
 
     def parse_search(tag, negate)

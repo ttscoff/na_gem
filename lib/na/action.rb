@@ -84,65 +84,92 @@ module NA
     ## @param      notes      [Boolean] Include notes
     ##
     def pretty(extension: 'taskpaper', template: {}, regexes: [], notes: false, detect_width: true)
-      theme = NA::Theme.load_theme
-      template = theme.merge(template)
+      NA::Benchmark.measure('Action.pretty') do
+        # Use cached theme instead of loading every time
+        theme = NA.theme
+        template = theme.merge(template)
 
-      # Create the hierarchical parent string
-      parents = @parent.map do |par|
-        NA::Color.template("{x}#{template[:parent]}#{par}")
-      end.join(NA::Color.template(template[:parent_divider]))
-      parents = "#{NA.theme[:bracket]}[#{NA.theme[:error]}#{parents}#{NA.theme[:bracket]}]{x} "
+        # Pre-compute common template parts to avoid repeated processing
+        output_template = template[:templates][:output]
+        needs_filename = output_template.include?('%filename')
+        needs_parents = output_template.include?('%parents') || output_template.include?('%parent')
+        needs_project = output_template.include?('%project')
 
-      # Create the project string
-      project = NA::Color.template("#{template[:project]}#{@project}{x} ")
+        # Create the hierarchical parent string (optimized)
+        parents = if needs_parents && @parent.any?
+                    parent_parts = @parent.map { |par| "#{template[:parent]}#{par}" }.join(template[:parent_divider])
+                    NA::Color.template("{x}#{template[:bracket]}[#{template[:error]}#{parent_parts}#{template[:bracket]}]{x} ")
+                  else
+                    ''
+                  end
 
-      # Create the source filename string, substituting ~ for HOME and removing extension
-      file = @file.sub(%r{^\./}, '').sub(/#{ENV['HOME']}/, '~')
-      file = file.sub(/\.#{extension}$/, '') unless NA.include_ext
-      # colorize the basename
-      file = file.highlight_filename
-      file_tpl = "#{template[:file]}#{file} {x}"
-      filename = NA::Color.template(file_tpl)
+        # Create the project string (optimized)
+        project = if needs_project && !@project.empty?
+                    NA::Color.template("#{template[:project]}#{@project}{x} ")
+                  else
+                    ''
+                  end
 
-      # colorize the action and highlight tags
-      @action.gsub!(/\{(.*?)\}/, '\\{\1\\}')
-      action = NA::Color.template("#{template[:action]}#{@action.sub(/ @#{NA.na_tag}\b/, '')}{x}")
-      action = action.highlight_tags(color: template[:tags],
-                                     parens: template[:value_parens],
-                                     value: template[:values],
-                                     last_color: template[:action])
+        # Create the source filename string (optimized)
+        filename = if needs_filename
+                     file = @file.sub(%r{^\./}, '').sub(/#{ENV['HOME']}/, '~')
+                     file = file.sub(/\.#{extension}$/, '') unless NA.include_ext
+                     file = file.highlight_filename
+                     NA::Color.template("#{template[:filename]}#{file} {x}")
+                   else
+                     ''
+                   end
 
-      if detect_width
-        width = TTY::Screen.columns
-        prefix = NA::Color.uncolor(pretty(template: { templates: { output: template[:templates][:output].sub(/%action/, '').sub(/%note/, '') } }, detect_width: false))
-        indent = prefix.length
+        # colorize the action and highlight tags (optimized)
+        action_text = @action.dup
+        action_text.gsub!(/\{(.*?)\}/, '\\{\1\\}')
+        action_text = action_text.sub(/ @#{NA.na_tag}\b/, '')
+        action = NA::Color.template("#{template[:action]}#{action_text}{x}")
+        action = action.highlight_tags(color: template[:tags],
+                                       parens: template[:value_parens],
+                                       value: template[:values],
+                                       last_color: template[:action])
 
-        # Add notes if needed
-        note = if notes && @note.count.positive?
-                 NA::Color.template(@note.wrap(width, indent, template[:note]))
-               elsif !notes && @note.count.positive?
-                 action += "#{template[:note]}*"
-               else
-                 ''
-               end
+        # Handle notes and wrapping (optimized)
+        note = ''
+        if @note.any?
+          if notes
+            if detect_width
+              # Cache width calculation
+              width = @cached_width ||= TTY::Screen.columns
+              # Calculate indent more efficiently - avoid repeated template processing
+              base_template = output_template.gsub(/%action/, '').gsub(/%note/, '')
+              base_output = base_template.gsub(/%filename/, filename).gsub(/%project/, project).gsub(/%parents?/, parents)
+              indent = NA::Color.uncolor(NA::Color.template(base_output)).length
+              note = NA::Color.template(@note.wrap(width, indent, template[:note]))
+            else
+              note = NA::Color.template("\n#{@note.map { |l| "  #{template[:note]}• #{l}{x}" }.join("\n")}")
+            end
+          else
+            action += "#{template[:note]}*"
+          end
+        end
 
-        action = action.wrap(width, indent)
-      else
-        note = if notes && @note.count.positive?
-                 NA::Color.template("\n#{@note.map { |l| "  #{template[:note]}• #{l.wrap(width, indent)}{x}" }.join("\n")}")
-               elsif !notes && @note.count.positive?
-                 action += "#{template[:note]}*"
-               else
-                 ''
-               end
+        # Wrap action if needed (optimized)
+        if detect_width && !action.empty?
+          width = @cached_width ||= TTY::Screen.columns
+          base_template = output_template.gsub(/%action/, '').gsub(/%note/, '')
+          base_output = base_template.gsub(/%filename/, filename).gsub(/%project/, project).gsub(/%parents?/, parents)
+          indent = NA::Color.uncolor(NA::Color.template(base_output)).length
+          action = action.wrap(width, indent)
+        end
+
+        # Replace variables in template string and output colorized (optimized)
+        final_output = output_template.dup
+        final_output.gsub!(/%filename/, filename)
+        final_output.gsub!(/%project/, project)
+        final_output.gsub!(/%parents?/, parents)
+        final_output.gsub!(/%action/, action.highlight_search(regexes))
+        final_output.gsub!(/%note/, note)
+        final_output.gsub!(/\\\{/, '{')
+
+        NA::Color.template(final_output)
       end
-
-      # Replace variables in template string and output colorized
-      NA::Color.template(template[:templates][:output].gsub(/%filename/, filename)
-                          .gsub(/%project/, project)
-                          .gsub(/%parents?/, parents)
-                          .gsub(/%action/, action.highlight_search(regexes))
-                          .gsub(/%note/, note)).gsub(/\\\{/, '{')
     end
 
     def tags_match?(any: [], all: [], none: [])
@@ -224,6 +251,7 @@ module NA
 
       begin
         tag_date = Time.parse(tag_val)
+        require 'chronic' unless defined?(Chronic)
         date = Chronic.parse(val)
 
         raise ArgumentError if date.nil?

@@ -29,38 +29,37 @@ module NA
           return
         end
 
-        pager = which_pager
+        # Skip pagination for small outputs (faster than starting a pager)
+        if text.length < 2000 && text.lines.count < 50
+          puts text
+          return
+        end
 
+        pager = which_pager
+        return false unless pager
+
+        # Optimized pager execution - use spawn instead of fork+exec
         read_io, write_io = IO.pipe
 
-        input = $stdin
-
-        pid = Kernel.fork do
-          write_io.close
-          input.reopen(read_io)
-          read_io.close
-
-          # Wait until we have input before we start the pager
-          IO.select [input]
-
-          begin
-            NA.notify("#{NA.theme[:debug]}Pager #{pager}", debug: true)
-            exec(pager)
-          rescue SystemCallError => e
-            raise Errors::DoingStandardError, "Pager error, #{e}"
-          end
-        end
+        # Use spawn for better performance than fork+exec
+        pid = spawn(pager, in: read_io, out: $stdout, err: $stderr)
+        read_io.close
 
         begin
-          read_io.close
+          # Write data to pager
           write_io.write(text)
           write_io.close
-        rescue SystemCallError # => e
-          # raise Errors::DoingStandardError, "Pager error, #{e}"
-        end
 
-        _, status = Process.waitpid2(pid)
-        status.success?
+          # Wait for pager to complete
+          _, status = Process.waitpid2(pid)
+          status.success?
+        rescue SystemCallError => e
+          # Clean up on error
+          write_io.close rescue nil
+          Process.kill('TERM', pid) rescue nil
+          Process.waitpid(pid) rescue nil
+          false
+        end
       end
 
       private
@@ -88,6 +87,11 @@ module NA
 
       def which_pager
         @which_pager ||= find_executable(*pagers)
+      end
+
+      # Clear pager cache (useful for testing)
+      def clear_pager_cache
+        @which_pager = nil
       end
     end
   end

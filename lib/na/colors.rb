@@ -196,6 +196,24 @@ module NA
 
       attr_writer :coloring
 
+      # Cache for compiled templates to avoid repeated regex processing
+      def template_cache
+        @template_cache ||= {}
+      end
+
+      def clear_template_cache
+        @template_cache = {}
+      end
+
+      # Pre-computed colors hash (expensive to create, so we cache it)
+      def colors_hash
+        @colors_hash ||= { w: white, k: black, g: green, l: blue,
+                          y: yellow, c: cyan, m: magenta, r: red,
+                          W: bgwhite, K: bgblack, G: bggreen, L: bgblue,
+                          Y: bgyellow, C: bgcyan, M: bgmagenta, R: bgred,
+                          d: dark, b: bold, u: underline, i: italic, x: reset }
+      end
+
       ##
       ## Enables colored output
       ##
@@ -236,23 +254,28 @@ module NA
         input = input.join(' ') if input.is_a? Array
         return input.gsub(/(?<!\\)\{#?(\w+)\}/i, '') unless NA::Color.coloring?
 
-        input = input.gsub(/(?<!\\)\{((?:[fb]g?)?#[a-f0-9]{3,6})\}/i) do
-                  hex = Regexp.last_match(1)
-                  rgb(hex)
-                end
+        # Check cache first
+        cache_key = input.hash
+        return template_cache[cache_key] if template_cache.key?(cache_key)
 
-        fmt = input.gsub(/%/, '%%')
+        # Process hex colors first
+        processed_input = input.gsub(/(?<!\\)\{((?:[fb]g?)?#[a-f0-9]{3,6})\}/i) do
+          hex = Regexp.last_match(1)
+          rgb(hex)
+        end
+
+        # Convert to format string
+        fmt = processed_input.gsub(/%/, '%%')
         fmt = fmt.gsub(/(?<!\\)\{(\w+)\}/i) do
           Regexp.last_match(1).split('').map { |c| "%<#{c}>s" }.join('')
         end
 
-        colors = { w: white, k: black, g: green, l: blue,
-                   y: yellow, c: cyan, m: magenta, r: red,
-                   W: bgwhite, K: bgblack, G: bggreen, L: bgblue,
-                   Y: bgyellow, C: bgcyan, M: bgmagenta, R: bgred,
-                   d: dark, b: bold, u: underline, i: italic, x: reset }
+        # Use pre-computed colors hash
+        result = format(fmt, colors_hash)
 
-        format(fmt, colors)
+        # Cache the result
+        template_cache[cache_key] = result
+        result
       end
     end
 

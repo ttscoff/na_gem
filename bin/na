@@ -5,8 +5,12 @@ $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
 require 'gli'
 require 'na/help_monkey_patch'
 require 'na'
+require 'na/benchmark'
 require 'fcntl'
 require 'tempfile'
+
+NA::Benchmark.init
+NA::Benchmark.measure('Gem loading') { nil }  # Measures time up to this point
 
 # Search for XDG compliant config first. Default to ~/.na.rc for compatibility
 def self.find_config_file
@@ -75,9 +79,9 @@ class App
   arg_name 'PATH'
   flag %i[f file]
 
-  desc 'Use a taskpaper file named after the git repository'
-  arg_name 'REPO'
-  switch %i[repo], negatable: true, default_value: true
+  desc 'Use a taskpaper file named after the git repository (enables git integration)'
+  arg_name 'REPO_TOP'
+  switch %i[repo-top], default_value: false
 
   desc 'Provide a template for new/blank todo files, use initconfig to make permanent'
   flag %[template]
@@ -125,8 +129,8 @@ class App
                 end
 
     # start of git repo addition ==================================
-    # defaut to git repo if in a git managed directory
-    if global[:repo]
+    # Use git repo if --repo-top flag is specified
+    if global[:repo_top]
       begin
         require 'git'
 
@@ -209,4 +213,6 @@ ARGV.each do |arg|
 end
 NA.command = NA.command_line[0]
 
-exit App.run(ARGV)
+exit_code = App.run(ARGV)
+NA::Benchmark.report
+exit exit_code

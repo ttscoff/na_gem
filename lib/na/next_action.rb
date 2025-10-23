@@ -554,17 +554,19 @@ module NA
     ## @param      depth  [Number] The depth at which to search
     ##
     def find_files(depth: 1)
-      return [NA.global_file] if NA.global_file
+      NA::Benchmark.measure("find_files (depth=#{depth})") do
+        return [NA.global_file] if NA.global_file
 
-      pattern = if depth == 1
-                  "*.#{NA.extension}"
-                else
-                  "{#{'*,' * (depth - 1)}*}.#{NA.extension}"
-                end
+        pattern = if depth == 1
+                    "*.#{NA.extension}"
+                  else
+                    "{#{'*,' * (depth - 1)}*}.#{NA.extension}"
+                  end
 
-      files = Dir.glob(pattern, File::FNM_DOTMATCH).reject { |f| f.start_with?('.') }
-      files.each { |f| save_working_dir(File.expand_path(f)) }
-      files
+        files = Dir.glob(pattern, File::FNM_DOTMATCH).reject { |f| f.start_with?('.') }
+        files.each { |f| save_working_dir(File.expand_path(f)) }
+        files
+      end
     end
 
     def find_files_matching(options = {})
@@ -677,12 +679,14 @@ module NA
     ## @param      todo_file  The todo file path
     ##
     def save_working_dir(todo_file)
-      file = database_path
-      content = File.exist?(file) ? file.read_file : ''
-      dirs = content.split(/\n/)
-      dirs.push(File.expand_path(todo_file))
-      dirs.sort!.uniq!
-      File.open(file, 'w') { |f| f.puts dirs.join("\n") }
+      NA::Benchmark.measure('save_working_dir') do
+        file = database_path
+        content = File.exist?(file) ? file.read_file : ''
+        dirs = content.split(/\n/)
+        dirs.push(File.expand_path(todo_file))
+        dirs.sort!.uniq!
+        File.open(file, 'w') { |f| f.puts dirs.join("\n") }
+      end
     end
 
     ##
