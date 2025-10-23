@@ -1,3 +1,39 @@
+### 1.2.80
+
+2025-10-23 05:25
+
+#### CHANGED
+
+- Default behavior: git integration now opt-in with --repo-top flag
+- Pager execution: use spawn for better performance than fork+exec
+- Color template processing: cache compiled templates and colors hash
+- Action processing: batch regex highlighting instead of per-action processing
+
+#### NEW
+
+- Add comprehensive benchmarking system with NA_BENCHMARK=1
+- Add template caching in Color.template to avoid repeated regex processing
+- Add colors hash caching to eliminate repeated hash creation
+- Add smart pagination that skips pager for small outputs (<2000 chars, <50 lines)
+- Add --repo-top flag to make git integration opt-in instead of default
+
+#### IMPROVED
+
+- Optimize performance
+- Theme loading now uses cached NA.theme instead of loading on every Action.pretty call
+- Action.pretty method with conditional processing and optimized string operations
+- Actions.output with batch regex processing - compile all output first, then apply regexes once
+- Pager performance using spawn instead of fork+exec and removing IO.select delays
+- Lazy loading of heavy gems (git, chronic, mdless) only when needed
+- String operations in Action.pretty with pre-computed template parts
+
+#### FIXED
+
+- Performance variability caused by git system calls running by default
+- Pager overhead causing 300-479ms delays on small outputs
+- Repeated regex compilation in color template processing
+- Theme loading bottleneck in Action.pretty method
+
 ### 1.2.79
 
 2025-09-29 06:51
