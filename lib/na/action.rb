@@ -159,8 +159,9 @@ module NA
 
     def search_matches_none(regexes, include_note: true)
       regexes.each do |rx|
-        note_matches = include_note && @note.join(' ').match(Regexp.new(rx, Regexp::IGNORECASE))
-        return false if @action.match(Regexp.new(rx, Regexp::IGNORECASE)) || note_matches
+        regex = rx.is_a?(Regexp) ? rx : Regexp.new(rx, Regexp::IGNORECASE)
+        note_matches = include_note && @note.join(' ').match(regex)
+        return false if @action.match(regex) || note_matches
       end
       true
     end
@@ -169,16 +170,18 @@ module NA
       return true if regexes.empty?
 
       regexes.each do |rx|
-        note_matches = include_note && @note.join(' ').match(Regexp.new(rx, Regexp::IGNORECASE))
-        return true if @action.match(Regexp.new(rx, Regexp::IGNORECASE)) || note_matches
+        regex = rx.is_a?(Regexp) ? rx : Regexp.new(rx, Regexp::IGNORECASE)
+        note_matches = include_note && @note.join(' ').match(regex)
+        return true if @action.match(regex) || note_matches
       end
       false
     end
 
     def search_matches_all(regexes, include_note: true)
       regexes.each do |rx|
-        note_matches = include_note && @note.join(' ').match(Regexp.new(rx, Regexp::IGNORECASE))
-        return false unless @action.match(Regexp.new(rx, Regexp::IGNORECASE)) || note_matches
+        regex = rx.is_a?(Regexp) ? rx : Regexp.new(rx, Regexp::IGNORECASE)
+        note_matches = include_note && @note.join(' ').match(regex)
+        return false unless @action.match(regex) || note_matches
       end
       true
     end
@@ -207,7 +210,8 @@ module NA
     end
 
     def compare_tag(tag)
-      keys = @tags.keys.delete_if { |k| k !~ Regexp.new(tag[:tag], Regexp::IGNORECASE) }
+      tag_regex = tag[:tag].is_a?(Regexp) ? tag[:tag] : Regexp.new(tag[:tag], Regexp::IGNORECASE)
+      keys = @tags.keys.delete_if { |k| k !~ tag_regex }
       return false if keys.empty?
 
       key = keys[0]

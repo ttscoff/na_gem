@@ -556,7 +556,13 @@ module NA
     def find_files(depth: 1)
       return [NA.global_file] if NA.global_file
 
-      files = `find . -maxdepth #{depth} -name "*.#{NA.extension}"`.strip.split("\n")
+      pattern = if depth == 1
+                  "*.#{NA.extension}"
+                else
+                  "{#{'*,' * (depth - 1)}*}.#{NA.extension}"
+                end
+
+      files = Dir.glob(pattern, File::FNM_DOTMATCH).reject { |f| f.start_with?('.') }
       files.each { |f| save_working_dir(File.expand_path(f)) }
       files
     end

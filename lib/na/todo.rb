@@ -87,6 +87,11 @@ module NA
         end
       end
 
+      # Pre-compile regexes for better performance
+      optional = optional.map { |rx| rx.is_a?(Regexp) ? rx : Regexp.new(rx, Regexp::IGNORECASE) }
+      required = required.map { |rx| rx.is_a?(Regexp) ? rx : Regexp.new(rx, Regexp::IGNORECASE) }
+      negated = negated.map { |rx| rx.is_a?(Regexp) ? rx : Regexp.new(rx, Regexp::IGNORECASE) }
+
       files = if !settings[:file_path].nil?
                 [settings[:file_path]]
               elsif settings[:query].nil?
@@ -96,6 +101,12 @@ module NA
               end
 
       NA.notify("Files: #{files.join(', ')}", debug: true)
+      # Cache project regex compilation outside the line loop for better performance
+      project_regex = if settings[:project]
+                        rx = settings[:project].split(%r{[/:]}).join('.*?/')
+                        Regexp.new("#{rx}.*?", Regexp::IGNORECASE)
+                      end
+
       files.each do |file|
         NA.save_working_dir(File.expand_path(file))
         content = file.read_file
@@ -130,20 +141,22 @@ module NA
           elsif line.action?
             in_action = false
 
+            # Early exits before creating Action object
+            next if line.done? && !settings[:done]
+
+            next if settings[:require_na] && !line.na?
+
+            if project_regex
+              next unless parent.join('/') =~ project_regex
+            end
+
+            # Only create Action if we passed basic filters
             action = line.action
             new_action = NA::Action.new(file, File.basename(file, ".#{NA.extension}"), parent.dup, action, idx)
 
             projects[-1].last_line = idx if projects.count.positive?
 
-            next if line.done? && !settings[:done]
-
-            next if settings[:require_na] && !line.na?
-
-            if settings[:project]
-              rx = settings[:project].split(%r{[/:]}).join('.*?/')
-              next unless parent.join('/') =~ Regexp.new("#{rx}.*?", Regexp::IGNORECASE)
-            end
-
+            # Tag matching
             has_tag = !optional_tag.empty? || !required_tag.empty? || !negated_tag.empty?
             next if has_tag && !new_action.tags_match?(any: optional_tag,
                                                        all: required_tag,
