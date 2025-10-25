@@ -76,7 +76,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.82
+    1.2.83
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -551,11 +551,11 @@ This command will perform actions (tag, untag, complete, archive, add note, etc.
 
 You can specify a particular todo file using `--file PATH` or any todo from history using `--in QUERY`.
 
-If more than one file is matched, a menu will be presented, multiple selections allowed. If multiple actions match the search within the selected file(s), a menu will be presented. If you have fzf installed, you can select one action to update with return, or use tab to mark multiple tasks to which the action will be applied. With gum you can use j, k, and x to mark multiple actions. Use the `--all` switch to force operation on all matched tasks, skipping the menu.
-
-Any time an update action is carried out, a backup of the file before modification will be made in the same directory with a `.` prepended and `.bak` appended (e.g. `marked.taskpaper` is copied to `.marked.taskpaper.bak`). Only one undo step is available, but if something goes wrong (and this feature is still experimental, so be wary), you can just copy the ".bak" file back to the original.
+If more than one file is matched, a menu will be presented, multiple selections allowed. If multiple actions match the search within the selected file(s), a menu will be presented. Use the `--all` switch to force operation on all matched tasks, skipping the menu.
 
 > **Note:** When using the `update` command, if you have [fzf](https://github.com/junegunn/fzf) installed, menus for selecting files or actions will support multi-select (tab to mark multiple, return to confirm). If [gum](https://github.com/charmbracelet/gum) is installed, multi-select is also supported (use j/k/x to navigate and mark). If neither is available, a simple prompt is used. This makes it easy to apply updates to multiple actions at once.
+
+Any time an update action is carried out, a backup of the file before modification will be made in the same directory with a `.` prepended and `.bak` appended (e.g. `marked.taskpaper` is copied to `.marked.taskpaper.bak`). Only one undo step is available, but if something goes wrong (and this feature is still experimental, so be wary), you can just copy the ".bak" file back to the original.
 
 ###### Marking a task as complete
 

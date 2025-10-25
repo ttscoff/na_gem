@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    na (1.2.82)
+    na (1.2.83)
       chronic (~> 0.10, >= 0.10.2)
       git (~> 3.0.0)
       gli (~> 2.21.0)
