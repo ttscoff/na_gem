@@ -135,13 +135,14 @@ class ::String
   # @param max [Integer] Maximum allowed length of the string
   # @return [String] Truncated string with middle replaced if necessary
   def trunc_middle(max)
-    return self unless length > max
+  return '' if self.nil?
+  return self unless length > max
 
-    half = (max / 2).floor - 3
-    chars = chars
-    pre = chars.slice(0, half)
-    post = chars.reverse.slice(0, half).reverse
-    "#{pre.join}[...]#{post.join}"
+  half = (max / 2).floor - 3
+  chars = chars
+  pre = chars.slice(0, half)
+  post = chars.reverse.slice(0, half).reverse
+  "#{pre.join}[...]#{post.join}"
   end
 
   # Wrap the string to a given width, indenting each line and preserving tag formatting.
