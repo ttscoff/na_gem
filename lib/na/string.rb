@@ -153,22 +153,23 @@ class ::String
 
     output = []
     line = []
-    length = indent
+    length = 0
     gsub!(/(@\S+)\((.*?)\)/) { "#{Regexp.last_match(1)}(#{Regexp.last_match(2).gsub(/ /, '†')})" }
 
     split(' ').each do |word|
       uncolored = NA::Color.uncolor(word)
-      if (length + uncolored.length + 1) < width
+      if (length + uncolored.length + 1) <= width
         line << word
         length += uncolored.length + 1
       else
         output << line.join(' ')
         line = [word]
-        length = indent + uncolored.length + 1
+        length = uncolored.length + 1
       end
     end
     output << line.join(' ')
-    output.join("\n#{' ' * (indent + 2)}").gsub(/†/, ' ')
+    # Indent all lines after the first
+    output.each_with_index.map { |l, i| i.zero? ? l : (' ' * indent) + l }.join("\n").gsub(/†/, ' ')
   end
 
   # Returns the last escape sequence from a string.

@@ -209,6 +209,8 @@ If more than one file is matched, a menu will be presented, multiple selections 
 
 Any time an update action is carried out, a backup of the file before modification will be made in the same directory with a `.` prepended and `.bak` appended (e.g. `marked.taskpaper` is copied to `.marked.taskpaper.bak`). Only one undo step is available, but if something goes wrong (and this feature is still experimental, so be wary), you can just copy the ".bak" file back to the original.
 
+> **Note:** When using the `update` command, if you have [fzf](https://github.com/junegunn/fzf) installed, menus for selecting files or actions will support multi-select (tab to mark multiple, return to confirm). If [gum](https://github.com/charmbracelet/gum) is installed, multi-select is also supported (use j/k/x to navigate and mark). If neither is available, a simple prompt is used. This makes it easy to apply updates to multiple actions at once.
+
 ###### Marking a task as complete
 
 You can mark an action complete using `--finish`, which will add a dated @done tag to the action. You can also mark it @done and immediately move it to the Archive project using `--archive`.

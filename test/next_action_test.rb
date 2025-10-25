@@ -121,7 +121,7 @@ class NextActionTest < Minitest::Test
     # Stub choose_from to return the first file
     NA.stub(:choose_from, ->(opts, **kwargs) { [opts.first] }) do
       selected = NA.select_file(files)
-      assert_equal ["file1.txt"], selected
+      assert_equal "file1.txt", selected
     end
   end
 

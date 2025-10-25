@@ -117,8 +117,15 @@ module NA
     # @return [String, Array<String>] Selected file(s)
     def select_file(files, multiple: false)
       res = choose_from(files, prompt: multiple ? 'Select files' : 'Select a file', multiple: multiple)
-      notify("#{NA.theme[:error]}No file selected, cancelled", exit_code: 1) if res == false || (res.respond_to?(:length) && res.empty?)
-      res
+      if res.nil? || res == false || (res.respond_to?(:length) && res.empty?)
+        notify("#{NA.theme[:error]}No file selected, cancelled", exit_code: 1)
+        return nil
+      end
+      if multiple
+        res
+      else
+        res.is_a?(Array) ? res.first : res
+      end
     end
 
     def shift_index_after(projects, idx, length = 1)
@@ -316,8 +323,8 @@ module NA
       contents = target.read_file.split("\n")
 
       if add.is_a?(Action)
-  add_tag ||= []
-  add.process(priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
+        add_tag ||= []
+        add.process(priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
 
         # Remove the original action and its notes
         action_line = add.line
@@ -335,9 +342,7 @@ module NA
         # Prepare indentation
         projects = find_projects(target)
         # If move is set, update add.parent to the target project
-        if move && target_proj
-          add.parent = target_proj.project.split(':')
-        end
+        add.parent = target_proj.project.split(':') if move && target_proj
         target_proj = projects.select { |proj| proj.project =~ /^#{add.parent.join(':')}$/i }.first
         indent = target_proj ? ("\t" * target_proj.indent) : ''
 
@@ -347,12 +352,12 @@ module NA
         # Insert at correct location: if moving, insert at start/end of target project
         if move && target_proj
           insert_line = if append
-            # End of project
-            target_proj.last_line + 1
-          else
-            # Start of project (after project header)
-            target_proj.line + 1
-          end
+                          # End of project
+                          target_proj.last_line + 1
+                        else
+                          # Start of project (after project header)
+                          target_proj.line + 1
+                        end
           contents.insert(insert_line, "#{indent}\t- #{add.action}#{note_str}")
         else
           # Not moving, update in-place
