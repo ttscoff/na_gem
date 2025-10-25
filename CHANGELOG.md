@@ -1,3 +1,11 @@
+### 1.2.82
+
+2025-10-25 09:47
+
+#### NEW
+
+- Multi-select menu when using `na update`
+
 ### 1.2.81
 
 2025-10-25 07:32

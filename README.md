@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.81.
+The current version of `na` is 1.2.82.
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder.
 
@@ -554,6 +554,8 @@ You can specify a particular todo file using `--file PATH` or any todo from hist
 If more than one file is matched, a menu will be presented, multiple selections allowed. If multiple actions match the search within the selected file(s), a menu will be presented. If you have fzf installed, you can select one action to update with return, or use tab to mark multiple tasks to which the action will be applied. With gum you can use j, k, and x to mark multiple actions. Use the `--all` switch to force operation on all matched tasks, skipping the menu.
 
 Any time an update action is carried out, a backup of the file before modification will be made in the same directory with a `.` prepended and `.bak` appended (e.g. `marked.taskpaper` is copied to `.marked.taskpaper.bak`). Only one undo step is available, but if something goes wrong (and this feature is still experimental, so be wary), you can just copy the ".bak" file back to the original.
+
+> **Note:** When using the `update` command, if you have [fzf](https://github.com/junegunn/fzf) installed, menus for selecting files or actions will support multi-select (tab to mark multiple, return to confirm). If [gum](https://github.com/charmbracelet/gum) is installed, multi-select is also supported (use j/k/x to navigate and mark). If neither is available, a simple prompt is used. This makes it easy to apply updates to multiple actions at once.
 
 ###### Marking a task as complete
 
