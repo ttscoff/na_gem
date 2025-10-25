@@ -61,7 +61,7 @@ module NA
           # Load custom theme
           theme_file = NA.database_path(file: 'theme.yaml')
           theme = if File.exist?(theme_file)
-                    YAML.safe_load(File.read(theme_file)) || {}
+                    YAML.load(File.read(theme_file)) || {}
                   else
                     {}
                   end

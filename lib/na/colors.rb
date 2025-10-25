@@ -212,42 +212,42 @@ module NA
                            d: dark, b: bold, u: underline, i: italic, x: reset }
       end
 
-      ##
-      ## Enables colored output
-      ##
-      ## @example Turn color on or off based on TTY
-      ##   NA::Color.coloring = STDOUT.isatty
+      #
+      # Enables colored output
+      #
+      # @example Turn color on or off based on TTY
+      #   NA::Color.coloring = STDOUT.isatty
       def coloring
         @coloring ||= true
       end
 
-      ##
-      ## Convert a template string to a colored string.
-      ## Colors are specified with single letters inside
-      ## curly braces. Uppercase changes background color.
-      ##
-      ## w: white, k: black, g: green, l: blue, y: yellow,
-      ## c: cyan, m: magenta, r: red, b: bold, u: underline,
-      ## i: italic, x: reset (remove background, color,
-      ## emphasis)
-      ##
-      ## Also accepts {#RGB} and {#RRGGBB} strings. Put a b
-      ## before the hash to make it a background color
-      ##
-      ## @example    Convert a templated string
-      ## Color.template('{Rwb}Warning:{x} {w}you look a
-      ## little {g}ill{x}')
-      ##
-      ## @example    Convert using RGB colors
-      ## Color.template('{#f0a}This is an RGB color')
-      ##
-      ## @param      input  [String, Array] The template
-      ##                    string. If this is an array, the
-      ##                    elements will be joined with a
-      ##                    space.
-      ##
-      ## @return     [String] Colorized string
-      ##
+      #
+      # Convert a template string to a colored string.
+      # Colors are specified with single letters inside
+      # curly braces. Uppercase changes background color.
+      #
+      # w: white, k: black, g: green, l: blue, y: yellow,
+      # c: cyan, m: magenta, r: red, b: bold, u: underline,
+      # i: italic, x: reset (remove background, color,
+      # emphasis)
+      #
+      # Also accepts {#RGB} and {#RRGGBB} strings. Put a b
+      # before the hash to make it a background color
+      #
+      # @example    Convert a templated string
+      # Color.template('{Rwb}Warning:{x} {w}you look a
+      # little {g}ill{x}')
+      #
+      # @example    Convert using RGB colors
+      # Color.template('{#f0a}This is an RGB color')
+      #
+      # @param      input  [String, Array] The template
+      #                    string. If this is an array, the
+      #                    elements will be joined with a
+      #                    space.
+      #
+      # @return     [String] Colorized string
+      #
       def template(input)
         input = input.join(' ') if input.is_a? Array
         return input.gsub(/(?<!\\)\{#?(\w+)\}/i, '') unless NA::Color.coloring?
@@ -324,13 +324,13 @@ module NA
       module_eval(new_method)
     end
 
-    ##
-    ## Generate escape codes for hex colors
-    ##
-    ## @param      hex   [String] The hexadecimal color code
-    ##
-    ## @return     [String] ANSI escape string
-    ##
+    #
+    # Generate escape codes for hex colors
+    #
+    # @param      hex   [String] The hexadecimal color code
+    #
+    # @return     [String] ANSI escape string
+    #
     def rgb(hex)
       is_bg = hex.match(/^bg?#/) ? true : false
       hex_string = hex.sub(/^([fb]g?)?#/, '')
@@ -376,5 +376,7 @@ module NA
     def attributes
       ATTRIBUTE_NAMES
     end
+
+    extend self
   end
 end

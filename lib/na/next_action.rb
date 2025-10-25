@@ -971,7 +971,7 @@ module NA
     def load_searches
       file = database_path(file: 'saved_searches.yml')
       if File.exist?(file)
-        searches = YAML.safe_load(file.read_file)
+        searches = YAML.load(file.read_file)
       else
         searches = {
           'soon' => 'tagged "due<in 2 days,due>yesterday"',
@@ -996,7 +996,7 @@ module NA
 
       strings = [strings] unless strings.is_a? Array
 
-      searches = YAML.safe_load(file.read_file)
+      searches = YAML.load(file.read_file)
       keys = searches.keys.delete_if { |k| k !~ /(#{strings.map(&:wildcard_to_rx).join('|')})/ }
 
       NA.notify("#{NA.theme[:error]}No search named #{strings.join(', ')} found", exit_code: 1) if keys.empty?

@@ -1,3 +1,9 @@
+require 'simplecov'
+SimpleCov.start do
+  add_filter '/test/'
+  add_group 'Library', 'lib/na'
+end
+
 require "minitest/autorun"
 $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
 require 'na'
