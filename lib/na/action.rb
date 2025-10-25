@@ -91,14 +91,6 @@ module NA
     end
 
     #
-    # Pretty print an action
-    #
-    # @param      extension  [String] The file extension
-    # @param      template   [Hash] The template to use for
-    #                        colorization
-    # @param      regexes    [Array] The regexes to
-    #                        highlight (searches)
-    # @param      notes      [Boolean] Include notes
     # Pretty print an action with color and template formatting
     #
     # @param extension [String] File extension

@@ -110,6 +110,8 @@ module NA
                         end
 
         files.each do |file|
+          next if File.directory?(file)
+
           NA::Benchmark.measure("Parse file: #{File.basename(file)}") do
             NA.save_working_dir(File.expand_path(file))
             content = file.read_file

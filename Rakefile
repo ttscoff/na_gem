@@ -207,3 +207,9 @@ end
 
 desc "alias for build"
 task package: :build
+
+desc 'Run tests with coverage'
+task :coverage do
+  ENV['COVERAGE'] = 'true'
+  Rake::Task[:test].invoke
+end

@@ -5,7 +5,6 @@ module NA
   class Actions < Array
     def initialize(actions = [])
       super
-      concat(actions)
     end
 
     # Pretty print a list of actions

@@ -556,14 +556,14 @@ module NA
     def output_children(children, level = 1)
       out = []
       indent = "\t" * level
+      return out if children.nil? || children.empty?
+
       children.each do |k, v|
         if k.to_s =~ /actions/
           indent += "\t"
-
-          v.each do |a|
+          v&.each do |a|
             item = "#{indent}- #{a.action}"
-
-            unless a.tags.empty?
+            unless a.tags.nil? || a.tags.empty?
               tags = []
               a.tags.each do |key, val|
                 next if key =~ /^(due|flagged|done)$/
@@ -572,12 +572,9 @@ module NA
                 tag += "-#{val}" unless val.nil? || val.empty?
                 tags.push(tag)
               end
-
               item += " @tags(#{tags.join(',')})" unless tags.empty?
             end
-
             item += "\n#{indent}\t#{a.note.join("\n#{indent}\t")}" unless a.note.empty?
-
             out.push(item)
           end
         else
@@ -639,7 +636,6 @@ module NA
         project: nil,
         query: nil,
         regex: false,
-        require_na: true,
         search: nil,
         tag: nil
       }

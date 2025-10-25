@@ -51,10 +51,6 @@ class ::Hash
   #
   # @param second [Hash] The hash to merge with
   # @return [Hash] The merged hash
-  # Recursively merge two hashes, combining arrays and preferring non-nil values
-  #
-  # @param second [Hash] The hash to merge with
-  # @return [Hash] The merged hash
   def deep_merge(second)
     merger = proc { |_, v1, v2|
       if v1.is_a?(Hash) && v2.is_a?(Hash)

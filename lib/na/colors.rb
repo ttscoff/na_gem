@@ -281,18 +281,18 @@ module NA
       new_method = <<-EOSCRIPT
         # Color string as #{c}
         def #{c}(string = nil)
-          result = ''
-          result << "\e[#{v}m" if NA::Color.coloring?
+          result = ''.dup
+          result << "\e[#{v}m".dup if NA::Color.coloring?
           if block_given?
             result << yield
           elsif string.respond_to?(:to_str)
-            result << string.to_str
+            result << string.to_str.dup
           elsif respond_to?(:to_str)
-            result << to_str
+            result << to_str.dup
           else
             return result #only switch on
           end
-          result << "\e[0m" if NA::Color.coloring?
+          result << "\e[0m".dup if NA::Color.coloring?
           result
         end
       EOSCRIPT
@@ -305,18 +305,18 @@ module NA
       new_method = <<-EOSCRIPT
         # color string as #{c}
         def #{c.to_s.sub('bold', 'bright')}(string = nil)
-          result = ''
-          result << "\e[#{v}m" if NA::Color.coloring?
+          result = ''.dup
+          result << "\e[#{v}m".dup if NA::Color.coloring?
           if block_given?
             result << yield
           elsif string.respond_to?(:to_str)
-            result << string.to_str
+            result << string.to_str.dup
           elsif respond_to?(:to_str)
-            result << to_str
+            result << to_str.dup
           else
             return result #only switch on
           end
-          result << "\e[0m" if NA::Color.coloring?
+          result << "\e[0m".dup if NA::Color.coloring?
           result
         end
       EOSCRIPT

@@ -15,7 +15,6 @@ module NA
 
       # Enable/disable pagination
       #
-      # @param should_paginate [Boolean] true to paginate
       # @return [void]
       attr_writer :paginate
 
