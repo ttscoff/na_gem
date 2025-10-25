@@ -117,9 +117,7 @@ module NA
     # @return [String, Array<String>] Selected file(s)
     def select_file(files, multiple: false)
       res = choose_from(files, prompt: multiple ? 'Select files' : 'Select a file', multiple: multiple)
-
-      notify("#{NA.theme[:error]}No file selected, cancelled", exit_code: 1) unless res&.length&.positive?
-
+      notify("#{NA.theme[:error]}No file selected, cancelled", exit_code: 1) if res == false || (res.respond_to?(:length) && res.empty?)
       res
     end
 
@@ -318,84 +316,45 @@ module NA
       contents = target.read_file.split("\n")
 
       if add.is_a?(Action)
-        add_tag ||= []
-        add.process(priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
+  add_tag ||= []
+  add.process(priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
 
+        # Update the action in-place at its line in the file
+        action_line = add.line
+        # Remove the original action and its notes
+        note_lines = add.note.is_a?(Array) ? add.note.count : 0
+        contents.slice!(action_line, note_lines + 1)
+
+        # Prepare updated note
+        note = note.to_s.split("\n") unless note.is_a?(Array)
+        updated_note = if note.empty?
+                         add.note
+                       else
+                         overwrite ? note : add.note.concat(note)
+                       end
+
+        # Prepare indentation
         projects = find_projects(target)
-
-        target_proj = if target_proj
-                        projects.select { |proj| proj.project =~ /^#{target_proj.project}$/i }.first
-                      else
-                        # First try exact full-path match
-                        projects.select { |proj| proj.project =~ /^#{add.parent.join(':')}$/i }.first
-                      end
-
-        # If no exact match, try unique suffix match (e.g., :Ideas at end)
-        if target_proj.nil?
-          leaf = Regexp.escape(add.parent.join(':'))
-          suffix_matches = projects.select { |proj| proj.project =~ /(^|:)#{leaf}$/i }
-          if suffix_matches.count == 1
-            target_proj = suffix_matches.first
-          elsif suffix_matches.count > 1 && $stdout.isatty
-            choice = choose_from(suffix_matches.map(&:project), prompt: 'Select a target project: ', multiple: false)
-            target_proj = projects.select { |proj| proj.project == choice }.first if choice
-          end
+        warn "[DEBUG] move: #{move.inspect}"
+        warn "[DEBUG] target_proj: #{target_proj.inspect}"
+        warn "[DEBUG] add.parent: #{add.parent.inspect}"
+        # If move is set, update add.parent to the target project
+        if move && target_proj
+          add.parent = target_proj.project.split(':')
         end
+        target_proj = projects.select { |proj| proj.project =~ /^#{add.parent.join(':')}$/i }.first
+        indent = target_proj ? ("\t" * target_proj.indent) : ''
 
-        if target_proj.nil?
-          res = NA.yn(
-            NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{add.project}#{NA.theme[:warning]} doesn't exist, add it"), default: true
-          )
+        # Format note for insertion
+        note_str = updated_note.empty? ? '' : "\n#{indent}\t\t#{updated_note.join("\n#{indent}\t\t").strip}"
 
-          if res
-            target_proj = insert_project(target, project, projects)
-            projects << target_proj
-          else
-            NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
-          end
-
-          if target_proj.nil?
-            NA.notify("#{NA.theme[:error]}Error parsing project #{NA.theme[:filename]}#{target}",
-                      exit_code: 1)
-          end
-
-          projects = find_projects(target)
-          contents = target.read_file.split("\n")
-        end
-
-        indent = "\t" * target_proj.indent
-        note = note.split("\n") unless note.is_a?(Array)
-        note = if note.empty?
-                 add.note
-               else
-                 overwrite ? note : add.note.concat(note)
-               end
-
-        note = note.empty? ? '' : "\n#{indent}\t\t#{note.join("\n#{indent}\t\t").strip}"
-
-        if append
-          this_idx = 0
-          projects.each_with_index do |proj, idx|
-            if proj.line == target_proj.line
-              this_idx = idx
-              break
-            end
-          end
-          target_line = if this_idx == projects.length - 1
-                          contents.count
-                        else
-                          projects[this_idx].last_line + 1
-                        end
-        else
-          target_line = target_proj.line + 1
-        end
-
-        contents.insert(target_line, "#{indent}\t- #{add.action}#{note}")
+        # Insert updated action and note at the original line
+        contents.insert(action_line, "#{indent}\t- #{add.action}#{note_str}")
 
         notify(add.pretty)
 
         # Track affected action and description
-        changes = ['added']
+        changes = ['updated']
         changes << 'finished' if finish
         changes << "priority=#{priority}" if priority.to_i.positive?
         changes << "tags+#{add_tag.join(',')}" unless add_tag.nil? || add_tag.empty?

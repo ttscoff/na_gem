@@ -2,7 +2,8 @@
 
 module NA
   class Action < Hash
-    attr_reader :file, :project, :parent, :tags, :line
+  attr_reader :file, :project, :tags, :line
+  attr_accessor :parent
 
     attr_accessor :action, :note
 

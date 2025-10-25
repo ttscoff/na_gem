@@ -104,6 +104,49 @@ class App
     c.switch %i[x exact], negatable: false
 
     c.action do |global_options, options, args|
+      # Ensure all variables used in update loop are declared
+      target_proj = if options[:move]
+                      options[:move]
+                    elsif NA.respond_to?(:cwd_is) && NA.cwd_is == :project
+                      NA.cwd
+                    end
+
+      priority = options[:priority].to_i if options[:priority]&.to_i&.positive?
+      remove_tags = options[:remove] ? options[:remove].join(',').split(/ *, */).map { |t| t.sub(/^@/, '').respond_to?(:wildcard_to_rx) ? t.wildcard_to_rx : t } : []
+      remove_tags << 'done' if options[:restore]
+
+      stdin_note = NA.respond_to?(:stdin) && NA.stdin ? NA.stdin.split("\n") : []
+      line_note = if options[:note] && $stdin.isatty
+                    puts stdin_note unless stdin_note.nil?
+                    if TTY::Which.exist?('gum')
+                      args = ['--placeholder "Enter a note, CTRL-d to save"']
+                      args << '--char-limit 0'
+                      args << '--width $(tput cols)'
+                      gum = TTY::Which.which('gum')
+                      `#{gum} write #{args.join(' ')}`.strip.split("\n")
+                    else
+                      NA.notify("#{NA.theme[:prompt]}Enter a note, {bw}CTRL-d#{NA.theme[:prompt]} to end editing:#{NA.theme[:action]}")
+                      reader.read_multiline
+                    end
+                  end
+      note = stdin_note.empty? ? [] : stdin_note
+      note.concat(line_note) unless line_note.nil? || line_note.empty?
+
+      append = options[:at] ? options[:at] =~ /^[ae]/i : global_options[:add_at] =~ /^[ae]/i
+  add_tags = options[:tag] ? options[:tag].join(',').split(/ *, */).map { |t| t.sub(/^@/, '').respond_to?(:wildcard_to_rx) ? t.wildcard_to_rx : t } : []
+      # Build tags array from options[:tagged]
+      all_req = options[:tagged].join(' ') !~ /[+!-]/ && !options[:or]
+      tags = []
+      options[:tagged].join(',').split(/ *, */).each do |arg|
+        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
+        tags.push({
+          tag: m['tag'].respond_to?(:wildcard_to_rx) ? m['tag'].wildcard_to_rx : m['tag'],
+          comp: m['op'],
+          value: m['val'],
+          required: all_req || (!m['req'].nil? && m['req'] == '+'),
+          negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
+        })
+      end
       reader = TTY::Reader.new
 
       args.concat(options[:search]) unless options[:search].nil?
@@ -121,13 +164,13 @@ class App
 
       options[:exact] = true unless options[:replace].nil?
 
-      action = if args.count.positive?
-                 args.join(' ').strip
-               else
-                 NA.request_input(options, prompt: 'Enter a task to search for')
-               end
-      if action
-        tokens = nil
+      if args.count.positive?
+        action = args.join(' ').strip
+      else
+        action = nil
+      end
+      tokens = nil
+      if action && !action.empty?
         if options[:exact]
           tokens = action
         elsif options[:regex]
@@ -135,20 +178,248 @@ class App
         else
           tokens = []
           all_req = action !~ /[+!-]/ && !options[:or]
-
           action.split(/ /).each do |arg|
             m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
             tokens.push({
-                          token: m['tok'],
-                          required: all_req || (!m['req'].nil? && m['req'] == '+'),
-                          negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
-                        })
+              token: m['tok'],
+              required: all_req || (!m['req'].nil? && m['req'] == '+'),
+              negate: !m['req'].nil? && m['req'] =~ /[!-]/ ? true : false
+            })
           end
         end
       end
 
+      # If no search query or tags, list all tasks for selection
       if (action.nil? || action.empty?) && options[:tagged].empty?
-        NA.notify("#{NA.theme[:error]}Empty input, cancelled", exit_code: 1)
+        tokens = nil # No search, list all
+      end
+
+      # Gather all candidate actions for selection
+      candidate_actions = []
+      targets_for_selection = []
+      files = NA.find_files_matching({
+        depth: options[:depth],
+        done: options[:done],
+        project: options[:project],
+        regex: options[:regex],
+        require_na: false,
+        search: tokens,
+        tag: tags
+      })
+      files.each do |file|
+        safe_search = (tokens.is_a?(String) || tokens.is_a?(Array) || tokens.is_a?(Regexp)) ? tokens : nil
+        todo = NA::Todo.new({
+          search: safe_search,
+          search_note: options[:search_notes],
+          require_na: false,
+          file_path: file,
+          project: options[:project],
+          tag: tags,
+          done: options[:done]
+        })
+        todo.actions.each do |action_obj|
+          # Format: filename:project:parent > action
+          display = "#{File.basename(action_obj.file)}:#{action_obj.project}:#{action_obj.parent.join('>')} | #{action_obj.action}"
+          candidate_actions << display
+          targets_for_selection << { file: action_obj.file, line: action_obj.line, action: action_obj }
+        end
+      end
+
+      # Multi-select using fzf or gum if available
+      selected_indices = []
+      if candidate_actions.any?
+        selector = nil
+        if TTY::Which.exist?('fzf')
+          selector = 'fzf --multi --prompt="Select tasks> "'
+        elsif TTY::Which.exist?('gum')
+          selector = 'gum choose --no-limit'
+        end
+        if selector
+          require 'open3'
+          input = candidate_actions.join("\n")
+          output, _ = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{selector}")
+          selected = output.split("\n").map(&:strip).reject(&:empty?)
+          selected_indices = candidate_actions.each_index.select { |i| selected.include?(candidate_actions[i]) }
+        else
+          # Fallback: select all or prompt for search string
+          selected_indices = (0...candidate_actions.size).to_a
+        end
+      end
+
+      # If no actions found, notify and exit
+      if selected_indices.empty?
+        NA.notify("#{NA.theme[:error]}No matching actions found for selection", exit_code: 1)
+      end
+
+      # Apply update to selected actions
+      actionable = [
+        options[:note],
+        (options[:priority].to_i if options[:priority]).to_i.positive?,
+        !options[:move].to_s.empty?,
+        !(options[:tag].nil? || options[:tag].empty?),
+        !(options[:remove].nil? || options[:remove].empty?),
+        !options[:replace].to_s.empty?,
+        options[:finish],
+        options[:archive],
+        options[:restore],
+        options[:delete],
+        options[:edit]
+      ].any?
+      unless actionable
+        # Interactive menu for actions
+        actions_menu = [
+          { key: :add_tag, label: 'Add Tag', param: 'Tag' },
+          { key: :remove_tag, label: 'Remove Tag', param: 'Tag' },
+          { key: :delete, label: 'Delete', param: nil },
+          { key: :finish, label: 'Finish (mark done)', param: nil },
+          { key: :edit, label: 'Edit', param: nil },
+          { key: :priority, label: 'Set Priority', param: 'Priority (1-5)' },
+          { key: :move, label: 'Move to Project', param: 'Project' },
+          { key: :restore, label: 'Restore', param: nil },
+          { key: :archive, label: 'Archive', param: nil },
+          { key: :note, label: 'Add Note', param: 'Note' }
+        ]
+        selector = nil
+        if TTY::Which.exist?('gum')
+          selector = 'gum choose'
+        elsif TTY::Which.exist?('fzf')
+          selector = 'fzf --prompt="Select action> "'
+        end
+        menu_labels = actions_menu.map { |a| a[:label] }
+        selected_action = nil
+        if selector
+          require 'open3'
+          input = menu_labels.join("\n")
+          output, _ = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{selector}")
+          selected_action = output.strip
+        else
+          puts 'Select an action:'
+          menu_labels.each_with_index { |label, i| puts "#{i+1}. #{label}" }
+          idx = (STDIN.gets || '').strip.to_i - 1
+          selected_action = menu_labels[idx] if idx >= 0 && idx < menu_labels.size
+        end
+        action_obj = actions_menu.find { |a| a[:label] == selected_action }
+        if action_obj.nil?
+          NA.notify("#{NA.theme[:error]}No action selected, cancelled", exit_code: 1)
+        end
+        # Prompt for parameter if needed
+        param_value = nil
+        # Only prompt for param if not :move (which has custom menu logic)
+        if action_obj[:param] && action_obj[:key] != :move
+          if TTY::Which.exist?('gum')
+            gum = TTY::Which.which('gum')
+            prompt = "Enter #{action_obj[:param]}: "
+            param_value = `#{gum} input --placeholder "#{prompt}"`.strip
+          else
+            print "Enter #{action_obj[:param]}: "
+            param_value = (STDIN.gets || '').strip
+          end
+        end
+        # Set options for update
+        case action_obj[:key]
+        when :add_tag
+          options[:tag] = [param_value]
+        when :remove_tag
+          options[:remove] = [param_value]
+        when :delete
+          options[:delete] = true
+        when :finish
+          options[:finish] = true
+        when :edit
+          options[:edit] = true
+        when :priority
+          options[:priority] = param_value
+        when :move
+          # Gather projects from the same file as the selected action
+          selected_file = targets_for_selection[selected_indices.first][:file]
+          todo = NA::Todo.new(file_path: selected_file)
+          project_names = todo.projects.map { |proj| proj.project }
+          project_menu = project_names + ['New project']
+          move_selector = nil
+          if TTY::Which.exist?('gum')
+            move_selector = 'gum choose'
+          elsif TTY::Which.exist?('fzf')
+            move_selector = 'fzf --prompt="Select project> "'
+          end
+          selected_project = nil
+          if move_selector
+            require 'open3'
+            input = project_menu.join("\n")
+            output, _ = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{move_selector}")
+            selected_project = output.strip
+          else
+            puts 'Select a project:'
+            project_menu.each_with_index { |label, i| puts "#{i+1}. #{label}" }
+            idx = (STDIN.gets || '').strip.to_i - 1
+            selected_project = project_menu[idx] if idx >= 0 && idx < project_menu.size
+          end
+          if selected_project == 'New project'
+            if TTY::Which.exist?('gum')
+              gum = TTY::Which.which('gum')
+              prompt = 'Enter new project name: '
+              new_proj_name = `#{gum} input --placeholder "#{prompt}"`.strip
+            else
+              print 'Enter new project name: '
+              new_proj_name = (STDIN.gets || '').strip
+            end
+            # Create the new project in the file
+            NA.insert_project(selected_file, new_proj_name, todo.projects)
+            options[:move] = new_proj_name
+          else
+            options[:move] = selected_project
+          end
+        when :restore
+          options[:restore] = true
+        when :archive
+          options[:archive] = true
+        when :note
+          options[:note] = true
+          note = [param_value]
+        end
+      end
+      did_direct_update = false
+      selected_indices.each do |idx|
+        # Rebuild all derived variables from options after menu-driven assignment
+        add_tags = options[:tag] ? options[:tag].join(',').split(/ *, */).map { |t| t.sub(/^@/, '') } : []
+        remove_tags = options[:remove] ? options[:remove].join(',').split(/ *, */).map { |t| t.sub(/^@/, '') } : []
+        remove_tags << 'done' if options[:restore]
+        priority = options[:priority].to_i if options[:priority]&.to_i&.positive?
+        target_proj = if options[:move]
+                        options[:move]
+                      elsif NA.respond_to?(:cwd_is) && NA.cwd_is == :project
+                        NA.cwd
+                      end
+        note_val = note
+        if options[:note] && defined?(param_value) && param_value
+          note_val = [param_value]
+        end
+        # Pass the selected action object as 'add', set search to nil
+        # Pass the exact selected action object to update_action, bypassing all search/filter logic
+        target = targets_for_selection[idx][:file]
+        action_obj = targets_for_selection[idx][:action]
+        # Direct action mode: update only the selected action in the known file
+        NA.update_action(target, nil,
+          add: action_obj,
+          add_tag: add_tags,
+          all: true,
+          append: append,
+          delete: options[:delete],
+          done: options[:done],
+          edit: options[:edit],
+          finish: options[:finish],
+          move: target_proj,
+          note: note_val,
+          overwrite: options[:overwrite],
+          priority: priority,
+          project: options[:project],
+          remove_tag: remove_tags,
+          replace: options[:replace],
+          search_note: options[:search_notes],
+          tagged: nil)
+        did_direct_update = true
+      end
+      if did_direct_update
+        next
       end
 
       all_req = options[:tagged].join(' ') !~ /[+!-]/ && !options[:or]

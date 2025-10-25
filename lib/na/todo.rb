@@ -44,6 +44,10 @@ module NA
         }
 
         settings = defaults.merge(options)
+        # Coerce settings[:search] to a string or nil if it's an integer
+        if settings[:search].is_a?(Integer)
+          settings[:search] = settings[:search] <= 0 ? nil : settings[:search].to_s
+        end
         # Ensure tag is always an Array
         if settings[:tag].nil?
           settings[:tag] = []
@@ -82,8 +86,7 @@ module NA
             optional_tag.push({ tag: t })
           end
         end
-
-        unless settings[:search].nil? || settings[:search].empty?
+        unless settings[:search].nil? || (settings[:search].respond_to?(:empty?) && settings[:search].empty?)
           if settings[:regex] || settings[:search].is_a?(String)
             if settings[:negate]
               negated.push(settings[:search])
