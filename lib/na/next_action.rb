@@ -163,7 +163,7 @@ module NA
       unless todo.actions.count.positive?
         NA.notify("#{NA.theme[:error]}No matching actions found in #{File.basename(target,
                                                                                    ".#{NA.extension}").highlight_filename}")
-        return
+        return [todo.projects, NA::Actions.new]
       end
 
       return [todo.projects, todo.actions] if todo.actions.count == 1 || all
@@ -171,7 +171,10 @@ module NA
       options = todo.actions.map { |action| "#{action.line} % #{action.parent.join('/')} : #{action.action}" }
       res = choose_from(options, prompt: 'Make a selection: ', multiple: true, sorted: true)
 
-      NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1) unless res&.length&.positive?
+      unless res&.length&.positive?
+        NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
+        return [todo.projects, NA::Actions.new]
+      end
 
       selected = NA::Actions.new
       res.each do |result|
@@ -948,7 +951,7 @@ module NA
     def save_search(title, search)
       file = database_path(file: 'saved_searches.yml')
       searches = load_searches
-      title = title.gsub(/[^a-z0-9]/, '_').gsub(/_+/, '_')
+      title = title.gsub(/[^a-zA-Z0-9]/, '_').gsub(/_+/, '_').downcase
 
       if searches.key?(title)
         res = yn('Overwrite existing definition?', default: true)

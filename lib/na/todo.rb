@@ -44,6 +44,12 @@ module NA
         }
 
         settings = defaults.merge(options)
+        # Ensure tag is always an Array
+        if settings[:tag].nil?
+          settings[:tag] = []
+        elsif !settings[:tag].is_a?(Array)
+          settings[:tag] = [settings[:tag]]
+        end
 
         actions = NA::Actions.new
         required = []
@@ -58,16 +64,22 @@ module NA
         NA.notify("Search: #{settings[:search]}", debug: true)
 
         settings[:tag]&.each do |t|
-          unless t[:tag].nil?
-            if settings[:negate]
-              optional_tag.push(t) if t[:negate]
-              required_tag.push(t) if t[:required] && t[:negate]
-              negated_tag.push(t) unless t[:negate]
-            else
-              optional_tag.push(t) unless t[:negate] || t[:required]
-              required_tag.push(t) if t[:required] && !t[:negate]
-              negated_tag.push(t) if t[:negate]
+          # If t is a Hash, use its keys; if String, treat as a tag string
+          if t.is_a?(Hash)
+            unless t[:tag].nil?
+              if settings[:negate]
+                optional_tag.push(t) if t[:negate]
+                required_tag.push(t) if t[:required] && t[:negate]
+                negated_tag.push(t) unless t[:negate]
+              else
+                optional_tag.push(t) unless t[:negate] || t[:required]
+                required_tag.push(t) if t[:required] && !t[:negate]
+                negated_tag.push(t) if t[:negate]
+              end
             end
+          elsif t.is_a?(String)
+            # Treat string as a simple tag
+            optional_tag.push({ tag: t })
           end
         end
 

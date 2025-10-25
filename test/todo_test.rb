@@ -27,7 +27,7 @@ class TodoTest < Minitest::Test
   def test_parse_with_search_and_tag
     File.write("test_todo_file.taskpaper", "Inbox:\n- Test Action @testing")
     todo = NA::Todo.new
-    _, actions, = todo.parse({ file_path: "test_todo_file.taskpaper", search: "Test Action", tag: [{ tag: "testing", required: true, negate: false }] })
+  _, actions, = todo.parse({ file_path: "test_todo_file.taskpaper", search: "Test Action", tag: [{ tag: "testing" }], require_na: false })
     assert actions.any? { |a| a.to_s.include?("Test Action") }
     File.delete("test_todo_file.taskpaper")
   end

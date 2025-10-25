@@ -129,9 +129,9 @@ module NA
         # Create the source filename string (optimized)
         filename = if needs_filename
                      path = @file.sub(%r{^\./}, '').sub(/#{Dir.home}/, '~')
-                     # When not showing cwd indicator and file is in '.', omit './'
-                     if File.dirname(path) == '.' && !NA.show_cwd_indicator
+                     if File.dirname(path) == '.'
                        fname = NA.include_ext ? File.basename(path) : File.basename(path, ".#{extension}")
+                       fname = "./#{fname}" if NA.show_cwd_indicator
                        NA::Color.template("#{template[:filename]}#{fname} {x}")
                      else
                        colored = (NA.include_ext ? path : path.sub(/\.#{extension}$/, '')).highlight_filename
