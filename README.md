@@ -76,7 +76,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.81
+    1.2.82
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -478,46 +478,48 @@ To perform a string comparison, you can use `*=` (contains), `^=` (starts with),
 
 ```
 NAME
-    next - Show next actions
+    tagged - Find actions matching a tag
 
 SYNOPSIS
 
-    na [global options] next [command options] [QUERY]
+    na [global options] tagged [command options] TAG[=VALUE]
 
 DESCRIPTION
-    Next actions are actions which contain the next action tag (default @na),   do not contain @done, and are not in the Archive project.   Arguments will target a todo file from history, whether it's in the current   directory or not. Todo file queries can include path components separated by /   or :, and may use wildcards (`*` to match any text, `?` to match a single character). Multiple queries allowed (separate arguments or separated by comma). 
+    Finds actions with tags matching the arguments. An action is shown if it   contains all of the tags listed. Add a + before a tag to make it required   and others optional. You can specify values using TAG=VALUE pairs.   Use <, >, and = for numeric comparisons, and *=, ^=, $=, or =~ (regex) for text comparisons.   Date comparisons use natural language (`na tagged "due<=today"`) and   are detected automatically. 
 
 COMMAND OPTIONS
-    --all                                  - Show next actions from all known todo files (in any directory)
-    -d, --depth=DEPTH                      - Recurse to depth (default: none)
+    -d, --depth=DEPTH                      - Recurse to depth (default: 1)
     --[no-]done                            - Include @done actions
     --exact                                - Search query is exact text match (not tokens)
-    --file=TODO_FILE                       - Display matches from specific todo file ([relative] path) (default: none)
-    --hidden                               - Include hidden directories while traversing
-    --in, --todo=TODO                      - Display matches from a known todo file anywhere in history (short name) (may be used more than once, default: none)
+    --in=TODO_PATH                         - Show actions from a specific todo file in history. May use wildcards (* and ?) (default: none)
     --nest                                 - Output actions nested by file
     --no_file                              - No filename in output
     --[no-]notes                           - Include notes in output
+    -o, --or                               - Combine tags with OR, displaying actions matching ANY of the tags
     --omnifocus                            - Output actions nested by file and project
-    -p, --prio, --priority=PRIORITY        - Match actions with priority, allows <>= comparison (may be used more than once, default: none)
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --regex                                - Search query is regular expression
     --save=TITLE                           - Save this search for future use (default: none)
     --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
     --[no-]search_notes                    - Include notes in search (default: enabled)
-    -t, --tag=TAG                          - Alternate tag to search for (default: none)
-    --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
+    -v, --invert                           - Show actions not matching tags
 
 EXAMPLES
 
-    # display the next actions from any todo files in the current directory
-    na next
+    # Show all actions tagged @maybe
+    na tagged maybe
 
-    # display the next actions from the current directory, traversing 3 levels deep
-    na next -d 3
+    # Show all actions tagged @feature AND @idea, recurse 3 levels
+    na tagged -d 3 "feature, idea"
 
-    # display next actions for a project you visited in the past
-    na next marked
+    # Show all actions tagged @feature OR @idea
+    na tagged --or "feature, idea"
+
+    # Show actions with @priority(4) or @priority(5)
+    na tagged "priority>=4"
+
+    # Show actions with a due date coming up in the next 2 days
+    na tagged "due<in 2 days"
 ```
 
 ##### todos

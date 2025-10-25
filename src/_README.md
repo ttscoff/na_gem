@@ -184,7 +184,7 @@ You can also perform value comparisons on tags. A value in a TaskPaper tag is ad
 To perform a string comparison, you can use `*=` (contains), `^=` (starts with), `$=` (ends with), or `=` (matches). E.g. `na tagged "note*=video"`.
 
 ```
-@cli(bundle exec bin/na help show)
+@cli(bundle exec bin/na help tagged)
 ```
 
 ##### todos
