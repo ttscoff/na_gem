@@ -1,3 +1,20 @@
+### 1.2.81
+
+2025-10-25 05:18
+
+#### NEW
+
+- `na scan` command to scan for untracked todo files (thanks @rhsev)
+
+#### IMPROVED
+
+- Rubocop cleanup
+
+#### FIXED
+
+- Reset color/emphasis before closing bracket in parent display
+- Subdirectory traversal with `na next -d X` fixed
+
 ### 1.2.80
 
 2025-10-23 05:26

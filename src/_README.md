@@ -167,14 +167,6 @@ Run `na saved` without an argument to list your saved searches.
 
 Scan a directory tree for todo files and cache them in tdlist.txt. Avoids duplicates and can optionally prune non-existent entries.
 
-Example usage:
-
-    na scan
-    na scan -d 3 ~/Projects
-    na scan -d inf --hidden
-    na scan --prune
-    na scan --dry-run
-
 Scan reports how many files were added and, if --prune is used, how many were pruned. With --dry-run, it lists the full file paths that would be added and/or pruned.
 
 ```

@@ -9,9 +9,9 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.80.
+The current version of `na` is 1.2.81.
 
-`na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
+`na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder.
 
 Used with Taskpaper files, it can add new action items quickly from the command line, automatically tagging them as next actions. It can also mark actions as completed, delete them, archive them, and move them between projects.
 
@@ -48,7 +48,7 @@ You can list next actions in files in the current directory by typing `na`. By d
 
 #### Adding todos
 
-You can also quickly add todo items from the command line with the `add` subcommand. The script will look for a file in the current directory with a `.taskpaper` extension (configurable). 
+You can also quickly add todo items from the command line with the `add` subcommand. The script will look for a file in the current directory with a `.taskpaper` extension (configurable).
 
 If found, it will try to locate an `Inbox:` project, or create one if it doesn't exist. Any arguments after `add` will be combined to create a new task in TaskPaper format. They will automatically be assigned as next actions (tagged `@na`) and will show up when `na` lists the tasks for the project.
 
@@ -76,7 +76,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.80
+    1.2.81
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -116,6 +116,7 @@ COMMANDS
     prompt              - Show or install prompt hooks for the current shell
     restore, unfinish   - Find and remove @done tag from an action
     saved               - Execute a saved search
+    scan                - Scan a directory tree for todo files and cache them
     tag                 - Add tags to matching action(s)
     tagged              - Find actions matching a tag
     todos               - Show list of known todo files
@@ -133,7 +134,7 @@ If you run the `add` command with no arguments, you'll be asked for input on the
 
 ###### Adding notes
 
-Use the `--note` switch to add a note. If STDIN (piped) input is present when this switch is used, it will be included in the note. A prompt will be displayed for adding additional notes, which will be appended to any STDIN note passed. Press CTRL-d to end editing and save the note. 
+Use the `--note` switch to add a note. If STDIN (piped) input is present when this switch is used, it will be included in the note. A prompt will be displayed for adding additional notes, which will be appended to any STDIN note passed. Press CTRL-d to end editing and save the note.
 
 Notes are not displayed by the `next/tagged/find` commands unless `--notes` is specified.
 
@@ -335,6 +336,7 @@ COMMAND OPTIONS
     --[no-]done                            - Include @done actions
     --exact                                - Search query is exact text match (not tokens)
     --file=TODO_FILE                       - Display matches from specific todo file ([relative] path) (default: none)
+    --hidden                               - Include hidden directories while traversing
     --in, --todo=TODO                      - Display matches from a known todo file anywhere in history (short name) (may be used more than once, default: none)
     --nest                                 - Output actions nested by file
     --no_file                              - No filename in output
@@ -426,6 +428,44 @@ EXAMPLES
     na saved
 ```
 
+##### scan
+
+Scan a directory tree for todo files and cache them in tdlist.txt. Avoids duplicates and can optionally prune non-existent entries.
+
+Scan reports how many files were added and, if --prune is used, how many were pruned. With --dry-run, it lists the full file paths that would be added and/or pruned.
+
+```
+NAME
+    scan - Scan a directory tree for todo files and cache them
+
+SYNOPSIS
+
+    na [global options] scan [command options] [PATH]
+
+DESCRIPTION
+    Searches PATH (default: current directory) for files matching the current NA.extension and adds their absolute paths to the tdlist.txt cache. Avoids duplicates. Optionally prunes non-existent entries from the cache. 
+
+COMMAND OPTIONS
+    -d, --depth=DEPTH - Recurse to depth (1..N or i/inf for infinite) (default: 5)
+    --hidden          - Include hidden directories and files while scanning
+    -n, --dry-run     - Show what would be added/pruned, but do not write tdlist.txt
+    -p, --prune       - Prune removed files from cache after scan
+
+EXAMPLES
+
+    # Scan current directory up to default depth (5)
+    na scan
+
+    # Scan a specific path up to depth 3
+    na scan -d 3 ~/Projects
+
+    # Scan current directory recursively with no depth limit
+    na scan -d inf
+
+    # Prune non-existent entries from the cache (in addition to scanning)
+    na scan --prune
+```
+
 ##### tagged
 
 Example: `na tagged feature +maybe`.
@@ -453,6 +493,7 @@ COMMAND OPTIONS
     --[no-]done                            - Include @done actions
     --exact                                - Search query is exact text match (not tokens)
     --file=TODO_FILE                       - Display matches from specific todo file ([relative] path) (default: none)
+    --hidden                               - Include hidden directories while traversing
     --in, --todo=TODO                      - Display matches from a known todo file anywhere in history (short name) (may be used more than once, default: none)
     --nest                                 - Output actions nested by file
     --no_file                              - No filename in output
