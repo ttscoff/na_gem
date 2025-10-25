@@ -617,6 +617,7 @@ module NA
       }
       options = defaults.merge(options)
       files = find_files(depth: options[:depth], include_hidden: options[:hidden])
+      return [] if files.nil? || files.empty?
 
       files.delete_if do |file|
         cmd_options = {

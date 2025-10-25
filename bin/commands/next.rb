@@ -17,7 +17,7 @@ class App
 
     c.desc "Recurse to depth"
     c.arg_name "DEPTH"
-    c.flag %i[d depth], type: :integer, must_match: /^[1-9]$/
+  c.flag %i[d depth], type: :integer, must_match: /^[1-9][0-9]*$/
 
     c.desc "Include hidden directories while traversing"
     c.switch %i[hidden], negatable: false, default_value: false
