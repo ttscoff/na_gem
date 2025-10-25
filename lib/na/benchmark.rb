@@ -5,12 +5,19 @@ module NA
     class << self
       attr_accessor :enabled, :timings
 
+      # Initialize benchmarking state
+      #
+      # @return [void]
       def init
         @enabled = %w[1 true].include?(ENV.fetch('NA_BENCHMARK', nil))
         @timings = []
         @start_time = Time.now
       end
 
+      # Measure the execution time of a block
+      #
+      # @param label [String] Label for the measurement
+      # @return [Object] Result of the block
       def measure(label)
         return yield unless @enabled
 
@@ -21,6 +28,9 @@ module NA
         result
       end
 
+      # Output a performance report to STDERR
+      #
+      # @return [void]
       def report
         return unless @enabled
 
@@ -28,7 +38,9 @@ module NA
         warn "\n#{NA::Color.template('{y}=== NA Performance Report ===')}"
         warn NA::Color.template("{dw}Total: {bw}#{total.round(2)}ms{x}")
         warn NA::Color.template("{dw}GC Count: {bw}#{GC.count}{x}") if defined?(GC)
-        warn NA::Color.template("{dw}Memory: {bw}#{(GC.stat[:heap_live_slots] * 40 / 1024.0).round(1)}KB{x}") if defined?(GC)
+        if defined?(GC)
+          warn NA::Color.template("{dw}Memory: {bw}#{(GC.stat[:heap_live_slots] * 40 / 1024.0).round(1)}KB{x}")
+        end
         warn ''
 
         @timings.each do |timing|

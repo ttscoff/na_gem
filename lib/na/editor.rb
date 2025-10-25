@@ -1,16 +1,20 @@
+# frozen_string_literal: true
+
+require 'English'
+
 module NA
   module Editor
     class << self
       def default_editor(prefer_git_editor: true)
-        if prefer_git_editor
-          editor ||= ENV['NA_EDITOR'] || ENV['GIT_EDITOR'] || ENV['EDITOR']
-        else
-          editor ||= ENV['NA_EDITOR'] || ENV['EDITOR'] || ENV['GIT_EDITOR']
-        end
+        editor ||= if prefer_git_editor
+                     ENV['NA_EDITOR'] || ENV['GIT_EDITOR'] || ENV.fetch('EDITOR', nil)
+                   else
+                     ENV['NA_EDITOR'] || ENV['EDITOR'] || ENV.fetch('GIT_EDITOR', nil)
+                   end
 
         return editor if editor&.good? && TTY::Which.exist?(editor)
 
-        NA.notify("No EDITOR environment variable, testing available editors", debug: true)
+        NA.notify('No EDITOR environment variable, testing available editors', debug: true)
         editors = %w[vim vi code subl mate mvim nano emacs]
         editors.each do |ed|
           try = TTY::Which.which(ed)
@@ -43,11 +47,10 @@ module NA
         "#{editor} #{args.join(' ')}"
       end
 
-      ##
-      ## Create a process for an editor and wait for the file handle to return
-      ##
-      ## @param      input  [String] Text input for editor
-      ##
+      # Create a process for an editor and wait for the file handle to return
+      #
+      # @param input [String] Text input for editor
+      # @return [String] Edited text
       def fork_editor(input = '', message: :default)
         # raise NonInteractive, 'Non-interactive terminal' unless $stdout.isatty || ENV['DOING_EDITOR_TEST']
 
@@ -78,8 +81,8 @@ module NA
         Process.wait(pid)
 
         begin
-          if $?.exitstatus == 0
-            input = IO.read(tmpfile.path)
+          if $CHILD_STATUS.exitstatus.zero?
+            input = File.read(tmpfile.path)
           else
             exit_now! 'Cancelled'
           end
@@ -88,16 +91,13 @@ module NA
           tmpfile.unlink
         end
 
-        input.split(/\n/).delete_if(&:ignore?).join("\n")
+        input.split("\n").delete_if(&:ignore?).join("\n")
       end
 
-      ##
-      ## Takes a multi-line string and formats it as an entry
-      ##
-      ## @param      input  [String] The string to parse
-      ##
-      ## @return     [Array] [[String]title, [Note]note]
-      ##
+      # Takes a multi-line string and formats it as an entry
+      #
+      # @param input [String] The string to parse
+      # @return [Array] [[String]title, [Note]note]
       def format_input(input)
         NA.notify("#{NA.theme[:error]}No content in entry", exit_code: 1) if input.nil? || input.strip.empty?
 
@@ -108,7 +108,7 @@ module NA
         title = title.expand_date_tags
 
         note = if input_lines.length > 1
-                 input_lines[1..-1]
+                 input_lines[1..]
                else
                  []
                end

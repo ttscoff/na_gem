@@ -7,22 +7,22 @@ module NA
   module Pager
     class << self
       # Boolean determines whether output is paginated
+      #
+      # @return [Boolean] true if paginated
       def paginate
         @paginate ||= false
       end
 
       # Enable/disable pagination
       #
-      # @param      should_paginate  [Boolean] true to paginate
-      def paginate=(should_paginate)
-        @paginate = should_paginate
-      end
+      # @param should_paginate [Boolean] true to paginate
+      # @return [void]
+      attr_writer :paginate
 
-      # Page output. If @paginate is false, just dump to
-      # STDOUT
+      # Page output. If @paginate is false, just dump to STDOUT
       #
-      # @param      text  [String] text to paginate
-      #
+      # @param text [String] text to paginate
+      # @return [Boolean, nil] true if paged, false if not, nil if no pager
       def page(text)
         unless @paginate
           puts text
@@ -76,20 +76,30 @@ module NA
 
       private
 
+      # Get the git pager command if available
+      #
+      # @return [String, nil] git pager command
       def git_pager
         TTY::Which.exist?('git') ? `#{TTY::Which.which('git')} config --get-all core.pager` : nil
       end
 
+      # List of possible pager commands
+      #
+      # @return [Array<String>] pager commands
       def pagers
         [
-          ENV['PAGER'],
+          ENV.fetch('PAGER', nil),
           'less -FXr',
-          ENV['GIT_PAGER'],
+          ENV.fetch('GIT_PAGER', nil),
           git_pager,
           'more -r'
         ].remove_bad
       end
 
+      # Find the first available executable pager command
+      #
+      # @param commands [Array<String>] commands to check
+      # @return [String, nil] first available command
       def find_executable(*commands)
         execs = commands.empty? ? pagers : commands
         execs
@@ -97,6 +107,9 @@ module NA
           .find { |cmd| TTY::Which.exist?(cmd.split.first) }
       end
 
+      # Determine which pager to use
+      #
+      # @return [String, nil] pager command
       def which_pager
         @which_pager ||= find_executable(*pagers)
       end

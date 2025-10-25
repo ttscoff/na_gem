@@ -4,7 +4,15 @@ module GLI
   module Commands
     # Help Command Monkeypatch for paginated output
     class Help < Command
-      def show_help(global_options, options, arguments, out, error)
+      # Show help output for GLI commands with paginated output
+      #
+      # @param global_options [Hash] Global CLI options
+      # @param options [Hash] Command-specific options
+      # @param arguments [Array] Command arguments
+      # @param out [IO] Output stream
+      # @param error [IO] Error stream
+      # @return [void]
+      def show_help(_global_options, options, arguments, out, error)
         NA::Pager.paginate = true
 
         command_finder = HelpModules::CommandFinder.new(@app, arguments, error)

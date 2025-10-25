@@ -5,27 +5,20 @@ module NA
   class << self
     include NA::Editor
 
-    attr_accessor :verbose, :extension, :include_ext, :na_tag, :command_line, :command, :globals, :global_file, :cwd_is, :cwd, :stdin, :show_cwd_indicator
+    attr_accessor :verbose, :extension, :include_ext, :na_tag, :command_line, :command, :globals, :global_file,
+                  :cwd_is, :cwd, :stdin, :show_cwd_indicator
 
     def theme
       @theme ||= NA::Theme.load_theme
     end
 
-    ##
-    ## Output to STDERR
-    ##
-    ## @param      msg        [String] The message
-    ## @param      exit_code  [Number] The exit code, no
-    ##                        exit if false
-    ## @param      debug      [Boolean] only display message if running :verbose
-    ##
     def notify(msg, exit_code: false, debug: false)
       return if debug && !NA.verbose
 
       if debug
-        $stderr.puts NA::Color.template("{x}#{NA.theme[:debug]}#{msg}{x}")
+        warn NA::Color.template("{x}#{NA.theme[:debug]}#{msg}{x}")
       else
-        $stderr.puts NA::Color.template("{x}#{msg}{x}")
+        warn NA::Color.template("{x}#{msg}{x}")
       end
       Process.exit exit_code if exit_code
     end
@@ -38,16 +31,16 @@ module NA
       }
     end
 
-    ##
-    ## Display and read a Yes/No prompt
-    ##
-    ## @param      prompt   [String] The prompt string
-    ## @param      default  [Boolean] default value if
-    ##                      return is pressed or prompt is
-    ##                      skipped
-    ##
-    ## @return     [Boolean] result
-    ##
+    #
+    # Display and read a Yes/No prompt
+    #
+    # @param      prompt   [String] The prompt string
+    # @param      default  [Boolean] default value if
+    #                      return is pressed or prompt is
+    #                      skipped
+    #
+    # @return     [Boolean] result
+    #
     def yn(prompt, default: true)
       return default unless $stdout.isatty
 
@@ -63,14 +56,14 @@ module NA
       res.empty? ? default : res =~ /y/i
     end
 
-    ##
-    ## Helper function to colorize the Y/N prompt
-    ##
-    ## @param      choices  [Array] The choices with
-    ##                      default capitalized
-    ##
-    ## @return     [String] colorized string
-    ##
+    #
+    # Helper function to colorize the Y/N prompt
+    #
+    # @param      choices  [Array] The choices with
+    #                      default capitalized
+    #
+    # @return     [String] colorized string
+    #
     def color_single_options(choices = %w[y n])
       out = []
       choices.each do |choice|
@@ -84,51 +77,48 @@ module NA
       NA::Color.template("{xg}[#{out.join('/')}{xg}]{x}")
     end
 
-    ##
-    ## Create a new todo file
-    ##
-    ## @param      target    [String] The target path
-    ## @param      basename  [String] The project base name
-    ##
+    #
+    # Create a new todo file
+    #
+    # @param      target    [String] The target path
+    # @param      basename  [String] The project base name
+    #
     def create_todo(target, basename, template: nil)
       File.open(target, 'w') do |f|
-        if template && File.exist?(template)
-          content = IO.read(template)
-        else
-          content = <<~ENDCONTENT
-            Inbox:
-            #{basename}:
-            \tFeature Requests:
-            \tIdeas:
-            \tBugs:
-            Archive:
-            Search Definitions:
-            \tTop Priority @search(@priority = 5 and not @done)
-            \tHigh Priority @search(@priority > 3 and not @done)
-            \tMaybe @search(@maybe)
-            \tNext @search(@#{NA.na_tag} and not @done and not project = \"Archive\")
-          ENDCONTENT
-        end
+        content = if template && File.exist?(template)
+                    File.read(template)
+                  else
+                    <<~ENDCONTENT
+                      Inbox:
+                      #{basename}:
+                      \tFeature Requests:
+                      \tIdeas:
+                      \tBugs:
+                      Archive:
+                      Search Definitions:
+                      \tTop Priority @search(@priority = 5 and not @done)
+                      \tHigh Priority @search(@priority > 3 and not @done)
+                      \tMaybe @search(@maybe)
+                      \tNext @search(@#{NA.na_tag} and not @done and not project = "Archive")
+                    ENDCONTENT
+                  end
         f.puts(content)
       end
       save_working_dir(target)
       notify("#{NA.theme[:warning]}Created #{NA.theme[:file]}#{target}")
     end
 
-    ##
-    ## Select from multiple files
-    ##
-    ## @note       If `gum` or `fzf` are available, they'll
-    ##             be used (in that order)
-    ##
-    ## @param      files     [Array] The files
-    ## @param      multiple  [Boolean] allow multiple selections
-    ##
-    ## @return [String, Array] array if multiple
+    # Select from multiple files
+    #
+    # If `gum` or `fzf` are available, they'll be used (in that order).
+    #
+    # @param files [Array<String>] The files to select from
+    # @param multiple [Boolean] Allow multiple selections
+    # @return [String, Array<String>] Selected file(s)
     def select_file(files, multiple: false)
       res = choose_from(files, prompt: multiple ? 'Select files' : 'Select a file', multiple: multiple)
 
-      notify("#{NA.theme[:error]}No file selected, cancelled", exit_code: 1) unless res && res.length.positive?
+      notify("#{NA.theme[:error]}No file selected, cancelled", exit_code: 1) unless res&.length&.positive?
 
       res
     end
@@ -142,11 +132,25 @@ module NA
       end
     end
 
+    # Find all projects in a todo file
+    #
+    # @param target [String] Path to the todo file
+    # @return [Array<NA::Project>] List of projects
     def find_projects(target)
       todo = NA::Todo.new(require_na: false, file_path: target)
       todo.projects
     end
 
+    # Find actions in a todo file matching criteria
+    #
+    # @param target [String] Path to the todo file
+    # @param search [String, nil] Search string
+    # @param tagged [String, nil] Tag to filter
+    # @param all [Boolean] Return all actions
+    # @param done [Boolean] Include done actions
+    # @param project [String, nil] Project name
+    # @param search_note [Boolean] Search notes
+    # @return [Array] Projects and actions
     def find_actions(target, search, tagged = nil, all: false, done: false, project: nil, search_note: true)
       todo = NA::Todo.new({ search: search,
                             search_note: search_note,
@@ -157,7 +161,8 @@ module NA
                             done: done })
 
       unless todo.actions.count.positive?
-        NA.notify("#{NA.theme[:error]}No matching actions found in #{File.basename(target, ".#{NA.extension}").highlight_filename}")
+        NA.notify("#{NA.theme[:error]}No matching actions found in #{File.basename(target,
+                                                                                   ".#{NA.extension}").highlight_filename}")
         return
       end
 
@@ -166,7 +171,7 @@ module NA
       options = todo.actions.map { |action| "#{action.line} % #{action.parent.join('/')} : #{action.action}" }
       res = choose_from(options, prompt: 'Make a selection: ', multiple: true, sorted: true)
 
-      NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1) unless res && res.length.positive?
+      NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1) unless res&.length&.positive?
 
       selected = NA::Actions.new
       res.each do |result|
@@ -177,7 +182,13 @@ module NA
       [todo.projects, selected]
     end
 
-    def insert_project(target, project, projects)
+    # Insert a new project into a todo file
+    #
+    # @param target [String] Path to the todo file
+    # @param project [String] Project name
+    # @param projects [Array<NA::Project>] Existing projects
+    # @return [NA::Project] The new project
+    def insert_project(target, project, _projects)
       path = project.split(%r{[:/]})
       todo = NA::Todo.new(file_path: target)
       built = []
@@ -207,11 +218,11 @@ module NA
           indent += 1
         end
 
-        if new_path.join('') =~ /Archive/i
+        if new_path.join =~ /Archive/i
           line = todo.projects.last&.last_line || 0
-          content = content.split(/\n/).insert(line, input.join("\n")).join("\n")
+          content = content.split("\n").insert(line, input.join("\n")).join("\n")
         else
-          split = content.split(/\n/)
+          split = content.split("\n")
           line = todo.projects.first&.line || 0
           before = split.slice(0, line).join("\n")
           after = split.slice(line, split.count - 0).join("\n")
@@ -227,8 +238,9 @@ module NA
           input.push("#{"\t" * indent}#{part.cap_first}:")
           indent += 1
         end
-        content = content.split(/\n/).insert(line, input.join("\n")).join("\n")
-        new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, line + input.count - 1, line + input.count - 1)
+        content = content.split("\n").insert(line, input.join("\n")).join("\n")
+        new_project = NA::Project.new(path.map(&:cap_first).join(':'), indent - 1, line + input.count - 1,
+                                      line + input.count - 1)
       end
 
       File.open(target, 'w') do |f|
@@ -238,6 +250,28 @@ module NA
       new_project
     end
 
+    # Update actions in a todo file (add, edit, delete, move, etc.)
+    #
+    # @param target [String] Path to the todo file
+    # @param search [String, nil] Search string
+    # @param search_note [Boolean] Search notes
+    # @param add [Action, nil] Action to add
+    # @param add_tag [Array<String>] Tags to add
+    # @param all [Boolean] Update all matching actions
+    # @param append [Boolean] Append to project
+    # @param delete [Boolean] Delete matching actions
+    # @param done [Boolean] Mark as done
+    # @param edit [Boolean] Edit matching actions
+    # @param finish [Boolean] Mark as finished
+    # @param note [Array<String>] Notes to add
+    # @param overwrite [Boolean] Overwrite notes
+    # @param priority [Integer] Priority value
+    # @param project [String, nil] Project name
+    # @param move [String, nil] Move to project
+    # @param remove_tag [Array<String>] Tags to remove
+    # @param replace [String, nil] Replacement text
+    # @param tagged [String, nil] Tag to filter
+    # @return [void]
     def update_action(target,
                       search,
                       search_note: true,
@@ -257,7 +291,6 @@ module NA
                       remove_tag: [],
                       replace: nil,
                       tagged: nil)
-
       projects = find_projects(target)
       affected_actions = []
 
@@ -265,9 +298,11 @@ module NA
 
       if move
         move = move.sub(/:$/, '')
-        target_proj = projects.select { |pr| pr.project =~ /#{move.gsub(/:/, '.*?:.*?')}/i }.first
+        target_proj = projects.select { |pr| pr.project =~ /#{move.gsub(':', '.*?:.*?')}/i }.first
         if target_proj.nil?
-          res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{move}#{NA.theme[:warning]} doesn't exist, add it"), default: true)
+          res = NA.yn(
+            NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{move}#{NA.theme[:warning]} doesn't exist, add it"), default: true
+          )
           if res
             target_proj = insert_project(target, move, projects)
             projects << target_proj
@@ -277,7 +312,7 @@ module NA
         end
       end
 
-      contents = target.read_file.split(/\n/)
+      contents = target.read_file.split("\n")
 
       if add.is_a?(Action)
         add_tag ||= []
@@ -305,7 +340,9 @@ module NA
         end
 
         if target_proj.nil?
-          res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{add.project}#{NA.theme[:warning]} doesn't exist, add it"), default: true)
+          res = NA.yn(
+            NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{add.project}#{NA.theme[:warning]} doesn't exist, add it"), default: true
+          )
 
           if res
             target_proj = insert_project(target, project, projects)
@@ -314,7 +351,10 @@ module NA
             NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
           end
 
-          NA.notify("#{NA.theme[:error]}Error parsing project #{NA.theme[:filename]}#{target}", exit_code: 1) if target_proj.nil?
+          if target_proj.nil?
+            NA.notify("#{NA.theme[:error]}Error parsing project #{NA.theme[:filename]}#{target}",
+                      exit_code: 1)
+          end
 
           projects = find_projects(target)
           contents = target.read_file.split("\n")
@@ -360,7 +400,8 @@ module NA
         changes << 'note updated' unless note.nil? || note.empty?
         affected_actions << { action: add, desc: changes.join(', ') }
       else
-        _, actions = find_actions(target, search, tagged, done: done, all: all, project: project, search_note: search_note)
+        _, actions = find_actions(target, search, tagged, done: done, all: all, project: project,
+                                                          search_note: search_note)
 
         return if actions.nil?
 
@@ -461,14 +502,16 @@ module NA
       end
     end
 
-    ##
-    ## Add an action to a todo file
-    ##
-    ## @param      file     [String] The target file
-    ## @param      project  [String] The project name
-    ## @param      action   [String] The action
-    ## @param      note     [String] The note
-    ##
+    # Add an action to a todo file
+    #
+    # @param file [String] Path to the todo file
+    # @param project [String] Project name
+    # @param action [String] Action text
+    # @param note [Array<String>] Notes
+    # @param priority [Integer] Priority value
+    # @param finish [Boolean] Mark as finished
+    # @param append [Boolean] Append to project
+    # @return [void]
     def add_action(file, project, action, note = [], priority: 0, finish: false, append: false)
       parent = project.split(%r{[:/]})
 
@@ -482,18 +525,21 @@ module NA
 
       action = Action.new(file, project, parent, action, nil, note)
 
-      update_action(file, nil, add: action, project: project, add_tag: add_tag, priority: priority, finish: finish, append: append)
+      update_action(file, nil, add: action, project: project, add_tag: add_tag, priority: priority, finish: finish,
+                               append: append)
     end
 
+    # Build a nested hash representing project hierarchy from actions
+    #
+    # @param actions [Array<Action>] List of actions
+    # @return [Hash] Nested hierarchy
     def project_hierarchy(actions)
       parents = { actions: [] }
       actions.each do |a|
         parent = a.parent
         current_parent = parents
         parent.each do |par|
-          if !current_parent.key?(par)
-            current_parent[par] = { actions: [] }
-          end
+          current_parent[par] = { actions: [] } unless current_parent.key?(par)
           current_parent = current_parent[par]
         end
 
@@ -542,15 +588,20 @@ module NA
       out
     end
 
+    # Open a file in the specified editor/application
+    #
+    # @param file [String, nil] Path to the file
+    # @param app [String, nil] Application to use
+    # @return [void]
     def edit_file(file: nil, app: nil)
       os_open(file, app: app) if file && File.exist?(file)
     end
 
-    ##
-    ## Locate files matching NA.extension up to a given depth
-    ##
-    ## @param      depth  [Number] The depth at which to search
-    ##
+    # Locate files matching NA.extension up to a given depth
+    #
+    # @param depth [Integer] The depth at which to search
+    # @param include_hidden [Boolean] Whether to include hidden directories/files
+    # @return [Array<String>] List of matching file paths
     def find_files(depth: 1, include_hidden: false)
       NA::Benchmark.measure("find_files (depth=#{depth})") do
         return [NA.global_file] if NA.global_file
@@ -615,20 +666,13 @@ module NA
       files
     end
 
-    ##
-    ## Find a matching path using semi-fuzzy matching.
-    ## Search tokens can include ! and + to negate or make
-    ## required.
-    ##
-    ## @param      search        [Array] search tokens to
-    ##                           match
-    ## @param      distance      [Integer] allowed distance
-    ##                           between characters
-    ## @param      require_last  [Boolean] require regex to
-    ##                           match last element of path
-    ##
-    ## @return     [Array] array of matching directories/todo files
-    ##
+    # Find a matching path using semi-fuzzy matching.
+    # Search tokens can include ! and + to negate or make required.
+    #
+    # @param search [Array<Hash>] Search tokens to match
+    # @param distance [Integer] Allowed distance between characters
+    # @param require_last [Boolean] Require regex to match last element of path
+    # @return [Array<String>] Array of matching directories/todo files
     def match_working_dir(search, distance: 1, require_last: true)
       file = database_path
       NA.notify("#{NA.theme[:error]}No na database found", exit_code: 1) unless File.exist?(file)
@@ -647,7 +691,9 @@ module NA
 
       NA.notify("Optional directory regex: {x}#{optional.map { |t| t.dir_to_rx(distance: distance) }}", debug: true)
       NA.notify("Required directory regex: {x}#{required.map { |t| t.dir_to_rx(distance: distance) }}", debug: true)
-      NA.notify("Negated directory regex: {x}#{negated.map { |t| t.dir_to_rx(distance: distance, require_last: false) }}", debug: true)
+      NA.notify("Negated directory regex: {x}#{negated.map do |t|
+        t.dir_to_rx(distance: distance, require_last: false)
+      end}", debug: true)
 
       if require_last
         dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required, none: negated) }
@@ -683,32 +729,30 @@ module NA
       out
     end
 
-    ##
-    ## Save a todo file path to the database
-    ##
-    ## @param      todo_file  The todo file path
-    ##
+    # Save a todo file path to the database
+    #
+    # @param todo_file [String] The todo file path
+    # @return [void]
     def save_working_dir(todo_file)
       NA::Benchmark.measure('save_working_dir') do
         file = database_path
         content = File.exist?(file) ? file.read_file : ''
-        dirs = content.split(/\n/)
+        dirs = content.split("\n")
         dirs.push(File.expand_path(todo_file))
         dirs.sort!.uniq!
         File.open(file, 'w') { |f| f.puts dirs.join("\n") }
       end
     end
 
-    ##
-    ## Save a backed-up file to the database
-    ##
-    ## @param      file  The file
-    ##
+    # Save a backed-up file to the database
+    #
+    # @param file [String] The file
+    # @return [void]
     def save_modified_file(file)
       db = database_path(file: 'last_modified.txt')
       file = File.expand_path(file)
       if File.exist? db
-        files = IO.read(db).split(/\n/).map(&:strip)
+        files = File.read(db).split("\n").map(&:strip)
         files.delete(file)
         files << file
         File.open(db, 'w') { |f| f.puts(files.join("\n")) }
@@ -717,22 +761,20 @@ module NA
       end
     end
 
-    ##
-    ## Get the last modified file from the database
-    ##
-    ## @param      search  The search
-    ##
+    # Get the last modified file from the database
+    #
+    # @param search [String, nil] Optional search string
+    # @return [String, nil] Last modified file path
     def last_modified_file(search: nil)
       files = backup_files
       files.delete_if { |f| f !~ Regexp.new(search.dir_to_rx(require_last: true)) } if search
       files.last
     end
 
-    ##
-    ## Get last modified file and restore a backup
-    ##
-    ## @param      search  The search
-    ##
+    # Get last modified file and restore a backup
+    #
+    # @param search [String, nil] Optional search string
+    # @return [void]
     def restore_last_modified_file(search: nil)
       file = last_modified_file(search: search)
       if file
@@ -742,22 +784,23 @@ module NA
       end
     end
 
-    ##
-    ## Get list of backed up files
-    ##
-    ## @return     [Array] list of file paths
-    ##
+    # Get list of backed up files
+    #
+    # @return [Array<String>] List of file paths
     def backup_files
       db = database_path(file: 'last_modified.txt')
       if File.exist?(db)
-        IO.read(db).strip.split(/\n/).map(&:strip)
+        File.read(db).strip.split("\n").map(&:strip)
       else
         NA.notify("#{NA.theme[:error]}Backup database not found")
-        File.open(db, 'w') { |f| f.puts }
+        File.open(db, 'w', &:puts)
         []
       end
     end
 
+    # Move deprecated backup files to new backup folder
+    #
+    # @return [void]
     def move_deprecated_backups
       backup_files.each do |file|
         if File.exist?(old_backup_path(file))
@@ -767,15 +810,18 @@ module NA
       end
     end
 
+    # Get the old backup file path for a file
+    #
+    # @param file [String] The file
+    # @return [String] Old backup file path
     def old_backup_path(file)
       File.join(File.dirname(file), ".#{File.basename(file)}.bak")
     end
 
-    ##
-    ## Get the backup file path for a file
-    ##
-    ## @param      file  The file
-    ##
+    # Get the backup file path for a file
+    #
+    # @param file [String] The file
+    # @return [String] Backup file path
     def backup_path(file)
       backup_home = File.expand_path('~/.local/share/na/backup')
       backup = old_backup_path(file)
@@ -787,6 +833,10 @@ module NA
       backup_target
     end
 
+    # Remove entries for missing backup files from the database
+    #
+    # @param file [String, nil] Optional file to filter
+    # @return [void]
     def weed_modified_files(file = nil)
       files = backup_files
 
@@ -797,11 +847,10 @@ module NA
       File.open(database_path(file: 'last_modified.txt'), 'w') { |f| f.puts files.join("\n") }
     end
 
-    ##
-    ## Restore a file from backup
-    ##
-    ## @param      file  The file
-    ##
+    # Restore a file from backup
+    #
+    # @param file [String] The file
+    # @return [void]
     def restore_modified_file(file)
       bak_file = backup_path(file)
       if File.exist?(bak_file)
@@ -814,11 +863,10 @@ module NA
       weed_modified_files(file)
     end
 
-    ##
-    ## Get path to database of known todo files
-    ##
-    ## @return     [String] File path
-    ##
+    # Get path to database of known todo files
+    #
+    # @param file [String] The database filename (default: 'tdlist.txt')
+    # @return [String] File path
     def database_path(file: 'tdlist.txt')
       db_dir = File.expand_path('~/.local/share/na')
       # Create directory if needed
@@ -826,11 +874,11 @@ module NA
       File.join(db_dir, file)
     end
 
-    ##
-    ## Platform-agnostic open command
-    ##
-    ## @param      file  [String] The file to open
-    ##
+    # Platform-agnostic open command
+    #
+    # @param file [String] The file to open
+    # @param app [String, nil] Optional application to use
+    # @return [void]
     def os_open(file, app: nil)
       os = RbConfig::CONFIG['target_os']
       case os
@@ -843,9 +891,9 @@ module NA
       end
     end
 
-    ##
-    ## Remove entries from cache database that no longer exist
-    ##
+    #
+    # Remove entries from cache database that no longer exist
+    #
     def weed_cache_file
       db_dir = File.expand_path('~/.local/share/na')
       db_file = 'tdlist.txt'
@@ -873,7 +921,7 @@ module NA
 
       projects = find_projects(target)
       projects.each do |proj|
-        parts = proj.project.split(/:/)
+        parts = proj.project.split(':')
         output = if paths
                    "{bg}#{parts.join('{bw}/{bg}')}{x}"
                  else
@@ -893,12 +941,10 @@ module NA
                content = File.exist?(file) ? file.read_file.strip : ''
                notify("#{NA.theme[:error]}Database empty", exit_code: 1) if content.empty?
 
-               content.split(/\n/)
+               content.split("\n")
              end
 
-      dirs.map! do |dir|
-        dir.highlight_filename
-      end
+      dirs.map!(&:highlight_filename)
 
       puts NA::Color.template(dirs.join("\n"))
     end
@@ -919,6 +965,9 @@ module NA
       NA.notify("#{NA.theme[:success]}Search #{NA.theme[:filename]}#{title}#{NA.theme[:success]} saved", exit_code: 0)
     end
 
+    # Load saved search definitions from YAML file
+    #
+    # @return [Hash] Hash of saved searches
     def load_searches
       file = database_path(file: 'saved_searches.yml')
       if File.exist?(file)
@@ -935,6 +984,10 @@ module NA
       searches
     end
 
+    # Delete saved search definitions by name
+    #
+    # @param strings [Array<String>, String, nil] Names of searches to delete
+    # @return [void]
     def delete_search(strings = nil)
       NA.notify("#{NA.theme[:error]}Name of search required", exit_code: 1) if strings.nil? || strings.empty?
 
@@ -957,9 +1010,14 @@ module NA
 
       File.open(file, 'w') { |f| f.puts(YAML.dump(searches)) }
 
-      NA.notify("#{NA.theme[:warning]}Deleted {bw}#{keys.count}{x}#{NA.theme[:warning]} #{keys.count > 1 ? 'searches' : 'search'}", exit_code: 0)
+      NA.notify(
+        "#{NA.theme[:warning]}Deleted {bw}#{keys.count}{x}#{NA.theme[:warning]} #{keys.count > 1 ? 'searches' : 'search'}", exit_code: 0
+      )
     end
 
+    # Edit saved search definitions in the default editor
+    #
+    # @return [void]
     def edit_searches
       file = database_path(file: 'saved_searches.yml')
       searches = load_searches
@@ -973,23 +1031,22 @@ module NA
       NA.notify("#{NA.theme[:success]}Opened #{file} in #{editor}", exit_code: 0)
     end
 
-    ##
-    ## Create a backup file
-    ##
-    ## @param      target [String] The file to back up
-    ##
+    # Create a backup file
+    #
+    # @param target [String] The file to back up
+    # @return [void]
     def backup_file(target)
       FileUtils.cp(target, backup_path(target))
       save_modified_file(target)
       NA.notify("#{NA.theme[:warning]}Backup file created for #{target.highlight_filename}", debug: true)
     end
 
-    ##
-    ## Request terminal input from user, readline style
-    ##
-    ## @param      options  [Hash] The options
-    ## @param      prompt   [String] The prompt
-    ##
+    #
+    # Request terminal input from user, readline style
+    #
+    # @param      options  [Hash] The options
+    # @param      prompt   [String] The prompt
+    #
     def request_input(options, prompt: 'Enter text')
       if $stdin.isatty && TTY::Which.exist?('gum') && (options[:tagged].nil? || options[:tagged].empty?)
         opts = [%(--placeholder "#{prompt}"),
@@ -1002,18 +1059,18 @@ module NA
       end
     end
 
-    ##
-    ## Generate a menu of options and allow user selection
-    ##
-    ## @return     [String] The selected option
-    ##
-    ## @param      options   [Array] The options from which to choose
-    ## @param      prompt    [String] The prompt
-    ## @param      multiple  [Boolean] If true, allow multiple selections
-    ## @param      sorted    [Boolean] If true, sort selections alphanumerically
-    ## @param      fzf_args  [Array] Additional fzf arguments
-    ##
-    ## @return [String, Array] array if multiple is true
+    #
+    # Generate a menu of options and allow user selection
+    #
+    # @return     [String] The selected option
+    #
+    # @param      options   [Array] The options from which to choose
+    # @param      prompt    [String] The prompt
+    # @param      multiple  [Boolean] If true, allow multiple selections
+    # @param      sorted    [Boolean] If true, sort selections alphanumerically
+    # @param      fzf_args  [Array] Additional fzf arguments
+    #
+    # @return [String, Array] array if multiple is true
     def choose_from(options, prompt: 'Make a selection: ', multiple: false, sorted: true, fzf_args: [])
       return nil unless $stdout.isatty
 
@@ -1041,12 +1098,14 @@ module NA
               reader = TTY::Reader.new
               puts
               options.each.with_index do |f, i|
-                puts NA::Color.template(format("#{NA.theme[:prompt]}%<idx> 2d{xw}) #{NA.theme[:filename]}%<action>s{x}\n", idx: i + 1, action: f))
+                puts NA::Color.template(format(
+                                          "#{NA.theme[:prompt]}%<idx> 2d{xw}) #{NA.theme[:filename]}%<action>s{x}\n", idx: i + 1, action: f
+                                        ))
               end
               result = reader.read_line(NA::Color.template("#{NA.theme[:prompt]}#{prompt}{x}")).strip
               if multiple
                 mult_res = []
-                result = result.gsub(/,/, ' ').gsub(/ +/, ' ').split(/ /)
+                result = result.gsub(',', ' ').gsub(/ +/, ' ').split(/ /)
                 result.each do |r|
                   mult_res << options[r.to_i - 1] if r.to_i&.positive?
                 end
@@ -1056,19 +1115,20 @@ module NA
               end
             end
 
-      return false if res&.strip&.size&.zero?
+      return false if res&.strip&.empty?
+
       # pp NA::Color.uncolor(NA::Color.template(res))
-      multiple ? NA::Color.uncolor(NA::Color.template(res)).split(/\n/) : NA::Color.uncolor(NA::Color.template(res))
+      multiple ? NA::Color.uncolor(NA::Color.template(res)).split("\n") : NA::Color.uncolor(NA::Color.template(res))
     end
 
     private
 
-    ##
-    ## macOS open command
-    ##
-    ## @param      file  The file
-    ## @param      app   The application
-    ##
+    #
+    # macOS open command
+    #
+    # @param      file  The file
+    # @param      app   The application
+    #
     def darwin_open(file, app: nil)
       if app
         `open -a "#{app}" #{Shellwords.escape(file)}`
@@ -1077,20 +1137,20 @@ module NA
       end
     end
 
-    ##
-    ## Windows open command
-    ##
-    ## @param      file  The file
-    ##
+    #
+    # Windows open command
+    #
+    # @param      file  The file
+    #
     def win_open(file)
       `start #{Shellwords.escape(file)}`
     end
 
-    ##
-    ## Linux open command
-    ##
-    ## @param      file  The file
-    ##
+    #
+    # Linux open command
+    #
+    # @param      file  The file
+    #
     def linux_open(file)
       if TTY::Which.exist?('xdg-open')
         `xdg-open #{Shellwords.escape(file)}`

@@ -21,13 +21,13 @@ non-existent entries from the cache.'
     c.desc 'Prune removed files from cache after scan'
     c.switch %i[p prune], negatable: false, default_value: false
 
-  c.desc 'Include hidden directories and files while scanning'
-  c.switch %i[hidden], negatable: false, default_value: false
+    c.desc 'Include hidden directories and files while scanning'
+    c.switch %i[hidden], negatable: false, default_value: false
 
-  c.desc 'Show what would be added/pruned, but do not write tdlist.txt'
-  c.switch %i[n dry-run], negatable: false, default_value: false
+    c.desc 'Show what would be added/pruned, but do not write tdlist.txt'
+    c.switch %i[n dry-run], negatable: false, default_value: false
 
-  c.action do |_global_options, options, args|
+    c.action do |_global_options, options, args|
       base = args.first || Dir.pwd
       ext = NA.extension
 
@@ -40,7 +40,7 @@ non-existent entries from the cache.'
       # Prepare existing cache
       db = NA.database_path
       existing = if File.exist?(db)
-                   IO.read(db).split(/\n/).map(&:strip)
+                   File.read(db).split(/\n/).map(&:strip)
                  else
                    []
                  end
@@ -55,16 +55,12 @@ non-existent entries from the cache.'
         pattern = patterns.length == 1 ? patterns.first : "{#{patterns.join(',')}}"
         files = Dir.glob(pattern, File::FNM_DOTMATCH)
         # Exclude hidden dirs/files (any segment starting with '.') unless --hidden
-        unless options[:hidden]
-          files.reject! { |f| f.split('/').any? { |seg| seg.start_with?('.') && seg !~ /^\.\.?$/ } }
-        end
+        files.reject! { |f| f.split('/').any? { |seg| seg.start_with?('.') && seg !~ /^\.\.?$/ } } unless options[:hidden]
         found = files.map { |f| File.expand_path(f) }
       end
 
       merged = (existing + found).map(&:strip).uniq.sort
-      if options[:prune]
-        merged.select! { |f| File.exist?(f) }
-      end
+      merged.select! { |f| File.exist?(f) } if options[:prune]
 
       added_files = (merged - existing)
       pruned_files = options[:prune] ? (existing - merged) : []
@@ -75,18 +71,12 @@ non-existent entries from the cache.'
         msg = "#{NA.theme[:success]}Dry run: would add #{added} file#{added == 1 ? '' : 's'}"
         msg << ", prune #{pruned} file#{pruned == 1 ? '' : 's'}" if options[:prune]
         NA.notify(msg)
-        if added_files.any?
-          NA.notify("{bw}Would add:{x}\n" + added_files.join("\n"))
-        end
-        if options[:prune] && pruned_files.any?
-          NA.notify("{bw}Would prune:{x}\n" + pruned_files.join("\n"))
-        end
+        NA.notify("{bw}Would add:{x}\n#{added_files.join("\n")}") if added_files.any?
+        NA.notify("{bw}Would prune:{x}\n#{pruned_files.join("\n")}") if options[:prune] && pruned_files.any?
       else
         File.open(db, 'w') { |f| f.puts merged.join("\n") }
         msg = "#{NA.theme[:success]}Scan complete: #{NA.theme[:filename]}#{added}{x}#{NA.theme[:success]} added"
-        if options[:prune]
-          msg << ", #{NA.theme[:filename]}#{pruned}{x}#{NA.theme[:success]} pruned"
-        end
+        msg << ", #{NA.theme[:filename]}#{pruned}{x}#{NA.theme[:success]} pruned" if options[:prune]
         NA.notify(msg)
       end
     end

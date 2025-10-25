@@ -5,7 +5,7 @@ module NA
   # Terminal output color functions.
   module Color
     # Regexp to match excape sequences
-    ESCAPE_REGEX = /(?<=\[)(?:(?:(?:[349]|10)[0-9]|[0-9])?;?)+(?=m)/
+    ESCAPE_REGEX = /(?<=\[)(?:(?:(?:[349]|10)[0-9]|[0-9])?;?)+(?=m)/.freeze
 
     # All available color names. Available as methods and string extensions.
     #
@@ -99,35 +99,33 @@ module NA
 
     # Template coloring
     class ::String
-      ##
-      ## Extract the longest valid %color name from a string.
-      ##
-      ## Allows %colors to bleed into other text and still
-      ## be recognized, e.g. %greensomething still finds
-      ## %green.
-      ##
-      ## @return     [String] a valid color name
-      ##
+      # Extract the longest valid %color name from a string.
+      #
+      # Allows %colors to bleed into other text and still
+      # be recognized, e.g. %greensomething still finds
+      # %green.
+      #
+      # @return [String] a valid color name
       def validate_color
         valid_color = nil
         compiled = ''
-        normalize_color.split('').each do |char|
+        normalize_color.chars.each do |char|
           compiled += char
-          valid_color = compiled if Color.attributes.include?(compiled.to_sym) || compiled =~ /^([fb]g?)?#([a-f0-9]{6})$/i
+          if Color.attributes.include?(compiled.to_sym) || compiled =~ /^([fb]g?)?#([a-f0-9]{6})$/i
+            valid_color = compiled
+          end
         end
 
         valid_color
       end
 
-      ##
-      ## Normalize a color name, removing underscores,
-      ## replacing "bright" with "bold", and converting
-      ## bgbold to boldbg
-      ##
-      ## @return     [String] Normalized color name
-      ##
+      # Normalize a color name, removing underscores,
+      # replacing "bright" with "bold", and converting
+      # bgbold to boldbg
+      #
+      # @return [String] Normalized color name
       def normalize_color
-        gsub(/_/, '').sub(/bright/i, 'bold').sub(/bgbold/, 'boldbg')
+        gsub('_', '').sub(/bright/i, 'bold').sub('bgbold', 'boldbg')
       end
 
       # Get the calculated ANSI color at the end of the
@@ -159,20 +157,20 @@ module NA
               rgbb = c
             end
           else
-            c.split(/;/).each do |i|
+            c.split(';').each do |i|
               x = i.to_i
               if x <= 9
                 em << x
-              elsif x >= 30 && x <= 39
+              elsif x.between?(30, 39)
                 rgbf = nil
                 fg = x
-              elsif x >= 40 && x <= 49
+              elsif x.between?(40, 49)
                 rgbb = nil
                 bg = x
-              elsif x >= 90 && x <= 97
+              elsif x.between?(90, 97)
                 rgbf = nil
                 fg = x
-              elsif x >= 100 && x <= 107
+              elsif x.between?(100, 107)
                 rgbb = nil
                 bg = x
               end
@@ -265,9 +263,9 @@ module NA
         end
 
         # Convert to format string
-        fmt = processed_input.gsub(/%/, '%%')
+        fmt = processed_input.gsub('%', '%%')
         fmt = fmt.gsub(/(?<!\\)\{(\w+)\}/i) do
-          Regexp.last_match(1).split('').map { |c| "%<#{c}>s" }.join('')
+          Regexp.last_match(1).chars.map { |c| "%<#{c}>s" }.join
         end
 
         # Use pre-computed colors hash
@@ -306,7 +304,7 @@ module NA
       # Accept brightwhite in addition to boldwhite
       new_method = <<-EOSCRIPT
         # color string as #{c}
-        def #{c.to_s.sub(/bold/, 'bright')}(string = nil)
+        def #{c.to_s.sub('bold', 'bright')}(string = nil)
           result = ''
           result << "\e[#{v}m" if NA::Color.coloring?
           if block_given?
@@ -345,13 +343,12 @@ module NA
           t << parts[e]
           t << parts[e]
         end
-        hex_string = t.join('')
+        hex_string = t.join
       end
 
       parts = hex_string.match(/(?<r>..)(?<g>..)(?<b>..)/)
-      t = []
-      %w[r g b].each do |e|
-        t << parts[e].hex
+      t = %w[r g b].map do |e|
+        parts[e].hex
       end
 
       "\e[#{is_bg ? '48' : '38'};2;#{t.join(';')}m"
@@ -359,7 +356,7 @@ module NA
 
     # Regular expression that is used to scan for ANSI-sequences while
     # uncoloring strings.
-    COLORED_REGEXP = /\e\[(?:(?:(?:[349]|10)[0-9]|[0-9])?;?)+m/
+    COLORED_REGEXP = /\e\[(?:(?:(?:[349]|10)[0-9]|[0-9])?;?)+m/.freeze
 
     # Returns an uncolored version of the string, that is all
     # ANSI-sequences are stripped from the string.
@@ -379,6 +376,5 @@ module NA
     def attributes
       ATTRIBUTE_NAMES
     end
-    extend self
   end
 end

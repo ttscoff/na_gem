@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "test_helper"
 
 class FilenameIndicatorTest < Minitest::Test
@@ -5,7 +7,7 @@ class FilenameIndicatorTest < Minitest::Test
 
   def setup
     create_temp_files
-    Dir.mkdir(SUBDIR) unless Dir.exist?(SUBDIR)
+    FileUtils.mkdir_p(SUBDIR)
     NA.create_todo(File.join(SUBDIR, 'sub.taskpaper'), 'Sub')
   end
 
@@ -22,13 +24,13 @@ class FilenameIndicatorTest < Minitest::Test
     NA.show_cwd_indicator = false
     a = build_action('test.taskpaper')
     s = a.pretty(template: { templates: { output: '%filename%action' } }, detect_width: false)
-    refute_match(/\.\//, s, 'should not include ./ when flag is false and file in cwd')
+    refute_match(%r{\./}, s, 'should not include ./ when flag is false and file in cwd')
   end
 
   def test_cwd_indicator_shown_when_subdir_present
     NA.show_cwd_indicator = true
     a = build_action('test.taskpaper')
     s = a.pretty(template: { templates: { output: '%filename%action' } }, detect_width: false)
-    assert_match(/\.\//, s, 'should include ./ when flag is true')
+    assert_match(%r{\./}, s, 'should include ./ when flag is true')
   end
 end

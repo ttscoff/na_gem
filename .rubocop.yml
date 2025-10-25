@@ -1,4 +1,10 @@
+inherit_from: .rubocop_todo.yml
+
 AllCops:
     NewCops: enable
-
-inherit_from: .rubocop_todo.yml
+    Include:
+        - 'lib/na/**/*'
+    Exclude:
+        - 'pkg/**/*'
+        - 'test/**/*'
+        - 'bin/**/*'

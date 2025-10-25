@@ -3,6 +3,8 @@
 module NA
   module Theme
     class << self
+      # Returns a help string describing available color placeholders for themes.
+      # @return [String] Help text for theme placeholders
       def template_help
         <<~EOHELP
           Use {X} placeholders to apply colors. Available colors are:
@@ -22,6 +24,10 @@ module NA
         EOHELP
       end
 
+      # Loads the theme configuration, merging defaults with any custom theme file and the provided template.
+      # Writes the help text and theme YAML to the theme file.
+      # @param template [Hash] Additional theme settings to merge
+      # @return [Hash] The merged theme configuration
       def load_theme(template: {})
         NA::Benchmark.measure('Theme.load_theme') do
           # Default colorization, can be overridden with full or partial template variable
@@ -55,7 +61,7 @@ module NA
           # Load custom theme
           theme_file = NA.database_path(file: 'theme.yaml')
           theme = if File.exist?(theme_file)
-                    YAML.load(IO.read(theme_file)) || {}
+                    YAML.safe_load(File.read(theme_file)) || {}
                   else
                     {}
                   end

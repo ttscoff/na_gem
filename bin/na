@@ -83,7 +83,7 @@ class App
   switch %i[repo-top], default_value: false
 
   desc 'Provide a template for new/blank todo files, use initconfig to make permanent'
-  flag %[template]
+  flag %(template)
 
   desc 'Use current working directory as [p]roject, [t]ag, or [n]one'
   arg_name 'TYPE'
@@ -120,7 +120,7 @@ class App
     NA.include_ext = global[:include_ext]
     NA.na_tag = global[:na_tag]
     NA.global_file = global[:file]
-    NA.cwd = File.basename(ENV['PWD'])
+    NA.cwd = File.basename(ENV.fetch('PWD', nil))
     NA.cwd_is = if global[:cwd_as] =~ /^n/
                   :none
                 else
@@ -145,7 +145,8 @@ class App
           NA.global_file = taskpaper_file
           # Add this block to create the file if it doesn't exist
           unless File.exist?(taskpaper_file)
-            res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Repository file not found, create #{taskpaper_file}"), default: true)
+            res = NA.yn(NA::Color.template("#{NA.theme[:warning]}Repository file not found, create #{taskpaper_file}"),
+                        default: true)
             if res
               NA.create_todo(taskpaper_file, repo_name, template: global[:template])
             else
@@ -197,7 +198,7 @@ class App
 end
 
 NA.stdin = $stdin.read.strip if $stdin.stat.size.positive? || $stdin.fcntl(Fcntl::F_GETFL, 0).zero?
-NA.stdin = nil unless NA.stdin && NA.stdin.length.positive?
+NA.stdin = nil unless NA.stdin&.length&.positive?
 
 NA.globals = []
 NA.command_line = []

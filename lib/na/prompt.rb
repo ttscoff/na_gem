@@ -4,6 +4,10 @@ module NA
   # Prompt Hooks
   module Prompt
     class << self
+      # Generate the shell prompt hook script for na
+      #
+      # @param shell [Symbol] Shell type (:zsh, :fish, :bash)
+      # @return [String] Shell script for prompt hook
       def prompt_hook(shell)
         case shell
         when :zsh
@@ -14,7 +18,9 @@ module NA
                   when :tag
                     'na tagged $(basename "$PWD")'
                   else
-                    NA.notify("#{NA.theme[:error]}When using a global file, a prompt hook requires `--cwd_as [tag|project]`", exit_code: 1)
+                    NA.notify(
+                      "#{NA.theme[:error]}When using a global file, a prompt hook requires `--cwd_as [tag|project]`", exit_code: 1
+                    )
                   end
                 else
                   'na next'
@@ -31,7 +37,9 @@ module NA
                   when :tag
                     'na tagged (basename "$PWD")'
                   else
-                    NA.notify("#{NA.theme[:error]}When using a global file, a prompt hook requires `--cwd_as [tag|project]`", exit_code: 1)
+                    NA.notify(
+                      "#{NA.theme[:error]}When using a global file, a prompt hook requires `--cwd_as [tag|project]`", exit_code: 1
+                    )
                   end
                 else
                   'na next'
@@ -50,7 +58,9 @@ module NA
                   when :tag
                     'na tagged $(basename "$PWD")'
                   else
-                    NA.notify("#{NA.theme[:error]}When using a global file, a prompt hook requires `--cwd_as [tag|project]`", exit_code: 1)
+                    NA.notify(
+                      "#{NA.theme[:error]}When using a global file, a prompt hook requires `--cwd_as [tag|project]`", exit_code: 1
+                    )
                   end
                 else
                   'na next'
@@ -70,6 +80,10 @@ module NA
         end
       end
 
+      # Get the configuration file path for the given shell
+      #
+      # @param shell [Symbol] Shell type
+      # @return [String] Path to shell config file
       def prompt_file(shell)
         files = {
           zsh: '~/.zshrc',
@@ -80,6 +94,10 @@ module NA
         files[shell]
       end
 
+      # Display the prompt hook script and notify user of config file
+      #
+      # @param shell [Symbol] Shell type
+      # @return [void]
       def show_prompt_hook(shell)
         file = prompt_file(shell)
 
@@ -87,6 +105,10 @@ module NA
         puts prompt_hook(shell)
       end
 
+      # Install the prompt hook script into the shell config file
+      #
+      # @param shell [Symbol] Shell type
+      # @return [void]
       def install_prompt_hook(shell)
         file = prompt_file(shell)
 

@@ -4,28 +4,28 @@ module NA
   class Todo
     attr_accessor :actions, :projects, :files
 
+    # Initialize a Todo object and parse actions/projects/files
+    #
+    # @param options [Hash] Options for parsing todo files
+    # @return [void]
     def initialize(options = {})
       @files, @actions, @projects = parse(options)
     end
 
-    ##
-    ## Read a todo file and create a list of actions
-    ##
-    ## @param      options  The options
-    ##
-    ## @option      depth       [Number] The directory depth to
-    ##                         search for files
-    ## @option      done        [Boolean] include @done actions
-    ## @option      query       [Hash] The todo file query
-    ## @option      tag         [Array] Tags to search for
-    ## @option      search      [String] A search string
-    ## @option      negate      [Boolean] Invert results
-    ## @option      regex       [Boolean] Interpret as regular
-    ##                         expression
-    ## @option      project     [String] The project
-    ## @option      require_na  [Boolean] Require @na tag
-    ## @option      file_path   [String] file path to parse
-    ##
+    # Read a todo file and create a list of actions
+    #
+    # @param options [Hash] The options
+    # @option options [Number] :depth The directory depth to search for files
+    # @option options [Boolean] :done include @done actions
+    # @option options [Hash] :query The todo file query
+    # @option options [Array] :tag Tags to search for
+    # @option options [String] :search A search string
+    # @option options [Boolean] :negate Invert results
+    # @option options [Boolean] :regex Interpret as regular expression
+    # @option options [String] :project The project
+    # @option options [Boolean] :require_na Require @na tag
+    # @option options [String] :file_path file path to parse
+    # @return [Array] files, actions, projects
     def parse(options)
       NA::Benchmark.measure('Todo.parse') do
         defaults = {
@@ -54,8 +54,8 @@ module NA
         negated_tag = []
         projects = []
 
-        NA.notify("Tags: #{settings[:tag]}", debug:true)
-        NA.notify("Search: #{settings[:search]}", debug:true)
+        NA.notify("Tags: #{settings[:tag]}", debug: true)
+        NA.notify("Search: #{settings[:search]}", debug: true)
 
         settings[:tag]&.each do |t|
           unless t[:tag].nil?
@@ -117,7 +117,7 @@ module NA
             parent = []
             in_yaml = false
             in_action = false
-            content.split(/\n/).each.with_index do |line, idx|
+            content.split("\n").each.with_index do |line, idx|
               if in_yaml && line !~ /^(---|~~~)\s*$/
                 NA.notify("YAML: #{line}", debug: true)
               elsif line =~ /^(---|~~~)\s*$/
@@ -188,6 +188,11 @@ module NA
       end
     end
 
+    # Parse a search tag and categorize as optional, required, or negated
+    #
+    # @param tag [Hash] Search tag with :token, :negate, :required
+    # @param negate [Boolean] Invert results
+    # @return [Array<Array>] Arrays of optional, required, and negated regexes
     def parse_search(tag, negate)
       required = []
       optional = []
