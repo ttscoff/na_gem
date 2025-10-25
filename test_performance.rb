@@ -8,7 +8,7 @@ require_relative 'lib/na/benchmark'
 module NA
   module Color
     def self.template(input)
-      input.to_s  # Simple mock
+      input.to_s # Simple mock
     end
   end
 
@@ -41,15 +41,15 @@ end
 NA::Benchmark.init
 
 # Test the optimizations
-puts "Testing performance optimizations..."
+puts 'Testing performance optimizations...'
 
 # Test 1: Theme caching
 NA::Benchmark.measure('Theme loading (first time)') do
-  theme1 = NA::Theme.load_theme
+  NA::Theme.load_theme
 end
 
 NA::Benchmark.measure('Theme loading (cached)') do
-  theme2 = NA.theme
+  NA.theme
 end
 
 # Test 2: Color template caching
@@ -70,7 +70,7 @@ end
 
 NA::Benchmark.measure('Multiple color templates') do
   100.times do
-    NA::Color.template('{bg}Action {c}#{rand(1000)}{x}')
+    NA::Color.template("{bg}Action {c}#{rand(1000)}{x}")
   end
 end
 

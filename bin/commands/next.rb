@@ -19,6 +19,9 @@ class App
     c.arg_name "DEPTH"
     c.flag %i[d depth], type: :integer, must_match: /^[1-9]$/
 
+    c.desc "Include hidden directories while traversing"
+    c.switch %i[hidden], negatable: false, default_value: false
+
     c.desc "Show next actions from all known todo files (in any directory)"
     c.switch %i[all], negatable: false, default_value: false
 
@@ -217,6 +220,7 @@ class App
       file_path = options[:file] ? File.expand_path(options[:file]) : nil
 
       todo = NA::Todo.new({ depth: depth,
+                            hidden: options[:hidden],
                             done: options[:done],
                             file_path: file_path,
                             project: options[:project],

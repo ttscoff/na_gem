@@ -6,7 +6,7 @@ module NA
       attr_accessor :enabled, :timings
 
       def init
-        @enabled = ENV['NA_BENCHMARK'] == '1' || ENV['NA_BENCHMARK'] == 'true'
+        @enabled = %w[1 true].include?(ENV.fetch('NA_BENCHMARK', nil))
         @timings = []
         @start_time = Time.now
       end
@@ -25,20 +25,20 @@ module NA
         return unless @enabled
 
         total = @timings.sum { |t| t[:duration] }
-        $stderr.puts "\n#{NA::Color.template('{y}=== NA Performance Report ===')}"
-        $stderr.puts NA::Color.template("{dw}Total: {bw}#{total.round(2)}ms{x}")
-        $stderr.puts NA::Color.template("{dw}GC Count: {bw}#{GC.count}{x}") if defined?(GC)
-        $stderr.puts NA::Color.template("{dw}Memory: {bw}#{(GC.stat[:heap_live_slots] * 40 / 1024.0).round(1)}KB{x}") if defined?(GC)
-        $stderr.puts ""
+        warn "\n#{NA::Color.template('{y}=== NA Performance Report ===')}"
+        warn NA::Color.template("{dw}Total: {bw}#{total.round(2)}ms{x}")
+        warn NA::Color.template("{dw}GC Count: {bw}#{GC.count}{x}") if defined?(GC)
+        warn NA::Color.template("{dw}Memory: {bw}#{(GC.stat[:heap_live_slots] * 40 / 1024.0).round(1)}KB{x}") if defined?(GC)
+        warn ''
 
         @timings.each do |timing|
-          pct = total > 0 ? ((timing[:duration] / total) * 100).round(1) : 0
+          pct = total.positive? ? ((timing[:duration] / total) * 100).round(1) : 0
           bar = '█' * [(pct / 2).round, 50].min
-          $stderr.puts NA::Color.template(
+          warn NA::Color.template(
             "{dw}[{y}#{bar.ljust(25)}{dw}] {bw}#{timing[:duration].to_s.rjust(7)}ms {dw}(#{pct.to_s.rjust(5)}%) {x}#{timing[:label]}"
           )
         end
-        $stderr.puts NA::Color.template("{y}#{'=' * 50}{x}\n")
+        warn NA::Color.template("{y}#{'=' * 50}{x}\n")
       end
     end
   end

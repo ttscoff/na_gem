@@ -26,39 +26,39 @@ module NA
         NA::Benchmark.measure('Theme.load_theme') do
           # Default colorization, can be overridden with full or partial template variable
           default_template = {
-          parent: '{c}',
-          bracket: '{dc}',
-          parent_divider: '{xw}/',
-          action: '{bg}',
-          project: '{xbk}',
-          tags: '{m}',
-          value_parens: '{m}',
-          values: '{c}',
-          search_highlight: '{y}',
-          note: '{dw}',
-          dirname: '{xdw}',
-          filename: '{xb}{#eccc87}',
-          prompt: '{m}',
-          success: '{bg}',
-          error: '{b}{#b61d2a}',
-          warning: '{by}',
-          debug: '{dw}',
-          templates: {
-            output: '%filename%parents| %action',
-            default: '%parent%action',
-            single_file: '%parent%action',
-            multi_file: '%filename%parent%action',
-            no_file: '%parent%action'
+            parent: '{c}',
+            bracket: '{dc}',
+            parent_divider: '{xw}/',
+            action: '{bg}',
+            project: '{xbk}',
+            tags: '{m}',
+            value_parens: '{m}',
+            values: '{c}',
+            search_highlight: '{y}',
+            note: '{dw}',
+            dirname: '{xdw}',
+            filename: '{xb}{#eccc87}',
+            prompt: '{m}',
+            success: '{bg}',
+            error: '{b}{#b61d2a}',
+            warning: '{by}',
+            debug: '{dw}',
+            templates: {
+              output: '%filename%parents| %action',
+              default: '%parent%action',
+              single_file: '%parent%action',
+              multi_file: '%filename%parent%action',
+              no_file: '%parent%action'
+            }
           }
-        }
 
-        # Load custom theme
-        theme_file = NA.database_path(file: 'theme.yaml')
-        theme = if File.exist?(theme_file)
-                  YAML.load(IO.read(theme_file)) || {}
-                else
-                  {}
-                end
+          # Load custom theme
+          theme_file = NA.database_path(file: 'theme.yaml')
+          theme = if File.exist?(theme_file)
+                    YAML.load(IO.read(theme_file)) || {}
+                  else
+                    {}
+                  end
           theme = default_template.deep_merge(theme)
 
           File.open(theme_file, 'w') do |f|

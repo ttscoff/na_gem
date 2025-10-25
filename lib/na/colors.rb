@@ -208,10 +208,10 @@ module NA
       # Pre-computed colors hash (expensive to create, so we cache it)
       def colors_hash
         @colors_hash ||= { w: white, k: black, g: green, l: blue,
-                          y: yellow, c: cyan, m: magenta, r: red,
-                          W: bgwhite, K: bgblack, G: bggreen, L: bgblue,
-                          Y: bgyellow, C: bgcyan, M: bgmagenta, R: bgred,
-                          d: dark, b: bold, u: underline, i: italic, x: reset }
+                           y: yellow, c: cyan, m: magenta, r: red,
+                           W: bgwhite, K: bgblack, G: bggreen, L: bgblue,
+                           Y: bgyellow, C: bgcyan, M: bgmagenta, R: bgred,
+                           d: dark, b: bold, u: underline, i: italic, x: reset }
       end
 
       ##

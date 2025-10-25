@@ -6,6 +6,7 @@ require 'fileutils'
 # Add helper classes or methods here, too
 
 def create_temp_files
+  NA.extension = 'taskpaper'
   NA.create_todo('test.taskpaper', 'test')
   NA.create_todo('test2.taskpaper', 'test2')
 end

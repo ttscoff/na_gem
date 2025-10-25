@@ -105,17 +105,22 @@ module NA
 
         # Create the project string (optimized)
         project = if needs_project && !@project.empty?
-                    NA::Color.template("#{template[:project]}#{@project}{x} ")
+                    NA::Color.template("{x}#{template[:project]}#{@project}{x} ")
                   else
                     ''
                   end
 
         # Create the source filename string (optimized)
         filename = if needs_filename
-                     file = @file.sub(%r{^\./}, '').sub(/#{ENV['HOME']}/, '~')
-                     file = file.sub(/\.#{extension}$/, '') unless NA.include_ext
-                     file = file.highlight_filename
-                     NA::Color.template("#{template[:filename]}#{file} {x}")
+                     path = @file.sub(%r{^\./}, '').sub(/#{ENV['HOME']}/, '~')
+                     # When not showing cwd indicator and file is in '.', omit './'
+                     if File.dirname(path) == '.' && !NA.show_cwd_indicator
+                       fname = NA.include_ext ? File.basename(path) : File.basename(path, ".#{extension}")
+                       NA::Color.template("#{template[:filename]}#{fname} {x}")
+                     else
+                       colored = (NA.include_ext ? path : path.sub(/\.#{extension}$/, '')).highlight_filename
+                       NA::Color.template("#{template[:filename]}#{colored} {x}")
+                     end
                    else
                      ''
                    end
@@ -143,10 +148,10 @@ module NA
               indent = NA::Color.uncolor(NA::Color.template(base_output)).length
               note = NA::Color.template(@note.wrap(width, indent, template[:note]))
             else
-              note = NA::Color.template("\n#{@note.map { |l| "  #{template[:note]}• #{l}{x}" }.join("\n")}")
+              note = NA::Color.template("\n#{@note.map { |l| "  {x}#{template[:note]}• #{l}{x}" }.join("\n")}")
             end
           else
-            action += "#{template[:note]}*"
+            action += "{x}#{template[:note]}*"
           end
         end
 

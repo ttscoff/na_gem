@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
+
 require 'tty-progressbar'
 require 'shellwords'
 
@@ -21,7 +23,6 @@ class ::String
 end
 
 class FishCompletions
-
   attr_accessor :commands, :global_options
 
   def generate_helpers
@@ -68,7 +69,7 @@ class FishCompletions
     sections = {}
     scanned.each do |sect|
       title = sect[0].downcase.strip.gsub(/ +/, '_').to_sym
-      content = sect[1].split(/\n/).map(&:strip).delete_if(&:empty?)
+      content = sect[1].split("\n").map(&:strip).delete_if(&:empty?)
       sections[title] = content
     end
     sections
@@ -77,6 +78,7 @@ class FishCompletions
   def parse_option(option)
     res = option.match(/(?:-(?<short>\w), )?(?:--(?:\[no-\])?(?<long>w+)(?:=(?<arg>\w+))?)\s+- (?<desc>.*?)$/)
     return nil unless res
+
     {
       short: res['short'],
       long: res['long'],
@@ -92,7 +94,7 @@ class FishCompletions
   def parse_command(command)
     res = command.match(/^(?<cmd>[^, \t]+)(?<alias>(?:, [^, \t]+)*)?\s+- (?<desc>.*?)$/)
     commands = [res['cmd']]
-    commands.concat(res['alias'].split(/, /).delete_if(&:empty?)) if res['alias']
+    commands.concat(res['alias'].split(', ').delete_if(&:empty?)) if res['alias']
 
     {
       commands: commands,
@@ -106,7 +108,7 @@ class FishCompletions
 
   def generate_subcommand_completions
     out = []
-    @commands.each_with_index do |cmd, i|
+    @commands.each_with_index do |cmd, _i|
       out << "complete -xc na -n '__fish_na_needs_command' -a '#{cmd[:commands].join(' ')}' -d #{Shellwords.escape(cmd[:description])}"
     end
 
@@ -114,35 +116,30 @@ class FishCompletions
   end
 
   def generate_subcommand_option_completions
-
     out = []
     need_export = []
 
-    @commands.each_with_index do |cmd, i|
+    @commands.each_with_index do |cmd, _i|
       @bar.advance
       data = get_help_sections(cmd[:commands].first)
 
-      if data[:synopsis].join(' ').strip.split(/ /).last =~ /(path|file)/i
-        out << "complete -c na -F -n '__fish_na_using_command #{cmd[:commands].join(" ")}'"
-      end
+      out << "complete -c na -F -n '__fish_na_using_command #{cmd[:commands].join(' ')}'" if data[:synopsis].join(' ').strip.split(/ /).last =~ /(path|file)/i
 
-      if data[:command_options]
-        parse_options(data[:command_options]).each do |option|
-          next if option.nil?
+      next unless data[:command_options]
 
-          arg = option[:arg] ? '-r' : ''
-          short = option[:short] ? "-s #{option[:short]}" : ''
-          long = option[:long] ? "-l #{option[:long]}" : ''
-          out << "complete -c na #{long} #{short} -f #{arg} -n '__fish_na_using_command #{cmd[:commands].join(' ')}' -d #{Shellwords.escape(option[:description])}"
+      parse_options(data[:command_options]).each do |option|
+        next if option.nil?
 
-          need_export.concat(cmd[:commands]) if option[:long] == 'output'
-        end
+        arg = option[:arg] ? '-r' : ''
+        short = option[:short] ? "-s #{option[:short]}" : ''
+        long = option[:long] ? "-l #{option[:long]}" : ''
+        out << "complete -c na #{long} #{short} -f #{arg} -n '__fish_na_using_command #{cmd[:commands].join(' ')}' -d #{Shellwords.escape(option[:description])}"
+
+        need_export.concat(cmd[:commands]) if option[:long] == 'output'
       end
     end
 
-    unless need_export.empty?
-      out << "complete -f -c na -s o -l output -x -n '__fish_na_using_command #{need_export.join(' ')}' -a '(__fish_na_export_plugins)'"
-    end
+    out << "complete -f -c na -s o -l output -x -n '__fish_na_using_command #{need_export.join(' ')}' -a '(__fish_na_export_plugins)'" unless need_export.empty?
 
     # clear
     out.join("\n")

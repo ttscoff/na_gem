@@ -5,7 +5,7 @@ module NA
   class << self
     include NA::Editor
 
-    attr_accessor :verbose, :extension, :include_ext, :na_tag, :command_line, :command, :globals, :global_file, :cwd_is, :cwd, :stdin
+    attr_accessor :verbose, :extension, :include_ext, :na_tag, :command_line, :command, :globals, :global_file, :cwd_is, :cwd, :stdin, :show_cwd_indicator
 
     def theme
       @theme ||= NA::Theme.load_theme
@@ -352,12 +352,12 @@ module NA
         notify(add.pretty)
 
         # Track affected action and description
-        changes = ["added"]
-        changes << "finished" if finish
+        changes = ['added']
+        changes << 'finished' if finish
         changes << "priority=#{priority}" if priority.to_i.positive?
         changes << "tags+#{add_tag.join(',')}" unless add_tag.nil? || add_tag.empty?
         changes << "tags-#{remove_tag.join(',')}" unless remove_tag.nil? || remove_tag.empty?
-        changes << "note updated" unless note.nil? || note.empty?
+        changes << 'note updated' unless note.nil? || note.empty?
         affected_actions << { action: add, desc: changes.join(', ') }
       else
         _, actions = find_actions(target, search, tagged, done: done, all: all, project: project, search_note: search_note)
@@ -425,15 +425,15 @@ module NA
 
           # Track affected action and description
           changes = []
-          changes << "finished" if finish
-          changes << "edited" if edit
+          changes << 'finished' if finish
+          changes << 'edited' if edit
           changes << "priority=#{priority}" if priority.to_i.positive?
           changes << "tags+#{add_tag.join(',')}" unless add_tag.nil? || add_tag.empty?
           changes << "tags-#{remove_tag.join(',')}" unless remove_tag.nil? || remove_tag.empty?
-          changes << "text replaced" if replace
+          changes << 'text replaced' if replace
           changes << "moved to #{target_proj.project}" if target_proj
-          changes << "note updated" unless note.nil? || note.empty?
-          changes = ["updated"] if changes.empty?
+          changes << 'note updated' unless note.nil? || note.empty?
+          changes = ['updated'] if changes.empty?
           affected_actions << { action: action, desc: changes.join(', ') }
         end
       end
@@ -454,12 +454,10 @@ module NA
           action_color = delete ? NA.theme[:error] : NA.theme[:success]
           notify("  #{entry[:action].to_s_pretty} — #{action_color}#{entry[:desc]}")
         end
+      elsif add
+        notify("#{NA.theme[:success]}Task added to #{NA.theme[:filename]}#{target}")
       else
-        if add
-          notify("#{NA.theme[:success]}Task added to #{NA.theme[:filename]}#{target}")
-        else
-          notify("#{NA.theme[:success]}Task updated in #{NA.theme[:filename]}#{target}")
-        end
+        notify("#{NA.theme[:success]}Task updated in #{NA.theme[:filename]}#{target}")
       end
     end
 
@@ -549,21 +547,32 @@ module NA
     end
 
     ##
-    ## Use the *nix `find` command to locate files matching NA.extension
+    ## Locate files matching NA.extension up to a given depth
     ##
     ## @param      depth  [Number] The depth at which to search
     ##
-    def find_files(depth: 1)
+    def find_files(depth: 1, include_hidden: false)
       NA::Benchmark.measure("find_files (depth=#{depth})") do
         return [NA.global_file] if NA.global_file
 
-        pattern = if depth == 1
-                    "*.#{NA.extension}"
-                  else
-                    "{#{'*,' * (depth - 1)}*}.#{NA.extension}"
-                  end
+        # Build a brace-expanded pattern list covering 1..depth levels, e.g.:
+        # depth=1 -> "*.ext"
+        # depth=3 -> "{*.ext,*/*.ext,*/*/*.ext}"
+        ext = NA.extension
+        patterns = (1..[depth.to_i, 1].max).map do |d|
+          prefix = d > 1 ? ('*/' * (d - 1)) : ''
+          "#{prefix}*.#{ext}"
+        end
+        pattern = patterns.length == 1 ? patterns.first : "{#{patterns.join(',')}}"
 
-        files = Dir.glob(pattern, File::FNM_DOTMATCH).reject { |f| f.start_with?('.') }
+        files = Dir.glob(pattern, File::FNM_DOTMATCH)
+        # Exclude hidden directories/files unless explicitly requested
+        unless include_hidden
+          files.reject! do |f|
+            # reject any path segment beginning with '.' (excluding '.' and '..')
+            f.split('/').any? { |seg| seg.start_with?('.') && seg !~ /^\.\.?$/ }
+          end
+        end
         files.each { |f| save_working_dir(File.expand_path(f)) }
         files
       end
@@ -575,6 +584,7 @@ module NA
         done: false,
         file_path: nil,
         negate: false,
+        hidden: false,
         project: nil,
         query: nil,
         regex: false,
@@ -583,7 +593,7 @@ module NA
         tag: nil
       }
       options = defaults.merge(options)
-      files = find_files(depth: options[:depth])
+      files = find_files(depth: options[:depth], include_hidden: options[:hidden])
 
       files.delete_if do |file|
         cmd_options = {

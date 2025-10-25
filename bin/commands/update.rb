@@ -192,7 +192,7 @@ class App
       # Require at least one actionable option to be provided
       actionable = [
         options[:note],
-        (options[:priority].to_i if options[:priority]).to_i > 0,
+        (options[:priority].to_i if options[:priority]).to_i.positive?,
         !options[:move].to_s.empty?,
         !(options[:tag].nil? || options[:tag].empty?),
         !(options[:remove].nil? || options[:remove].empty?),

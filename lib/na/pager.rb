@@ -53,11 +53,23 @@ module NA
           # Wait for pager to complete
           _, status = Process.waitpid2(pid)
           status.success?
-        rescue SystemCallError => e
+        rescue SystemCallError
           # Clean up on error
-          write_io.close rescue nil
-          Process.kill('TERM', pid) rescue nil
-          Process.waitpid(pid) rescue nil
+          begin
+            write_io.close
+          rescue StandardError
+            nil
+          end
+          begin
+            Process.kill('TERM', pid)
+          rescue StandardError
+            nil
+          end
+          begin
+            Process.waitpid(pid)
+          rescue StandardError
+            nil
+          end
           false
         end
       end
