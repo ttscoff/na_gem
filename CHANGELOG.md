@@ -1,6 +1,6 @@
 ### 1.2.81
 
-2025-10-25 05:18
+2025-10-25 07:32
 
 #### NEW
 
@@ -9,6 +9,8 @@
 #### IMPROVED
 
 - Rubocop cleanup
+- YARD documentation
+- Test coverage
 
 #### FIXED
 
