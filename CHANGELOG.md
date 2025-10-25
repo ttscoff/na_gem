@@ -1,3 +1,12 @@
+### 1.2.83
+
+2025-10-25 10:06
+
+#### FIXED
+
+- Gracefully ignore -d X commands where X is deeper than existing structure
+- Allow depth > 9
+
 ### 1.2.82
 
 2025-10-25 09:47
