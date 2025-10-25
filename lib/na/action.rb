@@ -59,7 +59,7 @@ module NA
              else
                ''
              end
-      "#{NA.theme[:filename]}#{File.basename(@file)}:#{@line}#{NA.theme[:bracket]}[#{NA.theme[:project]}#{@project}:#{@parent.join(">")}#{NA.theme[:bracket]}]{x} | #{NA.theme[:action]}#{@action}#{NA.theme[:note]}#{note}"
+      "{x}#{NA.theme[:filename]}#{File.basename(@file)}:#{@line}{x}#{NA.theme[:bracket]}[{x}#{NA.theme[:project]}#{@project}:#{@parent.join(">")}{x}#{NA.theme[:bracket]}]{x} | #{NA.theme[:action]}#{@action}{x}#{NA.theme[:note]}#{note}"
     end
 
     def inspect
@@ -98,7 +98,7 @@ module NA
         # Create the hierarchical parent string (optimized)
         parents = if needs_parents && @parent.any?
                     parent_parts = @parent.map { |par| "#{template[:parent]}#{par}" }.join(template[:parent_divider])
-                    NA::Color.template("{x}#{template[:bracket]}[#{template[:error]}#{parent_parts}#{template[:bracket]}]{x} ")
+                    NA::Color.template("{x}#{template[:bracket]}[#{template[:error]}#{parent_parts}{x}#{template[:bracket]}]{x} ")
                   else
                     ''
                   end
