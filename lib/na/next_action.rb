@@ -319,9 +319,8 @@ module NA
   add_tag ||= []
   add.process(priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
 
-        # Update the action in-place at its line in the file
-        action_line = add.line
         # Remove the original action and its notes
+        action_line = add.line
         note_lines = add.note.is_a?(Array) ? add.note.count : 0
         contents.slice!(action_line, note_lines + 1)
 
@@ -335,9 +334,6 @@ module NA
 
         # Prepare indentation
         projects = find_projects(target)
-        warn "[DEBUG] move: #{move.inspect}"
-        warn "[DEBUG] target_proj: #{target_proj.inspect}"
-        warn "[DEBUG] add.parent: #{add.parent.inspect}"
         # If move is set, update add.parent to the target project
         if move && target_proj
           add.parent = target_proj.project.split(':')
@@ -348,8 +344,20 @@ module NA
         # Format note for insertion
         note_str = updated_note.empty? ? '' : "\n#{indent}\t\t#{updated_note.join("\n#{indent}\t\t").strip}"
 
-        # Insert updated action and note at the original line
-        contents.insert(action_line, "#{indent}\t- #{add.action}#{note_str}")
+        # Insert at correct location: if moving, insert at start/end of target project
+        if move && target_proj
+          insert_line = if append
+            # End of project
+            target_proj.last_line + 1
+          else
+            # Start of project (after project header)
+            target_proj.line + 1
+          end
+          contents.insert(insert_line, "#{indent}\t- #{add.action}#{note_str}")
+        else
+          # Not moving, update in-place
+          contents.insert(action_line, "#{indent}\t- #{add.action}#{note_str}")
+        end
 
         notify(add.pretty)
 
@@ -360,6 +368,7 @@ module NA
         changes << "tags+#{add_tag.join(',')}" unless add_tag.nil? || add_tag.empty?
         changes << "tags-#{remove_tag.join(',')}" unless remove_tag.nil? || remove_tag.empty?
         changes << 'note updated' unless note.nil? || note.empty?
+        changes << "moved to #{target_proj.project}" if move && target_proj
         affected_actions << { action: add, desc: changes.join(', ') }
       else
         _, actions = find_actions(target, search, tagged, done: done, all: all, project: project,

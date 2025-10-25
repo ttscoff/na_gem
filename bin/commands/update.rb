@@ -280,10 +280,10 @@ class App
           { key: :note, label: 'Add Note', param: 'Note' }
         ]
         selector = nil
-        if TTY::Which.exist?('gum')
-          selector = 'gum choose'
-        elsif TTY::Which.exist?('fzf')
+        if TTY::Which.exist?('fzf')
           selector = 'fzf --prompt="Select action> "'
+        elsif TTY::Which.exist?('gum')
+          selector = 'gum choose'
         end
         menu_labels = actions_menu.map { |a| a[:label] }
         selected_action = nil
@@ -326,6 +326,12 @@ class App
         when :finish
           options[:finish] = true
         when :edit
+          # Open editor for the selected action and update its content
+          edit_action = targets_for_selection[selected_indices.first][:action]
+          editor_content = "#{edit_action.action}\n#{edit_action.note.join("\n")}"
+          new_action, new_note = NA::Editor.format_input(NA::Editor.fork_editor(editor_content))
+          edit_action.action = new_action
+          edit_action.note = new_note
           options[:edit] = true
         when :priority
           options[:priority] = param_value
@@ -336,10 +342,10 @@ class App
           project_names = todo.projects.map { |proj| proj.project }
           project_menu = project_names + ['New project']
           move_selector = nil
-          if TTY::Which.exist?('gum')
-            move_selector = 'gum choose'
-          elsif TTY::Which.exist?('fzf')
+          if TTY::Which.exist?('fzf')
             move_selector = 'fzf --prompt="Select project> "'
+          elsif TTY::Which.exist?('gum')
+            move_selector = 'gum choose'
           end
           selected_project = nil
           if move_selector
