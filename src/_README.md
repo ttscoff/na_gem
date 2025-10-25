@@ -11,7 +11,7 @@ _If you're one of the rare people like me who find this useful, feel free to
 
 The current version of `na` is <!--VER-->1.2.80<!--END VER-->.
 
-`na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder. 
+`na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder.
 
 Used with Taskpaper files, it can add new action items quickly from the command line, automatically tagging them as next actions. It can also mark actions as completed, delete them, archive them, and move them between projects.
 
@@ -48,7 +48,7 @@ You can list next actions in files in the current directory by typing `na`. By d
 
 #### Adding todos
 
-You can also quickly add todo items from the command line with the `add` subcommand. The script will look for a file in the current directory with a `.taskpaper` extension (configurable). 
+You can also quickly add todo items from the command line with the `add` subcommand. The script will look for a file in the current directory with a `.taskpaper` extension (configurable).
 
 If found, it will try to locate an `Inbox:` project, or create one if it doesn't exist. Any arguments after `add` will be combined to create a new task in TaskPaper format. They will automatically be assigned as next actions (tagged `@na`) and will show up when `na` lists the tasks for the project.
 
@@ -82,7 +82,7 @@ If you run the `add` command with no arguments, you'll be asked for input on the
 
 ###### Adding notes
 
-Use the `--note` switch to add a note. If STDIN (piped) input is present when this switch is used, it will be included in the note. A prompt will be displayed for adding additional notes, which will be appended to any STDIN note passed. Press CTRL-d to end editing and save the note. 
+Use the `--note` switch to add a note. If STDIN (piped) input is present when this switch is used, it will be included in the note. A prompt will be displayed for adding additional notes, which will be appended to any STDIN note passed. Press CTRL-d to end editing and save the note.
 
 Notes are not displayed by the `next/tagged/find` commands unless `--notes` is specified.
 
@@ -161,6 +161,24 @@ Run `na saved` without an argument to list your saved searches.
 
 ```
 @cli(bundle exec bin/na help saved)
+```
+
+##### scan
+
+Scan a directory tree for todo files and cache them in tdlist.txt. Avoids duplicates and can optionally prune non-existent entries.
+
+Example usage:
+
+    na scan
+    na scan -d 3 ~/Projects
+    na scan -d inf --hidden
+    na scan --prune
+    na scan --dry-run
+
+Scan reports how many files were added and, if --prune is used, how many were pruned. With --dry-run, it lists the full file paths that would be added and/or pruned.
+
+```
+@cli(bundle exec bin/na help scan)
 ```
 
 ##### tagged
