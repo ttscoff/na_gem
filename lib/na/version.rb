@@ -8,8 +8,5 @@
 module Na
   ##
   # Current version of the na gem.
-  #
-  # @example Get the current version
-  #   Na::VERSION #=> '1.2.85'
   VERSION = '1.2.85'
 end
