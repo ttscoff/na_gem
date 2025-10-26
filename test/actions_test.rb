@@ -1,6 +1,6 @@
 require_relative "test_helper"
 require 'ostruct'
-require "na/actions"
+require 'na/actions'
 
 class ActionsTest < Minitest::Test
   def test_initialize_empty

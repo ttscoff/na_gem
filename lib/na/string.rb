@@ -1,12 +1,32 @@
+# frozen_string_literal: true
+
+# Special handling for nil strings
 class ::NilClass
+  # Always returns an empty string for nil.
+  # @return [String]
+  def highlight_filename
+    ''
+  end
+
+  # Always returns an empty string for nil.
+  # @param max [Integer] Maximum allowed length
+  # @return [String]
   def trunc_middle(max)
     ''
   end
 end
-# frozen_string_literal: true
 
+
+# Matches day names (e.g., mon, tue, wednesday)
+# @return [Regexp]
 REGEX_DAY = /^(mon|tue|wed|thur?|fri|sat|sun)(\w+(day)?)?$/i.freeze
+
+# Matches clock times (e.g., 12:30 pm, midnight)
+# @return [String]
 REGEX_CLOCK = '(?:\d{1,2}+(?::\d{1,2}+)?(?: *(?:am|pm))?|midnight|noon)'
+
+# Matches time strings using REGEX_CLOCK
+# @return [Regexp]
 REGEX_TIME = /^#{REGEX_CLOCK}$/i.freeze
 
 # String helpers
@@ -30,6 +50,10 @@ class ::String
     line =~ /^#/ || line.strip.empty?
   end
 
+  # Returns the contents of the file, or raises if missing.
+  # Handles directories and NA extension.
+  # @return [String] Contents of the file
+  # @raise [RuntimeError] if the file does not exist
   def read_file
     file = File.expand_path(self)
     raise "Missing file #{file}" unless File.exist?(file)
@@ -69,11 +93,15 @@ class ::String
     !action? && self =~ /:( +@\S+(\([^)]*\))?)*$/
   end
 
+  # Returns the project name if matched, otherwise nil.
+  # @return [String, nil]
   def project
     m = match(/^([ \t]*)([^\-][^@:]*?): *(@\S+ *)*$/)
     m ? m[2] : nil
   end
 
+  # Returns the action text with leading dash and whitespace removed.
+  # @return [String]
   def action
     sub(/^[ \t]*- /, '')
   end
@@ -89,6 +117,8 @@ class ::String
   # Colorize the dirname and filename of a path
   # @return [String] Colorized string
   def highlight_filename
+    return '' if nil?
+
     dir = File.dirname(self).shorten_path.trunc_middle(TTY::Screen.columns / 3)
     file = NA.include_ext ? File.basename(self) : File.basename(self, ".#{NA.extension}")
     "#{NA.theme[:dirname]}#{dir}/#{NA.theme[:filename]}#{file}{x}"
@@ -140,14 +170,15 @@ class ::String
   # @param max [Integer] Maximum allowed length of the string
   # @return [String] Truncated string with middle replaced if necessary
   def trunc_middle(max)
-  return '' if self.nil?
-  return self unless length > max
+    return '' if nil?
 
-  half = (max / 2).floor - 3
-  cs = chars
-  pre = cs.slice(0, half)
-  post = cs.reverse.slice(0, half).reverse
-  "#{pre.join}[...]#{post.join}"
+    return self unless length > max
+
+    half = (max / 2).floor - 3
+    cs = chars
+    pre = cs.slice(0, half)
+    post = cs.reverse.slice(0, half).reverse
+    "#{pre.join}[...]#{post.join}"
   end
 
   # Wrap the string to a given width, indenting each line and preserving tag formatting.

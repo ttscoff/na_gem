@@ -42,4 +42,8 @@ class StringExtTest < Minitest::Test
     assert "   ".blank?
     refute "not blank".blank?
   end
+
+  def test_highlight_filename_with_nil
+    assert_equal '', nil.highlight_filename
+  end
 end

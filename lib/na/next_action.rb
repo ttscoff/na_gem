@@ -8,10 +8,24 @@ module NA
     attr_accessor :verbose, :extension, :include_ext, :na_tag, :command_line, :command, :globals, :global_file,
                   :cwd_is, :cwd, :stdin, :show_cwd_indicator
 
+    # Returns the current theme hash for color and style settings.
+    # @return [Hash] The theme settings
+    # Returns the current theme hash for color and style settings.
+    # @return [Hash] The theme settings
     def theme
       @theme ||= NA::Theme.load_theme
     end
 
+    # Print a message to stderr, optionally exit or debug.
+    # @param msg [String] The message to print
+    # @param exit_code [Integer, Boolean] Exit code or false for no exit
+    # @param debug [Boolean] Only print if verbose
+    # @return [void]
+    # Print a message to stderr, optionally exit or debug.
+    # @param msg [String] The message to print
+    # @param exit_code [Integer, Boolean] Exit code or false for no exit
+    # @param debug [Boolean] Only print if verbose
+    # @return [void]
     def notify(msg, exit_code: false, debug: false)
       return if debug && !NA.verbose
 
@@ -23,6 +37,10 @@ module NA
       Process.exit exit_code if exit_code
     end
 
+    # Returns a map of priority levels to numeric values.
+    # @return [Hash{String=>Integer}] Priority mapping
+    # Returns a map of priority levels to numeric values.
+    # @return [Hash{String=>Integer}] Priority mapping
     def priority_map
       {
         'h' => 5,
@@ -128,7 +146,17 @@ module NA
       end
     end
 
-    def shift_index_after(projects, idx, length = 1)
+    # Shift project indices after a given index by a length.
+    # @param projects [Array<NA::Project>] Projects to shift
+    # @param idx [Integer] Index after which to shift
+    # @param length [Integer] Amount to shift
+    # @return [Array<NA::Project>] Shifted projects
+  # Shift project indices after a given index by a length.
+  # @param projects [Array<NA::Project>] Projects to shift
+  # @param idx [Integer] Index after which to shift
+  # @param length [Integer] Amount to shift
+  # @return [Array<NA::Project>] Shifted projects
+  def shift_index_after(projects, idx, length = 1)
       projects.map do |proj|
         proj.line = proj.line - length if proj.line > idx
         proj.last_line = proj.last_line - length if proj.last_line > idx
@@ -602,7 +630,33 @@ module NA
       end
     end
 
-    def find_files_matching(options = {})
+  # Find files matching criteria and containing actions.
+  # @param options [Hash] Options for file search
+  # @option options [Integer] :depth Search depth
+  # @option options [Boolean] :done Include done actions
+  # @option options [String] :file_path File path
+  # @option options [Boolean] :negate Negate search
+  # @option options [Boolean] :hidden Include hidden files
+  # @option options [String] :project Project name
+  # @option options [String] :query Query string
+  # @option options [Boolean] :regex Use regex
+  # @option options [String] :search Search string
+  # @option options [String] :tag Tag to filter
+  # @return [Array<String>] Matching files
+  # Find files matching criteria and containing actions.
+  # @param options [Hash] Options for file search
+  # @option options [Integer] :depth Search depth
+  # @option options [Boolean] :done Include done actions
+  # @option options [String] :file_path File path
+  # @option options [Boolean] :negate Negate search
+  # @option options [Boolean] :hidden Include hidden files
+  # @option options [String] :project Project name
+  # @option options [String] :query Query string
+  # @option options [Boolean] :regex Use regex
+  # @option options [String] :search Search string
+  # @option options [String] :tag Tag to filter
+  # @return [Array<String>] Matching files
+  def find_files_matching(options = {})
       defaults = {
         depth: 1,
         done: false,
@@ -690,7 +744,15 @@ module NA
       end
     end
 
-    def find_exact_dir(dirs, search)
+  # Find a directory with an exact match from a list.
+  # @param dirs [Array<String>] Directories to search
+  # @param search [Array<Hash>] Search tokens
+  # @return [Array<String>] Matching directories
+  # Find a directory with an exact match from a list.
+  # @param dirs [Array<String>] Directories to search
+  # @param search [Array<Hash>] Search tokens
+  # @return [Array<String>] Matching directories
+  def find_exact_dir(dirs, search)
       terms = search.filter { |s| !s[:negate] }.map { |t| t[:token] }.join(' ')
       out = dirs
       dirs.each do |dir|
@@ -878,7 +940,19 @@ module NA
       File.open(file, 'w') { |f| f.puts dirs.join("\n") }
     end
 
-    def list_projects(query: [], file_path: nil, depth: 1, paths: true)
+  # List projects in a todo file or matching query.
+  # @param query [Array] Query tokens
+  # @param file_path [String, nil] File path
+  # @param depth [Integer] Search depth
+  # @param paths [Boolean] Show full paths
+  # @return [void]
+  # List projects in a todo file or matching query.
+  # @param query [Array] Query tokens
+  # @param file_path [String, nil] File path
+  # @param depth [Integer] Search depth
+  # @param paths [Boolean] Show full paths
+  # @return [void]
+  def list_projects(query: [], file_path: nil, depth: 1, paths: true)
       files = if NA.global_file
                 [NA.global_file]
               elsif !file_path.nil?
@@ -906,7 +980,13 @@ module NA
       end
     end
 
-    def list_todos(query: [])
+  # List todo files matching a query.
+  # @param query [Array] Query tokens
+  # @return [void]
+  # List todo files matching a query.
+  # @param query [Array] Query tokens
+  # @return [void]
+  def list_todos(query: [])
       dirs = if query
                match_working_dir(query, distance: 2, require_last: false)
              else
@@ -922,7 +1002,15 @@ module NA
       puts NA::Color.template(dirs.join("\n"))
     end
 
-    def save_search(title, search)
+  # Save a search definition to the database.
+  # @param title [String] The search title
+  # @param search [String] The search string
+  # @return [void]
+  # Save a search definition to the database.
+  # @param title [String] The search title
+  # @param search [String] The search string
+  # @return [void]
+  def save_search(title, search)
       file = database_path(file: 'saved_searches.yml')
       searches = load_searches
       title = title.gsub(/[^a-zA-Z0-9]/, '_').gsub(/_+/, '_').downcase

@@ -127,7 +127,7 @@ module NA
 
         # Create the source filename string (optimized)
         filename = if needs_filename
-                     path = @file.sub(%r{^\./}, '').sub(/#{Dir.home}/, '~')
+                     path = @file ? @file.sub(%r{^\./}, '').sub(/#{Dir.home}/, '~') : ''
                      if File.dirname(path) == '.'
                        fname = NA.include_ext ? File.basename(path) : File.basename(path, ".#{extension}")
                        fname = "./#{fname}" if NA.show_cwd_indicator
