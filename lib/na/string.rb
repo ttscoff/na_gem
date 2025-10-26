@@ -1,3 +1,8 @@
+class ::NilClass
+  def trunc_middle(max)
+    ''
+  end
+end
 # frozen_string_literal: true
 
 REGEX_DAY = /^(mon|tue|wed|thur?|fri|sat|sun)(\w+(day)?)?$/i.freeze
@@ -139,9 +144,9 @@ class ::String
   return self unless length > max
 
   half = (max / 2).floor - 3
-  chars = chars
-  pre = chars.slice(0, half)
-  post = chars.reverse.slice(0, half).reverse
+  cs = chars
+  pre = cs.slice(0, half)
+  post = cs.reverse.slice(0, half).reverse
   "#{pre.join}[...]#{post.join}"
   end
 
