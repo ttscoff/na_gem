@@ -1,3 +1,17 @@
+### 1.2.85
+
+2025-10-26 08:39
+
+#### IMPROVED
+
+- YARD documentation
+- Currently at 100% YARD documentation
+
+#### FIXED
+
+- Nil handler for trunc_middle
+- Nil handler for hihglight_file
+
 ### 1.2.84
 
 2025-10-25 15:50
