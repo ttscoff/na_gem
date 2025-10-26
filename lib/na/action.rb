@@ -2,10 +2,15 @@
 
 module NA
   # Represents a single actionable item in a todo file, with tags, notes, and project context.
+  #
+  # @example Create a new action
+  #   action = NA::Action.new('todo.txt', 'Inbox', [], '- Buy milk', 1)
   class Action < Hash
     attr_reader :file, :project, :tags, :line
     attr_accessor :parent, :action, :note
 
+    # @example
+    #   action = NA::Action.new('todo.txt', 'Inbox', [], '- Buy milk', 1)
     def initialize(file, project, parent, action, idx, note = [])
       super()
 
@@ -26,6 +31,8 @@ module NA
     # @param remove_tag [Array<String>] Tags to remove
     # @param note [Array<String>] Notes to set
     # @return [void]
+    # @example
+    #   action.process(priority: 5, finish: true, add_tag: ['urgent'], remove_tag: ['waiting'], note: ['Call Bob'])
     def process(priority: 0, finish: false, add_tag: [], remove_tag: [], note: [])
       string = @action.dup
 
@@ -55,6 +62,8 @@ module NA
     # String representation of the action
     #
     # @return [String]
+    # @example
+    #   action.to_s #=> "{ project: 'Inbox', ... }"
     def to_s
       note = if @note.count.positive?
                "\n#{@note.join("\n")}"

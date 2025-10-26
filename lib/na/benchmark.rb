@@ -2,6 +2,9 @@
 
 module NA
   # Provides benchmarking utilities for measuring code execution time.
+  #
+  # @example Measure a block of code
+  #   NA::Benchmark.measure('sleep') { sleep(1) }
   module Benchmark
     class << self
       attr_accessor :enabled, :timings
@@ -19,6 +22,8 @@ module NA
       #
       # @param label [String] Label for the measurement
       # @return [Object] Result of the block
+      # @example
+      #   NA::Benchmark.measure('sleep') { sleep(1) }
       def measure(label)
         return yield unless @enabled
 
@@ -32,6 +37,8 @@ module NA
       # Output a performance report to STDERR
       #
       # @return [void]
+      # @example
+      #   NA::Benchmark.report
       def report
         return unless @enabled
 

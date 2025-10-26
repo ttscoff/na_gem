@@ -2,10 +2,15 @@
 
 ##
 # Extensions to Ruby's Hash class for symbolizing keys and deep freezing values.
+#
+# @example Symbolize all keys in a hash
+#   { 'foo' => 1, 'bar' => { 'baz' => 2 } }.symbolize_keys #=> { :foo => 1, :bar => { :baz => 2 } }
 class ::Hash
   # Convert all keys in the hash to symbols recursively
   #
   # @return [Hash] Hash with symbolized keys
+  # @example
+  #   { 'foo' => 1, 'bar' => { 'baz' => 2 } }.symbolize_keys #=> { :foo => 1, :bar => { :baz => 2 } }
   def symbolize_keys
     each_with_object({}) { |(k, v), hsh| hsh[k.to_sym] = v.is_a?(Hash) ? v.symbolize_keys : v }
   end
@@ -14,6 +19,8 @@ class ::Hash
   # Freeze all values in a hash
   #
   # @return     Hash with all values frozen
+  # @example
+  #   { foo: { bar: 'baz' } }.deep_freeze
   def deep_freeze
     chilled = {}
     each do |k, v|

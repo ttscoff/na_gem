@@ -16,7 +16,6 @@ class ::NilClass
   end
 end
 
-
 # Matches day names (e.g., mon, tue, wednesday)
 # @return [Regexp]
 REGEX_DAY = /^(mon|tue|wed|thur?|fri|sat|sun)(\w+(day)?)?$/i.freeze

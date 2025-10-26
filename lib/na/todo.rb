@@ -2,6 +2,9 @@
 
 module NA
   # Represents a parsed todo file, including actions, projects, and file management.
+  #
+  # @example Parse a todo file
+  #   todo = NA::Todo.new(file_path: 'todo.txt')
   class Todo
     attr_accessor :actions, :projects, :files
 
@@ -9,6 +12,8 @@ module NA
     #
     # @param options [Hash] Options for parsing todo files
     # @return [void]
+    # @example
+    #   todo = NA::Todo.new(file_path: 'todo.txt')
     def initialize(options = {})
       @files, @actions, @projects = parse(options)
     end
@@ -27,6 +32,8 @@ module NA
     # @option options [Boolean] :require_na Require @na tag
     # @option options [String] :file_path file path to parse
     # @return [Array] files, actions, projects
+    # @example
+    #   files, actions, projects = todo.parse(file_path: 'todo.txt')
     def parse(options)
       NA::Benchmark.measure('Todo.parse') do
         defaults = {

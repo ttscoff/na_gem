@@ -3,6 +3,9 @@
 # Cribbed from <https://github.com/flori/term-ansicolor>
 module NA
   # Terminal output color functions.
+  #
+  # @example Clear the color template cache
+  #   NA::Color.clear_template_cache
   module Color
     # Regexp to match excape sequences
     ESCAPE_REGEX = /(?<=\[)(?:(?:(?:[349]|10)[0-9]|[0-9])?;?)+(?=m)/.freeze
@@ -201,6 +204,8 @@ module NA
 
       # Clears the cached compiled color templates.
       # @return [void]
+      # @example
+      #   NA::Color.clear_template_cache
       def clear_template_cache
         @template_cache = {}
       end

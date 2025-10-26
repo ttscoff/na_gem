@@ -2,10 +2,15 @@
 
 module NA
   # Provides theme and color template helpers for todo CLI output.
+  #
+  # @example Get theme help text
+  #   NA::Theme.template_help
   module Theme
     class << self
       # Returns a help string describing available color placeholders for themes.
       # @return [String] Help text for theme placeholders
+      # @example
+      #   NA::Theme.template_help
       def template_help
         <<~EOHELP
           Use {X} placeholders to apply colors. Available colors are:
@@ -29,6 +34,8 @@ module NA
       # Writes the help text and theme YAML to the theme file.
       # @param template [Hash] Additional theme settings to merge
       # @return [Hash] The merged theme configuration
+      # @example
+      #   NA::Theme.load_theme(template: { action: '{r}' })
       def load_theme(template: {})
         NA::Benchmark.measure('Theme.load_theme') do
           # Default colorization, can be overridden with full or partial template variable

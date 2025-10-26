@@ -615,20 +615,20 @@ module NA
       end
     end
 
-  # Find files matching criteria and containing actions.
-  # @param options [Hash] Options for file search
-  # @option options [Integer] :depth Search depth
-  # @option options [Boolean] :done Include done actions
-  # @option options [String] :file_path File path
-  # @option options [Boolean] :negate Negate search
-  # @option options [Boolean] :hidden Include hidden files
-  # @option options [String] :project Project name
-  # @option options [String] :query Query string
-  # @option options [Boolean] :regex Use regex
-  # @option options [String] :search Search string
-  # @option options [String] :tag Tag to filter
-  # @return [Array<String>] Matching files
-  def find_files_matching(options = {})
+    # Find files matching criteria and containing actions.
+    # @param options [Hash] Options for file search
+    # @option options [Integer] :depth Search depth
+    # @option options [Boolean] :done Include done actions
+    # @option options [String] :file_path File path
+    # @option options [Boolean] :negate Negate search
+    # @option options [Boolean] :hidden Include hidden files
+    # @option options [String] :project Project name
+    # @option options [String] :query Query string
+    # @option options [Boolean] :regex Use regex
+    # @option options [String] :search Search string
+    # @option options [String] :tag Tag to filter
+    # @return [Array<String>] Matching files
+    def find_files_matching(options = {})
       defaults = {
         depth: 1,
         done: false,
@@ -908,13 +908,13 @@ module NA
       File.open(file, 'w') { |f| f.puts dirs.join("\n") }
     end
 
-  # List projects in a todo file or matching query.
-  # @param query [Array] Query tokens
-  # @param file_path [String, nil] File path
-  # @param depth [Integer] Search depth
-  # @param paths [Boolean] Show full paths
-  # @return [void]
-  def list_projects(query: [], file_path: nil, depth: 1, paths: true)
+    # List projects in a todo file or matching query.
+    # @param query [Array] Query tokens
+    # @param file_path [String, nil] File path
+    # @param depth [Integer] Search depth
+    # @param paths [Boolean] Show full paths
+    # @return [void]
+    def list_projects(query: [], file_path: nil, depth: 1, paths: true)
       files = if NA.global_file
                 [NA.global_file]
               elsif !file_path.nil?
@@ -942,10 +942,10 @@ module NA
       end
     end
 
-  # List todo files matching a query.
-  # @param query [Array] Query tokens
-  # @return [void]
-  def list_todos(query: [])
+    # List todo files matching a query.
+    # @param query [Array] Query tokens
+    # @return [void]
+    def list_todos(query: [])
       dirs = if query
                match_working_dir(query, distance: 2, require_last: false)
              else
@@ -961,11 +961,11 @@ module NA
       puts NA::Color.template(dirs.join("\n"))
     end
 
-  # Save a search definition to the database.
-  # @param title [String] The search title
-  # @param search [String] The search string
-  # @return [void]
-  def save_search(title, search)
+    # Save a search definition to the database.
+    # @param title [String] The search title
+    # @param search [String] The search string
+    # @return [void]
+    def save_search(title, search)
       file = database_path(file: 'saved_searches.yml')
       searches = load_searches
       title = title.gsub(/[^a-zA-Z0-9]/, '_').gsub(/_+/, '_').downcase

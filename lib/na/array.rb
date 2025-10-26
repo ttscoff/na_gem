@@ -2,11 +2,16 @@
 
 ##
 # Extensions to Ruby's Array class for todo management and formatting.
+#
+# @example Remove bad elements from an array
+#   ['foo', '', nil, 0, false, 'bar'].remove_bad #=> ['foo', 'bar']
 class ::Array
   # Like Array#compact -- removes nil items, but also
   # removes empty strings, zero or negative numbers and FalseClass items
   #
   # @return [Array] Array without "bad" elements
+  # @example
+  #   ['foo', '', nil, 0, false, 'bar'].remove_bad #=> ['foo', 'bar']
   def remove_bad
     compact.map { |x| x.is_a?(String) ? x.strip : x }.select(&:good?)
   end
@@ -17,6 +22,8 @@ class ::Array
   # @param indent [Integer] Indentation spaces
   # @param color [String] Color code to apply
   # @return [Array, String] Wrapped and colorized lines
+  # @example
+  #   ['foo', 'bar'].wrap(80, 2, '{g}') #=> "\n{g}  • foo{x}\n{g}  • bar{x}"
   def wrap(width, indent, color)
     return map { |l| "#{color}  #{l.wrap(width, 2)}" } if width < 60
 

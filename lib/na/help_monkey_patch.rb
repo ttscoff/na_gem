@@ -2,6 +2,9 @@
 
 ##
 # Monkeypatches for GLI CLI framework to support paginated help output.
+#
+# @example Show help for a command
+#   GLI::Commands::Help.new.show_help({}, {}, [], $stdout, $stderr)
 module GLI
   ##
   # Command extensions for GLI CLI framework.
@@ -16,6 +19,8 @@ module GLI
       # @param out [IO] Output stream
       # @param error [IO] Error stream
       # @return [void]
+      # @example
+      #   GLI::Commands::Help.new.show_help({}, {}, [], $stdout, $stderr)
       def show_help(_global_options, options, arguments, out, error)
         NA::Pager.paginate = true
 
