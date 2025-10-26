@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+##
+# Extensions to Ruby's Hash class for symbolizing keys and deep freezing values.
 class ::Hash
   # Convert all keys in the hash to symbols recursively
   #

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module NA
+  # Represents a parsed todo file, including actions, projects, and file management.
   class Todo
     attr_accessor :actions, :projects, :files
 

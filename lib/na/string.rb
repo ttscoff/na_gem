@@ -33,8 +33,8 @@ REGEX_TIME = /^#{REGEX_CLOCK}$/i.freeze
 class ::String
   # Insert a comment character at the start of every line
   # @param char [String] The character to insert (default #)
-  def comment(_char = '#')
-    split("\n").map { |l| "# #{l}" }.join("\n")
+  def comment(char = '#')
+    split("\n").map { |l| "#{char} #{l}" }.join("\n")
   end
 
   # Tests if object is nil or empty

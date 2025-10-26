@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+##
+# Extensions to Ruby's Array class for todo management and formatting.
 class ::Array
   # Like Array#compact -- removes nil items, but also
   # removes empty strings, zero or negative numbers and FalseClass items

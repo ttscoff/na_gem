@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module NA
+  # Represents a single actionable item in a todo file, with tags, notes, and project context.
   class Action < Hash
     attr_reader :file, :project, :tags, :line
     attr_accessor :parent, :action, :note

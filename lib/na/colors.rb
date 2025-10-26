@@ -199,6 +199,8 @@ module NA
         @template_cache ||= {}
       end
 
+      # Clears the cached compiled color templates.
+      # @return [void]
       def clear_template_cache
         @template_cache = {}
       end
@@ -231,15 +233,15 @@ module NA
       # i: italic, x: reset (remove background, color,
       # emphasis)
       #
-      # Also accepts {#RGB} and {#RRGGBB} strings. Put a b
+      # Also accepts `{#RGB}` and `{#RRGGBB}` strings. Put a b
       # before the hash to make it a background color
       #
       # @example    Convert a templated string
-      # Color.template('{Rwb}Warning:{x} {w}you look a
-      # little {g}ill{x}')
+      # Color.template('\\{Rwb\\}Warning:\\{x\\} \\{w\}\you look a
+      # little \\{g\\}ill\\{x\\}')
       #
       # @example    Convert using RGB colors
-      # Color.template('{#f0a}This is an RGB color')
+      # Color.template('\\{#f0a\\}This is an RGB color')
       #
       # @param      input  [String, Array] The template
       #                    string. If this is an array, the

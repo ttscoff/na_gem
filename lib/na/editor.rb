@@ -3,8 +3,12 @@
 require 'English'
 
 module NA
+  # Provides editor selection and argument helpers for launching text editors.
   module Editor
     class << self
+      # Returns the default editor command, checking environment variables and available editors.
+      # @param prefer_git_editor [Boolean] Prefer GIT_EDITOR over EDITOR
+      # @return [String, nil] Editor command or nil if not found
       def default_editor(prefer_git_editor: true)
         editor ||= if prefer_git_editor
                      ENV['NA_EDITOR'] || ENV['GIT_EDITOR'] || ENV.fetch('EDITOR', nil)
@@ -29,10 +33,15 @@ module NA
         nil
       end
 
+      # Returns the default editor command with its arguments.
+      # @return [String] Editor command with arguments
       def editor_with_args
         args_for_editor(default_editor)
       end
 
+      # Returns the editor command with appropriate arguments for file opening.
+      # @param editor [String] Editor command
+      # @return [String] Editor command with arguments
       def args_for_editor(editor)
         return editor if editor =~ /-\S/
 

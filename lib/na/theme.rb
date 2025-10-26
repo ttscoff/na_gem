@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module NA
+  # Provides theme and color template helpers for todo CLI output.
   module Theme
     class << self
       # Returns a help string describing available color placeholders for themes.

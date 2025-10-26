@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module NA
+  # Represents a project section in a todo file, with indentation and line tracking.
   class Project < Hash
     attr_accessor :project, :indent, :line, :last_line
 

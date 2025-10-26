@@ -1,12 +1,16 @@
 # frozen_string_literal: true
 
+##
+# Monkeypatches for GLI CLI framework to support paginated help output.
 module GLI
+  ##
+  # Command extensions for GLI CLI framework.
   module Commands
     # Help Command Monkeypatch for paginated output
     class Help < Command
       # Show help output for GLI commands with paginated output
       #
-      # @param global_options [Hash] Global CLI options
+      # @param _global_options [Hash] Global CLI options
       # @param options [Hash] Command-specific options
       # @param arguments [Array] Command arguments
       # @param out [IO] Output stream

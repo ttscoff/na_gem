@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module NA
+  # Provides benchmarking utilities for measuring code execution time.
   module Benchmark
     class << self
       attr_accessor :enabled, :timings
