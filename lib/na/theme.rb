@@ -37,51 +37,60 @@ module NA
       # @example
       #   NA::Theme.load_theme(template: { action: '{r}' })
       def load_theme(template: {})
-        NA::Benchmark.measure('Theme.load_theme') do
-          # Default colorization, can be overridden with full or partial template variable
-          default_template = {
-            parent: '{c}',
-            bracket: '{dc}',
-            parent_divider: '{xw}/',
-            action: '{bg}',
-            project: '{xbk}',
-            tags: '{m}',
-            value_parens: '{m}',
-            values: '{c}',
-            search_highlight: '{y}',
-            note: '{dw}',
-            dirname: '{xdw}',
-            filename: '{xb}{#eccc87}',
-            prompt: '{m}',
-            success: '{bg}',
-            error: '{b}{#b61d2a}',
-            warning: '{by}',
-            debug: '{dw}',
-            templates: {
-              output: '%filename%parents| %action',
-              default: '%parent%action',
-              single_file: '%parent%action',
-              multi_file: '%filename%parent%action',
-              no_file: '%parent%action'
-            }
-          }
-
-          # Load custom theme
-          theme_file = NA.database_path(file: 'theme.yaml')
-          theme = if File.exist?(theme_file)
-                    YAML.load(File.read(theme_file)) || {}
-                  else
-                    {}
-                  end
-          theme = default_template.deep_merge(theme)
-
-          File.open(theme_file, 'w') do |f|
-            f.puts template_help.comment
-            f.puts YAML.dump(theme)
+        if defined?(NA::Benchmark) && NA::Benchmark
+          NA::Benchmark.measure('Theme.load_theme') do
+            load_theme_internal(template: template)
           end
-
-          theme.merge(template)
+        else
+          load_theme_internal(template: template)
         end
+      end
+
+      def load_theme_internal(template: {})
+        # Default colorization, can be overridden with full or partial template variable
+        default_template = {
+          parent: '{c}',
+          bracket: '{dc}',
+          parent_divider: '{xw}/',
+          action: '{bg}',
+          project: '{xbk}',
+          tags: '{m}',
+          value_parens: '{m}',
+          values: '{c}',
+          search_highlight: '{y}',
+          note: '{dw}',
+          dirname: '{xdw}',
+          filename: '{xb}{#eccc87}',
+          line: '{dw}',
+          prompt: '{m}',
+          success: '{bg}',
+          error: '{b}{#b61d2a}',
+          warning: '{by}',
+          debug: '{dw}',
+          templates: {
+            output: '%filename%line%parents| %action',
+            default: '%parents %line %action',
+            single_file: '%parents %line %action',
+            multi_file: '%filename%line%parents %action',
+            no_file: '%parents %line %action'
+          }
+        }
+
+        # Load custom theme
+        theme_file = NA.database_path(file: 'theme.yaml')
+        theme = if File.exist?(theme_file)
+                  YAML.load(File.read(theme_file)) || {}
+                else
+                  {}
+                end
+        theme = default_template.deep_merge(theme)
+
+        File.open(theme_file, 'w') do |f|
+          f.puts template_help.comment
+          f.puts YAML.dump(theme)
+        end
+
+        theme.merge(template)
       end
     end
   end

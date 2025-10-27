@@ -18,6 +18,8 @@ def create_temp_files
 end
 
 def clean_up_temp_files
-  FileUtils.rm('test.taskpaper')
-  FileUtils.rm('test2.taskpaper')
+  FileUtils.rm('test.taskpaper') if File.exist?('test.taskpaper')
+  FileUtils.rm('test2.taskpaper') if File.exist?('test2.taskpaper')
+  # Also clean up any remaining files from previous tests
+  Dir.glob('*.taskpaper').each { |f| FileUtils.rm(f) if File.exist?(f) }
 end

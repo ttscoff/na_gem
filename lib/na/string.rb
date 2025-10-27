@@ -149,13 +149,17 @@ class ::String
   # @param color [String] The highlight color template
   # @param last_color [String] Color to restore after highlight
   def highlight_search(regexes, color: NA.theme[:search_highlight], last_color: NA.theme[:action])
+    # Skip if string already contains ANSI codes - applying regex to colored text
+    # will break escape sequences (e.g., searching for "3" will match "3" in "38;2;236;204;135m")
+    return self if include?("\e")
+
+    # Original simple approach for strings without ANSI codes
     string = dup
     color = NA::Color.template(color.dup)
     regexes.each do |rx|
       next if rx.nil?
 
       rx = Regexp.new(rx, Regexp::IGNORECASE) if rx.is_a?(String)
-
       string.gsub!(rx) do
         m = Regexp.last_match
         last = m.pre_match.last_color
@@ -190,9 +194,9 @@ class ::String
     output = []
     line = []
     length = 0
-    gsub!(/(@\S+)\((.*?)\)/) { "#{Regexp.last_match(1)}(#{Regexp.last_match(2).gsub(/ /, '†')})" }
+    text = gsub(/(@\S+)\((.*?)\)/) { "#{Regexp.last_match(1)}(#{Regexp.last_match(2).gsub(/ /, '†')})" }
 
-    split(' ').each do |word|
+    text.split.each do |word|
       uncolored = NA::Color.uncolor(word)
       if (length + uncolored.length + 1) <= width
         line << word

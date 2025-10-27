@@ -1,6 +1,16 @@
 # frozen_string_literal: true
 
-require 'na/benchmark'
+require 'na/benchmark' if ENV['NA_BENCHMARK']
+# Define a dummy Benchmark if not available for tests
+unless defined?(NA::Benchmark)
+  module NA
+    module Benchmark
+      def self.measure(_label)
+        yield
+      end
+    end
+  end
+end
 require 'na/version'
 require 'na/pager'
 require 'time'

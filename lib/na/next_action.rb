@@ -169,8 +169,9 @@ module NA
     # @param done [Boolean] Include done actions
     # @param project [String, nil] Project name
     # @param search_note [Boolean] Search notes
+    # @param target_line [Integer] Specific line number to target
     # @return [Array] Projects and actions
-    def find_actions(target, search, tagged = nil, all: false, done: false, project: nil, search_note: true)
+    def find_actions(target, search, tagged = nil, all: false, done: false, project: nil, search_note: true, target_line: nil)
       todo = NA::Todo.new({ search: search,
                             search_note: search_note,
                             require_na: false,
@@ -187,7 +188,17 @@ module NA
 
       return [todo.projects, todo.actions] if todo.actions.count == 1 || all
 
-      options = todo.actions.map { |action| "#{action.line} % #{action.parent.join('/')} : #{action.action}" }
+      # If target_line is specified, find the action at that specific line
+      if target_line
+        matching_action = todo.actions.find { |a| a.line == target_line }
+        return [todo.projects, NA::Actions.new([matching_action])] if matching_action
+
+        NA.notify("#{NA.theme[:error]}No action found at line #{target_line}", exit_code: 1)
+        return [todo.projects, NA::Actions.new]
+
+      end
+
+      options = todo.actions.map { |action| "#{action.file} : #{action.action}" }
       res = choose_from(options, prompt: 'Make a selection: ', multiple: true, sorted: true)
 
       unless res&.length&.positive?
@@ -197,9 +208,14 @@ module NA
 
       selected = NA::Actions.new
       res.each do |result|
-        idx = result.match(/^(\d+)(?= % )/)[1]
-        action = todo.actions.select { |a| a.line == idx.to_i }.first
-        selected.push(action)
+        # Extract file:line from result (e.g., "./todo.taskpaper:21 : action text")
+        match = result.match(/^(.+?):(\d+) : /)
+        next unless match
+
+        file_path = match[1]
+        line_num = match[2].to_i
+        action = todo.actions.select { |a| a.file_path == file_path && a.file_line == line_num }.first
+        selected.push(action) if action
       end
       [todo.projects, selected]
     end
@@ -312,6 +328,9 @@ module NA
                       remove_tag: [],
                       replace: nil,
                       tagged: nil)
+      # Expand target to absolute path to avoid path resolution issues
+      target = File.expand_path(target) unless Pathname.new(target).absolute?
+
       projects = find_projects(target)
       affected_actions = []
 
@@ -336,11 +355,14 @@ module NA
       contents = target.read_file.split("\n")
 
       if add.is_a?(Action)
+        # NOTE: Edit is handled in the update command before calling update_action
+        # So we don't need to handle it here - the action is already edited
+
         add_tag ||= []
         add.process(priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
 
         # Remove the original action and its notes
-        action_line = add.line
+        action_line = add.file_line
         note_lines = add.note.is_a?(Array) ? add.note.count : 0
         contents.slice!(action_line, note_lines + 1)
 
@@ -389,27 +411,36 @@ module NA
         changes << "moved to #{target_proj.project}" if move && target_proj
         affected_actions << { action: add, desc: changes.join(', ') }
       else
+        # Check if search is actually target_line
+        target_line = search.is_a?(Hash) && search[:target_line] ? search[:target_line] : nil
         _, actions = find_actions(target, search, tagged, done: done, all: all, project: project,
-                                                          search_note: search_note)
+                                                          search_note: search_note, target_line: target_line)
 
         return if actions.nil?
 
-        actions.sort_by(&:line).reverse.each do |action|
-          contents.slice!(action.line, action.note.count + 1)
+        # Handle edit (single or multi-action)
+        if edit
+          editor_content = Editor.format_multi_action_input(actions)
+          edited_content = Editor.fork_editor(editor_content)
+          edited_actions = Editor.parse_multi_action_output(edited_content)
+
+          # Map edited content back to actions
+          actions.each do |action|
+            # Use file_path:file_line as the key
+            key = "#{action.file_path}:#{action.file_line}"
+            action.action, action.note = edited_actions[key] if edited_actions[key]
+          end
+        end
+
+        actions.sort_by(&:file_line).reverse.each do |action|
+          contents.slice!(action.file_line, action.note.count + 1)
           if delete
             # Track deletion before skipping re-insert
             affected_actions << { action: action, desc: 'deleted' }
             next
           end
 
-          projects = shift_index_after(projects, action.line, action.note.count + 1)
-
-          if edit
-            editor_content = "#{action.action}\n#{action.note.join("\n")}"
-            new_action, new_note = Editor.format_input(Editor.fork_editor(editor_content))
-            action.action = new_action
-            action.note = new_note
-          end
+          projects = shift_index_after(projects, action.file_line, action.note.count + 1)
 
           # If replace is defined, use search to search and replace text in action
           action.action.sub!(Regexp.new(Regexp.escape(search), Regexp::IGNORECASE), replace) if replace

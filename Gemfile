@@ -3,3 +3,5 @@
 source 'https://rubygems.org'
 gemspec
 gem 'rake'
+
+gem "simplecov", "~> 0.22.0", group: :development

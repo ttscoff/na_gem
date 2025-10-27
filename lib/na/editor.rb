@@ -100,7 +100,12 @@ module NA
           tmpfile.unlink
         end
 
-        input.split("\n").delete_if(&:ignore?).join("\n")
+        # Don't strip comments if this looks like multi-action format (has # ------ markers)
+        if input.include?('# ------ ')
+          input
+        else
+          input.split("\n").delete_if(&:ignore?).join("\n")
+        end
       end
 
       # Takes a multi-line string and formats it as an entry
@@ -128,6 +133,80 @@ module NA
         end
 
         [title, note]
+      end
+
+      # Format multiple actions for multi-edit
+      # @param actions [Array<Action>] Actions to edit
+      # @return [String] Formatted editor content
+      def format_multi_action_input(actions)
+        header = <<~EOF
+          # Instructions:
+          # - Edit the action text (the lines WITHOUT # comment markers)
+          # - DO NOT remove or edit the lines starting with "# ------"
+          # - Add notes on new lines after the action
+          # - Blank lines are ignored
+          #
+
+        EOF
+
+        # Use + to create a mutable string
+        content = +header
+
+        actions.each do |action|
+          # Use file_path to get the path and file_line to get the line number
+          content << "# ------ #{action.file_path}:#{action.file_line}\n"
+          content << "#{action.action}\n"
+          content << "#{action.note.join("\n")}\n" if action.note.any?
+          content << "\n" # Blank line separator
+        end
+
+        content
+      end
+
+      # Parse multi-action editor output
+      # @param content [String] Editor output
+      # @return [Hash] Hash mapping file:line to [action, note]
+      def parse_multi_action_output(content)
+        results = {}
+        current_file = nil
+        current_action = nil
+        current_note = []
+
+        content.lines.each do |line|
+          stripped = line.strip
+
+          # Check for file marker: # ------ path:line
+          match = stripped.match(/^# ------ (.+?):(\d+)$/)
+          if match
+            # Save previous action if exists
+            results[current_file] = [current_action, current_note] if current_file && current_action
+
+            # Start new action
+            current_file = "#{match[1]}:#{match[2]}"
+            current_action = nil
+            current_note = []
+            next
+          end
+
+          # Skip other comment lines
+          next if stripped.start_with?('#')
+
+          # Skip blank lines
+          next if stripped.empty?
+
+          # Store as action or note based on what we've seen so far
+          if current_action.nil?
+            current_action = stripped
+          else
+            # Subsequent lines are notes
+            current_note << stripped
+          end
+        end
+
+        # Save last action
+        results[current_file] = [current_action, current_note] if current_file && current_action
+
+        results
       end
     end
   end

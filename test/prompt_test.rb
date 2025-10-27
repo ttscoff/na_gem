@@ -123,7 +123,9 @@ class PromptTest < Minitest::Test
 
   def test_install_prompt_hook
     file = File.expand_path('~/.zshrc')
-    File.stub(:open, ->(f, mode) { assert_equal file, f; true }) do
+    mock_file = Object.new
+    def mock_file.puts(*args); end
+    File.stub(:open, ->(f, mode, &block) { assert_equal file, f; block&.call(mock_file) if block }) do
       called = false
       NA.stub(:notify, ->(msg) { called = true; msg }) do
         NA::Prompt.install_prompt_hook(:zsh)

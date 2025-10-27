@@ -14,13 +14,44 @@ module NA
     def initialize(file, project, parent, action, idx, note = [])
       super()
 
-      @file = file
+      # Store file in PATH:LINE format if line is available
+      @file = if idx.is_a?(Integer)
+                "#{file}:#{idx}"
+              else
+                file
+              end
       @project = project
       @parent = parent
       @action = action.gsub('{', '\\{')
       @tags = scan_tags
       @line = idx
       @note = note
+    end
+
+    # Extract file path and line number from PATH:LINE format
+    #
+    # @return [Array] [file_path, line_number]
+    def file_line_parts
+      if @file.to_s.include?(':')
+        path, line = @file.split(':', 2)
+        [path, line.to_i]
+      else
+        [@file, @line]
+      end
+    end
+
+    # Get just the file path without line number
+    #
+    # @return [String] File path
+    def file_path
+      file_line_parts.first
+    end
+
+    # Get the line number
+    #
+    # @return [Integer] Line number
+    def file_line
+      file_line_parts.last
     end
 
     # Update the action string and note with priority, tags, and completion status
@@ -70,7 +101,7 @@ module NA
              else
                ''
              end
-      "(#{@file}:#{@line}) #{@project}:#{@parent.join('>')} | #{@action}#{note}"
+      "(#{file_path}:#{file_line}) #{@project}:#{@parent.join(">")} | #{@action}#{note}"
     end
 
     # Pretty string representation of the action with color formatting
@@ -82,7 +113,7 @@ module NA
              else
                ''
              end
-      "{x}#{NA.theme[:filename]}#{File.basename(@file)}:#{@line}{x}#{NA.theme[:bracket]}[{x}#{NA.theme[:project]}#{@project}:#{@parent.join('>')}{x}#{NA.theme[:bracket]}]{x} | #{NA.theme[:action]}#{@action}{x}#{NA.theme[:note]}#{note}"
+      "{x}#{NA.theme[:filename]}#{File.basename(file_path)}:#{file_line}{x}#{NA.theme[:bracket]}[{x}#{NA.theme[:project]}#{@project}:#{@parent.join('>')}{x}#{NA.theme[:bracket]}]{x} | #{NA.theme[:action]}#{@action}{x}#{NA.theme[:note]}#{note}"
     end
 
     # Inspect the action object
@@ -112,40 +143,57 @@ module NA
       NA::Benchmark.measure('Action.pretty') do
         # Use cached theme instead of loading every time
         theme = NA.theme
-        template = theme.merge(template)
+        # Merge templates if provided
+        if template[:templates]
+          theme = theme.dup
+          theme[:templates] = theme[:templates].merge(template[:templates])
+          template = theme.merge(template.reject { |k| k == :templates })
+        else
+          template = theme.merge(template)
+        end
 
         # Pre-compute common template parts to avoid repeated processing
         output_template = template[:templates][:output]
         needs_filename = output_template.include?('%filename')
+        needs_line = output_template.include?('%line')
         needs_parents = output_template.include?('%parents') || output_template.include?('%parent')
         needs_project = output_template.include?('%project')
 
         # Create the hierarchical parent string (optimized)
         parents = if needs_parents && @parent.any?
                     parent_parts = @parent.map { |par| "#{template[:parent]}#{par}" }.join(template[:parent_divider])
-                    NA::Color.template("{x}#{template[:bracket]}[#{template[:error]}#{parent_parts}{x}#{template[:bracket]}]{x} ")
+                    # parent_parts already has color codes embedded, create final string directly
+                    "#{NA::Color.template("{x}#{template[:bracket]}[")}#{parent_parts}#{NA::Color.template("{x}#{template[:bracket]}]{x}")}"
                   else
                     ''
                   end
 
-        # Create the project string (optimized)
+        # Create the project string (optimized) - Ensure color reset before project
         project = if needs_project && !@project.empty?
-                    NA::Color.template("{x}#{template[:project]}#{@project}{x} ")
+                    NA::Color.template("{x}#{template[:project]}#{@project}{x}")
                   else
                     ''
                   end
 
         # Create the source filename string (optimized)
         filename = if needs_filename
-                     path = @file ? @file.sub(%r{^\./}, '').sub(/#{Dir.home}/, '~') : ''
+                     path_only = file_path # Extract just the path from PATH:LINE
+                     path = path_only.sub(%r{^\./}, '').sub(/#{Dir.home}/, '~')
                      if File.dirname(path) == '.'
                        fname = NA.include_ext ? File.basename(path) : File.basename(path, ".#{extension}")
                        fname = "./#{fname}" if NA.show_cwd_indicator
-                       NA::Color.template("#{template[:filename]}#{fname} {x}")
+                       NA::Color.template("#{template[:filename]}#{fname}{x}")
                      else
                        colored = (NA.include_ext ? path : path.sub(/\.#{extension}$/, '')).highlight_filename
-                       NA::Color.template("#{template[:filename]}#{colored} {x}")
+                       NA::Color.template("#{template[:filename]}#{colored}{x}")
                      end
+                   else
+                     ''
+                   end
+
+        # Create the line number string (optimized)
+        line_num = if needs_line && @line
+                     NA::Color.template("#{template[:line]}:#{@line} {x}")
                    else
                      ''
                    end
@@ -154,7 +202,8 @@ module NA
         action_text = @action.dup
         action_text.gsub!(/\{(.*?)\}/, '\\{\1\\}')
         action_text = action_text.sub(/ @#{NA.na_tag}\b/, '')
-        action = NA::Color.template("#{template[:action]}#{action_text}{x}")
+        # Reset colors before action to prevent bleeding from parents/project
+        action = NA::Color.template("{x}#{template[:action]}#{action_text}{x}")
         action = action.highlight_tags(color: template[:tags],
                                        parens: template[:value_parens],
                                        value: template[:values],
@@ -169,8 +218,8 @@ module NA
               width = @cached_width ||= TTY::Screen.columns
               # Calculate indent more efficiently - avoid repeated template processing
               base_template = output_template.gsub('%action', '').gsub('%note', '')
-              base_output = base_template.gsub('%filename', filename).gsub('%project', project).gsub(/%parents?/,
-                                                                                                     parents)
+              base_output = base_template.gsub('%filename', filename).gsub('%line', line_num).gsub('%project', project).gsub(/%parents?/,
+                                                                                                                             parents)
               indent = NA::Color.uncolor(NA::Color.template(base_output)).length
               note = NA::Color.template(@note.wrap(width, indent, template[:note]))
             else
@@ -185,7 +234,7 @@ module NA
         if detect_width && !action.empty?
           width = @cached_width ||= TTY::Screen.columns
           base_template = output_template.gsub('%action', '').gsub('%note', '')
-          base_output = base_template.gsub('%filename', filename).gsub('%project', project).gsub(/%parents?/, parents)
+          base_output = base_template.gsub('%filename', filename).gsub('%line', line_num).gsub('%project', project).gsub(/%parents?/, parents)
           indent = NA::Color.uncolor(NA::Color.template(base_output)).length
           action = action.wrap(width, indent)
         end
@@ -193,6 +242,7 @@ module NA
         # Replace variables in template string and output colorized (optimized)
         final_output = output_template.dup
         final_output.gsub!('%filename', filename)
+        final_output.gsub!('%line', line_num)
         final_output.gsub!('%project', project)
         final_output.gsub!(/%parents?/, parents)
         final_output.gsub!('%action', action.highlight_search(regexes))

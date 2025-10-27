@@ -18,8 +18,8 @@ class DepthTest < Minitest::Test
 
   def teardown
     clean_up_temp_files
-    FileUtils.rm_rf(SUBDIR)
-    FileUtils.rm_rf(HIDDEN_SUBDIR)
+    FileUtils.rm_rf(SUBDIR) if Dir.exist?(SUBDIR)
+    FileUtils.rm_rf(HIDDEN_SUBDIR) if Dir.exist?(HIDDEN_SUBDIR)
   end
 
   def test_find_files_depth_1_does_not_include_subdir

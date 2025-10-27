@@ -164,13 +164,33 @@ class App
 
       options[:exact] = true unless options[:replace].nil?
 
+      # Check for PATH:LINE format in arguments
+      target_file = nil
+      target_line = nil
+      if args.count.positive?
+        pathline_match = args.join(' ').strip.match(/^(.+):(\d+)$/)
+        if pathline_match
+          target_file = pathline_match[1]
+          target_line = pathline_match[2].to_i
+
+          # Verify file exists
+          if File.exist?(target_file)
+            options[:file] = target_file
+            options[:target_line] = target_line
+            action = nil  # Skip search processing
+          else
+            NA.notify("#{NA.theme[:error]}File not found: #{target_file}", exit_code: 1)
+          end
+        end
+      end
+
       if args.count.positive?
         action = args.join(' ').strip
       else
         action = nil
       end
       tokens = nil
-      if action && !action.empty?
+      if action && !action.empty? && !target_line
         if options[:exact]
           tokens = action
         elsif options[:regex]
@@ -218,10 +238,11 @@ class App
           done: options[:done]
         })
         todo.actions.each do |action_obj|
-          # Format: filename:project:parent > action
-          display = "#{File.basename(action_obj.file)}:#{action_obj.project}:#{action_obj.parent.join('>')} | #{action_obj.action}"
+          # Format: filename:LINENUM:parent > action
+          # Include line number in display for unique matching
+          display = "#{File.basename(action_obj.file_path)}:#{action_obj.file_line}:#{action_obj.parent.join('>')} | #{action_obj.action}"
           candidate_actions << display
-          targets_for_selection << { file: action_obj.file, line: action_obj.line, action: action_obj }
+          targets_for_selection << { file: action_obj.file_path, line: action_obj.file_line, action: action_obj }
         end
       end
 
@@ -237,9 +258,24 @@ class App
         if selector
           require 'open3'
           input = candidate_actions.join("\n")
-          output, _ = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{selector}")
-          selected = output.split("\n").map(&:strip).reject(&:empty?)
-          selected_indices = candidate_actions.each_index.select { |i| selected.include?(candidate_actions[i]) }
+
+          # Use popen3 to properly handle stdin for fzf
+          Open3.popen3(selector) do |stdin, stdout, stderr, wait_thr|
+            stdin.write(input)
+            stdin.close
+
+            output = stdout.read
+
+            selected = output.split("\n").map(&:strip).reject(&:empty?)
+
+            # Track which candidates have been matched to avoid duplicates
+            selected_indices = []
+            candidate_actions.each_index do |i|
+              if selected.include?(candidate_actions[i])
+                selected_indices << i unless selected_indices.include?(i)
+              end
+            end
+          end
         else
           # Fallback: select all or prompt for search string
           selected_indices = (0...candidate_actions.size).to_a
@@ -326,12 +362,7 @@ class App
         when :finish
           options[:finish] = true
         when :edit
-          # Open editor for the selected action and update its content
-          edit_action = targets_for_selection[selected_indices.first][:action]
-          editor_content = "#{edit_action.action}\n#{edit_action.note.join("\n")}"
-          new_action, new_note = NA::Editor.format_input(NA::Editor.fork_editor(editor_content))
-          edit_action.action = new_action
-          edit_action.note = new_note
+          # Just set the flag - multi-action editor will handle it below
           options[:edit] = true
         when :priority
           options[:priority] = param_value
@@ -384,7 +415,17 @@ class App
         end
       end
       did_direct_update = false
+
+      # Group selected actions by file for batch processing
+      actions_by_file = {}
       selected_indices.each do |idx|
+        file = targets_for_selection[idx][:file]
+        actions_by_file[file] ||= []
+        actions_by_file[file] << targets_for_selection[idx][:action]
+      end
+
+      # Process each file's actions
+      actions_by_file.each do |file, action_list|
         # Rebuild all derived variables from options after menu-driven assignment
         add_tags = options[:tag] ? options[:tag].join(',').split(/ *, */).map { |t| t.sub(/^@/, '') } : []
         remove_tags = options[:remove] ? options[:remove].join(',').split(/ *, */).map { |t| t.sub(/^@/, '') } : []
@@ -399,29 +440,64 @@ class App
         if options[:note] && defined?(param_value) && param_value
           note_val = [param_value]
         end
-        # Pass the selected action object as 'add', set search to nil
-        # Pass the exact selected action object to update_action, bypassing all search/filter logic
-        target = targets_for_selection[idx][:file]
-        action_obj = targets_for_selection[idx][:action]
-        # Direct action mode: update only the selected action in the known file
-        NA.update_action(target, nil,
-          add: action_obj,
-          add_tag: add_tags,
-          all: true,
-          append: append,
-          delete: options[:delete],
-          done: options[:done],
-          edit: options[:edit],
-          finish: options[:finish],
-          move: target_proj,
-          note: note_val,
-          overwrite: options[:overwrite],
-          priority: priority,
-          project: options[:project],
-          remove_tag: remove_tags,
-          replace: options[:replace],
-          search_note: options[:search_notes],
-          tagged: nil)
+
+        # Handle edit with multiple actions
+        if options[:edit]
+          # Open editor once with all actions for this file
+          editor_content = NA::Editor.format_multi_action_input(action_list)
+          edited_content = NA::Editor.fork_editor(editor_content)
+          edited_actions = NA::Editor.parse_multi_action_output(edited_content)
+
+          # If markers were removed but we have the same number of actions, match by position
+          if edited_actions.empty? && action_list.size > 0
+            # Parse content line by line, skipping comments and blanks
+            non_comment_lines = edited_content.lines.map(&:strip).reject { |l| l.empty? || l.start_with?('#') }
+
+            # Match each non-comment line to an action by position
+            action_list.each_with_index do |action_obj, idx|
+              if non_comment_lines[idx]
+                # Split into action and notes
+                lines = non_comment_lines[idx..-1]
+                action_text = lines[0]
+                note_lines = lines[1..-1] || []
+
+                # Store by file:line key
+                key = "#{action_obj.file_path}:#{action_obj.file_line}"
+                edited_actions[key] = [action_text, note_lines]
+              end
+            end
+          end
+
+          # Update each action with edited content
+          action_list.each do |action_obj|
+            key = "#{action_obj.file_path}:#{action_obj.file_line}"
+            if edited_actions[key]
+              action_obj.action, action_obj.note = edited_actions[key]
+            end
+          end
+        end
+
+        # Update each action
+        action_list.each do |action_obj|
+          NA.update_action(file, nil,
+            add: action_obj,
+            add_tag: add_tags,
+            all: true,
+            append: append,
+            delete: options[:delete],
+            done: options[:done],
+            edit: false,  # Already handled above
+            finish: options[:finish],
+            move: target_proj,
+            note: note_val,
+            overwrite: options[:overwrite],
+            priority: priority,
+            project: options[:project],
+            remove_tag: remove_tags,
+            replace: options[:replace],
+            search_note: options[:search_notes],
+            tagged: nil)
+        end
         did_direct_update = true
       end
       if did_direct_update
@@ -539,8 +615,15 @@ class App
 
       NA.notify("#{NA.theme[:error]}No search terms provided", exit_code: 1) if tokens.nil? && options[:tagged].empty?
 
+      # Handle target_line if provided (from PATH:LINE format)
+      search_tokens = if options[:target_line]
+                       { target_line: options[:target_line] }
+                     else
+                       tokens
+                     end
+
       targets.each do |target|
-        NA.update_action(target, tokens,
+        NA.update_action(target, search_tokens,
                          add_tag: add_tags,
                          all: options[:all],
                          append: append,

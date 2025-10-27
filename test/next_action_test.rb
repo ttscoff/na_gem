@@ -135,7 +135,7 @@ class NextActionTest < Minitest::Test
   def test_insert_project_creates_new_top_level
     File.write("test_insert.taskpaper", "Inbox:")
     NA.stub(:notify, ->(*args, **kwargs) { nil }) do
-      new_proj = NA.insert_project("test_insert.taskpaper", "ProjectA", [])
+      new_proj = NA.insert_project("test_insert.taskpaper", "ProjectA")
       assert_equal "ProjectA", new_proj.project
       assert_equal 0, new_proj.indent
       content = File.read("test_insert.taskpaper")
@@ -147,7 +147,7 @@ class NextActionTest < Minitest::Test
   def test_insert_project_creates_nested_project
     File.write("test_insert.taskpaper", "Inbox:\nProjectA:")
     NA.stub(:notify, ->(*args, **kwargs) { nil }) do
-      new_proj = NA.insert_project("test_insert.taskpaper", "ProjectA:SubProject1", [])
+      new_proj = NA.insert_project("test_insert.taskpaper", "ProjectA:SubProject1")
       assert_equal "ProjectA:SubProject1", new_proj.project
       assert new_proj.indent > 0
       content = File.read("test_insert.taskpaper")
@@ -159,7 +159,7 @@ class NextActionTest < Minitest::Test
   def test_insert_project_extends_existing_project
     File.write("test_insert.taskpaper", "Inbox:\nProjectA:\n\tSubProject1:")
     NA.stub(:notify, ->(*args, **kwargs) { nil }) do
-      new_proj = NA.insert_project("test_insert.taskpaper", "ProjectA:SubProject2", [])
+      new_proj = NA.insert_project("test_insert.taskpaper", "ProjectA:SubProject2")
       assert_equal "ProjectA:SubProject2", new_proj.project
       content = File.read("test_insert.taskpaper")
       assert_match(/SubProject2:/, content)
@@ -170,7 +170,7 @@ class NextActionTest < Minitest::Test
   def test_insert_project_into_archive
     File.write("test_insert.taskpaper", "Inbox:\nArchive:")
     NA.stub(:notify, ->(*args, **kwargs) { nil }) do
-      new_proj = NA.insert_project("test_insert.taskpaper", "Archive:OldStuff", [])
+      new_proj = NA.insert_project("test_insert.taskpaper", "Archive:OldStuff")
       assert_equal "Archive:OldStuff", new_proj.project
       content = File.read("test_insert.taskpaper")
       assert_match(/OldStuff:/, content)
