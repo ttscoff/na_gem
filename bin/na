@@ -113,6 +113,7 @@ class App
 
   pre do |global, _command, _options, _args|
     NA.move_deprecated_backups
+    NA::Plugins.ensure_plugins_home
     NA.verbose = global[:debug]
     NA::Pager.paginate = global[:pager] && $stdout.isatty
     NA::Color.coloring = global[:color] && $stdout.isatty

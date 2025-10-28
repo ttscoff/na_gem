@@ -9,6 +9,21 @@ class App
   allow you to pick which file to act on.'
   arg_name 'ACTION'
   command %i[update] do |c|
+    c.desc 'Run a plugin by name on selected actions'
+    c.arg_name 'NAME'
+    c.flag %i[plugin]
+
+    c.desc 'Plugin input format (json|yaml|csv|text)'
+    c.arg_name 'TYPE'
+    c.flag %i[input]
+
+    c.desc 'Plugin output format (json|yaml|csv|text)'
+    c.arg_name 'TYPE'
+    c.flag %i[output]
+
+    c.desc 'Divider string for text IO'
+    c.arg_name 'STRING'
+    c.flag %i[divider]
     c.desc 'Started time (natural language or ISO)'
     c.arg_name 'DATE'
     c.flag %i[started], type: :date_begin
@@ -329,6 +344,17 @@ class App
           { key: :archive, label: 'Archive', param: nil },
           { key: :note, label: 'Add Note', param: 'Note' }
         ]
+        # Append available plugins
+        begin
+          NA::Plugins.ensure_plugins_home
+          NA::Plugins.list_plugins.each do |_key, path|
+            meta = NA::Plugins.parse_plugin_metadata(path)
+            disp = meta['name'] || File.basename(path, File.extname(path))
+            actions_menu << { key: :_plugin, label: "Plugin: #{disp}", param: nil, plugin_path: path }
+          end
+        rescue StandardError
+          # ignore plugin discovery errors in menu
+        end
         selector = nil
         if TTY::Which.exist?('fzf')
           selector = 'fzf --prompt="Select action> "'
@@ -441,6 +467,9 @@ class App
         when :note
           options[:note] = true
           note = [param_value]
+        when :_plugin
+          # Set plugin path directly
+          options[:plugin] = action_obj[:plugin_path]
         end
       end
       did_direct_update = false
@@ -453,7 +482,31 @@ class App
         actions_by_file[file] << targets_for_selection[idx][:action]
       end
 
-      # Process each file's actions
+      # If a plugin is specified, run it on all selected actions and apply results
+      if options[:plugin]
+        plugin_path = options[:plugin]
+        unless File.exist?(plugin_path)
+          # Resolve by name via registry
+          resolved = NA::Plugins.resolve_plugin(plugin_path)
+          plugin_path = resolved if resolved
+        end
+        meta = NA::Plugins.parse_plugin_metadata(plugin_path)
+        input_fmt = (options[:input] || meta['input'] || 'json').to_s
+        output_fmt = (options[:output] || meta['output'] || input_fmt).to_s
+        divider = (options[:divider] || '||')
+
+        all_actions = []
+        actions_by_file.each_value { |list| all_actions.concat(list) }
+        io_actions = all_actions.map(&:to_plugin_io_hash)
+        stdin_str = NA::Plugins.serialize_actions(io_actions, format: input_fmt, divider: divider)
+        stdout = NA::Plugins.run_plugin(plugin_path, stdin_str)
+        returned = NA::Plugins.parse_actions(stdout, format: output_fmt, divider: divider)
+        Array(returned).each { |h| NA.apply_plugin_result(h) }
+        did_direct_update = true
+        next
+      end
+
+      # Process each file's actions (non-plugin paths)
       actions_by_file.each do |file, action_list|
         # Rebuild all derived variables from options after menu-driven assignment
         add_tags = options[:tag] ? options[:tag].join(',').split(/ *, */).map { |t| t.sub(/^@/, '') } : []

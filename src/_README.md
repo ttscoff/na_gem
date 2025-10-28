@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is <!--VER-->1.2.86<!--END VER-->.
+The current version of `na` is <!--VER-->1.2.87<!--END VER-->.
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder.
 
@@ -375,6 +375,115 @@ If you're using a single global file, you'll need `--cwd_as` to be `tag` or `pro
 
 After installing a hook, you'll need to close your terminal and start a new session to initialize the new commands.
 
+### Plugins
+
+NA supports a plugin system that allows you to run external scripts to transform or process actions. Plugins are stored in `~/.local/share/na/plugins` and can be written in any language with a shebang.
+
+#### Getting Started
+
+The first time NA runs, it will create the plugins directory with a README and two sample plugins:
+- `Add Foo.py` - Adds a `@foo` tag with a timestamp
+- `Add Bar.sh` - Adds a `@bar` tag
+
+You can delete or modify these sample plugins as needed.
+
+#### Running Plugins
+
+Run a plugin with:
+```bash
+na plugin PLUGIN_NAME
+```
+
+Or use plugins through the `update` command's interactive menu, or pipe actions through plugins on display commands:
+
+```bash
+na update --plugin PLUGIN_NAME           # Run plugin on selected actions
+na next --plugin PLUGIN_NAME             # Transform output only (no file writes)
+na tagged bug --plugin PLUGIN_NAME       # Filter and transform
+na find "search term" --plugin PLUGIN_NAME
+```
+
+#### Plugin Metadata
+
+Plugins can specify their behavior in a metadata block after the shebang:
+
+```bash
+#!/usr/bin/env python3
+# name: My Plugin
+# input: json
+# output: json
+```
+
+Available metadata keys (case-insensitive):
+- `input`: Input format (`json`, `yaml`, `csv`, `text`)
+- `output`: Output format
+- `name` or `title`: Display name (defaults to filename)
+
+#### Input/Output Formats
+
+Plugins accept and return action data. Use `--input` and `--output` flags to override metadata:
+
+```bash
+na plugin MY_PLUGIN --input text --output json --divider "||"
+```
+
+**JSON/YAML Schema:**
+```json
+[
+  {
+    "file_path": "todo.taskpaper",
+    "line": 15,
+    "parents": ["Project", "Subproject"],
+    "text": "- Action text @tag(value)",
+    "note": "Note content",
+    "tags": [
+      { "name": "tag", "value": "value" }
+    ]
+  }
+]
+```
+
+**Text Format:**
+```
+ACTION||ARGS||file_path:line||parents||text||note||tags
+```
+
+Default divider is `||` (configurable with `--divider`).
+- `parents`: `Parent>Child>Leaf`
+- `tags`: `name(value);name;other(value)`
+
+If the first token isn’t a known action, it’s treated as `file_path:line` and the action defaults to UPDATE.
+
+#### Actions
+
+Plugins may return an optional ACTION with arguments. Supported (case-insensitive):
+- UPDATE (default; replace text/note/tags/parents)
+- DELETE
+- COMPLETE/FINISH
+- RESTORE/UNFINISH
+- ARCHIVE
+- ADD_TAG (args: one or more tags)
+- DELETE_TAG/REMOVE_TAG (args: one or more tags)
+- MOVE (args: target project path)
+
+#### Plugin Behavior
+
+**On `update` or `plugin` command:**
+- Plugins can modify text, notes, tags, and parents
+- Changing `parents` will move the action to the new project location
+- `file_path` and `line` cannot be changed
+
+**On display commands (`next`, `tagged`, `find`):**
+- Plugins only transform STDOUT (no file writes)
+- Use returned text/note/tags/parents for rendering
+- Parent changes affect display but not file structure
+
+#### Override Formats
+
+You can override plugin defaults with flags on any command that supports `--plugin`:
+```bash
+na next --plugin FOO --input csv --output text
+```
 
 [fzf]: https://github.com/junegunn/fzf
 [gum]: https://github.com/charmbracelet/gum

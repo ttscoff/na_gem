@@ -3,6 +3,98 @@
 # Next Action methods
 module NA
   class << self
+    # Select actions across files using existing search pipeline
+    # @return [Array<NA::Action>]
+    def select_actions(file: nil, depth: 1, search: [], tagged: [], include_done: false)
+      files = if file
+                [file]
+              else
+                find_files(depth: depth)
+              end
+      out = []
+      files.each do |f|
+        _projects, actions = find_actions(f, search, tagged, done: include_done, all: true)
+        out.concat(actions) if actions
+      end
+      out
+    end
+
+    # Apply a plugin result hash back to the underlying file
+    # - Move if parents changed (project path differs)
+    # - Update text/note/tags
+    def apply_plugin_result(io_hash)
+      file = io_hash['file_path']
+      line = io_hash['line'].to_i
+      parents = Array(io_hash['parents']).map(&:to_s)
+      text = io_hash['text'].to_s
+      note = io_hash['note'].to_s
+      tags = Array(io_hash['tags']).to_h { |t| [t['name'].to_s, t['value'].to_s] }
+      action_block = io_hash['action'] || { 'action' => 'UPDATE', 'arguments' => [] }
+      action_name = action_block['action'].to_s.upcase
+      action_args = Array(action_block['arguments'])
+
+      # Load current action
+      _projects, actions = find_actions(file, nil, nil, all: true, done: true, project: nil, search_note: true, target_line: line)
+      action = actions&.first
+      return unless action
+
+      # Determine new project path from parents array
+      new_project = ''
+      new_parent_chain = []
+      if parents.any?
+        new_project = parents.first.to_s
+        new_parent_chain = parents[1..] || []
+      end
+
+      case action_name
+      when 'DELETE'
+        update_action(file, { target_line: line }, delete: true, all: true)
+        return
+      when 'COMPLETE'
+        update_action(file, { target_line: line }, finish: true, all: true)
+        return
+      when 'RESTORE'
+        update_action(file, { target_line: line }, restore: true, all: true)
+        return
+      when 'ARCHIVE'
+        update_action(file, { target_line: line }, finish: true, move: 'Archive', all: true)
+        return
+      when 'ADD_TAG'
+        add_tags = action_args.map { |t| t.sub(/^@/, '') }
+        update_action(file, { target_line: line }, add: action, add_tag: add_tags, all: true)
+        return
+      when 'DELETE_TAG', 'REMOVE_TAG'
+        remove_tags = action_args.map { |t| t.sub(/^@/, '') }
+        update_action(file, { target_line: line }, add: action, remove_tag: remove_tags, all: true)
+        return
+      when 'MOVE'
+        move_to = action_args.first.to_s
+        update_action(file, { target_line: line }, add: action, move: move_to, all: true)
+        return
+      end
+
+      # Replace content on the existing action then write back in-place
+      original_line = action.file_line
+      action.action = text
+      action.note = note.to_s.split("\n")
+      action.action.gsub!(/(?<=\A| )@\S+(?:\(.*?\))?/, '')
+      unless tags.empty?
+        tag_str = tags.map { |k, v| v.to_s.empty? ? "@#{k}" : "@#{k}(#{v})" }.join(' ')
+        action.action = action.action.strip + (tag_str.empty? ? "" : " #{tag_str}")
+      end
+      # Ensure we update this exact action in-place
+      update_action(file, { target_line: original_line }, add: action, all: true)
+
+      # If parents changed, set move target
+      move_to = nil
+      move_to = ([new_project] + new_parent_chain).join(':') if new_project.to_s.strip != action.project || new_parent_chain != action.parent
+
+      update_action(file, nil,
+                    add: action,
+                    project: action.project,
+                    overwrite: true,
+                    move: move_to)
+    end
     include NA::Editor
 
     attr_accessor :verbose, :extension, :include_ext, :na_tag, :command_line, :command, :globals, :global_file,

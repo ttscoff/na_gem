@@ -1,6 +1,6 @@
 html/
 *.bak
-na*gem
+na*.gem
 *~
 .*~
 .vscode

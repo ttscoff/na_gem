@@ -83,6 +83,22 @@ class App
     c.desc "Include @done actions"
     c.switch %i[done]
 
+    c.desc "Run a plugin on results (STDOUT only; no file writes)"
+    c.arg_name 'NAME'
+    c.flag %i[plugin]
+
+    c.desc 'Plugin input format (json|yaml|csv|text)'
+    c.arg_name 'TYPE'
+    c.flag %i[input]
+
+    c.desc 'Plugin output format (json|yaml|csv|text)'
+    c.arg_name 'TYPE'
+    c.flag %i[output]
+
+    c.desc 'Divider string for text IO'
+    c.arg_name 'STRING'
+    c.flag %i[divider]
+
     c.desc "Output actions nested by file"
     c.switch %i[nest], negatable: false
 
@@ -262,6 +278,55 @@ class App
                   Run `na todos` to see available todo files.")
       end
       NA::Pager.paginate = false if options[:omnifocus]
+
+      # If a plugin is specified, transform actions in memory for display only
+      if options[:plugin]
+        NA::Plugins.ensure_plugins_home
+        plugin_path = options[:plugin]
+        unless File.exist?(plugin_path)
+          resolved = NA::Plugins.resolve_plugin(plugin_path)
+          plugin_path = resolved if resolved
+        end
+        if plugin_path && File.exist?(plugin_path)
+          meta = NA::Plugins.parse_plugin_metadata(plugin_path)
+          input_fmt = (options[:input] || meta['input'] || 'json').to_s
+          output_fmt = (options[:output] || meta['output'] || input_fmt).to_s
+          divider = (options[:divider] || '||')
+
+          io_actions = todo.actions.map(&:to_plugin_io_hash)
+          stdin_str = NA::Plugins.serialize_actions(io_actions, format: input_fmt, divider: divider)
+          stdout = NA::Plugins.run_plugin(plugin_path, stdin_str)
+          returned = Array(NA::Plugins.parse_actions(stdout, format: output_fmt, divider: divider))
+          index = {}
+          todo.actions.each { |a| index["#{a.file_path}:#{a.file_line}"] = a }
+          returned.each do |h|
+            key = "#{h['file_path']}:#{h['line'].to_i}"
+            a = index[key]
+            next unless a
+            # Update for display: text, note, tags
+            new_text = h['text'].to_s
+            new_note = h['note'].to_s
+            new_tags = Array(h['tags']).map { |t| [t['name'].to_s, t['value'].to_s] }
+            # replace tags in text
+            new_text = new_text.gsub(/(?<=\A| )@\S+(?:\(.*?\))?/, '')
+            unless new_tags.empty?
+              tag_str = new_tags.map { |k, v| v.to_s.empty? ? "@#{k}" : "@#{k}(#{v})" }.join(' ')
+              new_text = new_text.strip + (tag_str.empty? ? '' : " #{tag_str}")
+            end
+            a.action = new_text
+            a.note = new_note.empty? ? [] : new_note.split("\n")
+            a.instance_variable_set(:@tags, a.scan_tags)
+            # parents -> possibly change project and parent chain for display
+            parents = Array(h['parents']).map(&:to_s)
+            if parents.any?
+              new_proj = parents.first.to_s
+              new_chain = parents[1..] || []
+              a.instance_variable_set(:@project, new_proj)
+              a.parent = new_chain
+            end
+          end
+        end
+      end
       todo.actions.output(depth,
                           { files: todo.files,
                             nest: options[:nest],

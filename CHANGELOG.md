@@ -1,3 +1,21 @@
+### 1.2.88
+
+2025-10-29 07:00
+
+#### NEW
+
+- Plugin system: run scripts from `~/.local/share/na/plugins` to transform actions
+- `na plugin NAME` command to run plugins on selected actions
+- `--plugin NAME` flag on `update`, `next`, `tagged`, `find` for plugin processing
+- `--input/--output` flags (json|yaml|csv|text) for plugin IO formats
+- `--divider` flag for text-format field separation (default: `||`)
+- Plugin metadata block (after shebang): `input`, `output`, `name/title` keys
+- Plugins auto-create sample scripts (Add Foo.py, Add Bar.sh) on first run
+- Display commands (`next`, `tagged`, `find`) pipe through plugins for STDOUT-only transformation
+- Update menu shows available plugins; select to run on chosen actions
+- Plugin IO includes parent project hierarchy; plugins can move by changing parents array
+- Support CSV format for plugin input/output alongside JSON/YAML/Text
+
 ### 1.2.87
 
 2025-10-28 06:21

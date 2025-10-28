@@ -28,6 +28,19 @@ module NA
       @note = note
     end
 
+    # Convert action to plugin IO hash
+    # @return [Hash]
+    def to_plugin_io_hash
+      {
+        'file_path' => file_path,
+        'line' => file_line,
+        'parents' => [@project].concat(@parent),
+        'text' => @action.dup,
+        'note' => @note.join("\n"),
+        'tags' => @tags.map { |k, v| { 'name' => k, 'value' => (v || '').to_s } }
+      }
+    end
+
     # Extract file path and line number from PATH:LINE format
     #
     # @return [Array] [file_path, line_number]

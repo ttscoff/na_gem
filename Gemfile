@@ -11,3 +11,4 @@ group :development do
   gem 'rubocop-performance', '~> 1.21'
 end
 gem 'chronic'
+gem 'csv'

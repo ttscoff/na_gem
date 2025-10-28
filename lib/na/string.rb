@@ -193,18 +193,20 @@ class ::String
 
     output = []
     line = []
-    length = 0
+    # Track visible length of current line (exclude the separating space before first word)
+    length = -1
     text = gsub(/(@\S+)\((.*?)\)/) { "#{Regexp.last_match(1)}(#{Regexp.last_match(2).gsub(/ /, '†')})" }
 
     text.split.each do |word|
       uncolored = NA::Color.uncolor(word)
-      if (length + uncolored.length + 1) <= width
+      candidate = length + 1 + uncolored.length
+      if candidate <= width
         line << word
-        length += uncolored.length + 1
+        length = candidate
       else
         output << line.join(' ')
         line = [word]
-        length = uncolored.length + 1
+        length = uncolored.length
       end
     end
     output << line.join(' ')
