@@ -11,6 +11,48 @@ _If you're one of the rare people like me who find this useful, feel free to
 
 The current version of `na` is <!--VER-->1.2.88<!--END VER-->.
 
+<!--GITHUB-->
+### Table of contents
+
+- [Installation](#installation)
+- [Optional Dependencies](#optional-dependencies)
+- [Features](#features)
+  - [Easy matching](#easy-matching)
+  - [Recursion](#recursion)
+  - [Adding todos](#adding-todos)
+  - [Updating todos](#updating-todos)
+- [Terminology](#terminology)
+- [Usage](#usage)
+  - [Commands](#commands)
+  - [add](#add)
+  - [edit](#edit)
+  - [find](#find)
+  - [init, create](#init-create)
+  - [move](#move)
+  - [next, show](#next-show)
+  - [projects](#projects)
+  - [saved](#saved)
+  - [scan](#scan)
+  - [tagged](#tagged)
+  - [todos](#todos)
+  - [update](#update)
+  - [changelog](#changelog)
+  - [complete](#complete)
+  - [archive](#archive)
+  - [tag](#tag)
+  - [undo](#undo)
+- [Configuration](#configuration)
+  - [Working with a single global file](#working-with-a-single-global-file)
+  - [Add tasks at the end of a project](#add-tasks-at-the-end-of-a-project)
+  - [Prompt Hooks](#prompt-hooks)
+- [Time tracking](#time-tracking)
+- [Plugins](#plugins)
+- [Changelog](#changelog)
+<!--END GITHUB--><!--JEKYLL
+- Table of Contents
+{:.toc}
+-->
+
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder.
 
 Used with Taskpaper files, it can add new action items quickly from the command line, automatically tagging them as next actions. It can also mark actions as completed, delete them, archive them, and move them between projects.
@@ -235,49 +277,6 @@ See the help output for a list of all available actions.
 @cli(bundle exec bin/na help update)
 ```
 
-#### Time tracking
-
-`na` supports tracking elapsed time between a start and finish for actions using `@started(YYYY-MM-DD HH:MM)` and `@done(YYYY-MM-DD HH:MM)` tags. Durations are not stored; they are calculated on the fly from these tags.
-
-- Add/Finish/Update flags:
-  - `--started TIME` set a start time when creating or finishing an item
-  - `--end TIME` (alias `--finished`) set a done time
-  - `--duration DURATION` backfill start time from the provided end time
-  - All flags accept natural language (via Chronic) and shorthand: `30m ago`, `-2h`, `2h30m`, `2:30 ago`, `yesterday 5pm`
-
-Examples:
-
-```bash
-na add --started "30 minutes ago" "Investigate bug"
-na complete --finished now --duration 2h30m "Investigate bug"
-na update --started "yesterday 3pm" --end "yesterday 5:15pm" "Investigate bug"
-```
-
-- Display flags (next/tagged):
-  - `--times` show per‑action durations and a grand total (implies `--done`)
-  - `--human` format durations as human‑readable text instead of `DD:HH:MM:SS`
-  - `--only_timed` show only actions that have both `@started` and `@done` (implies `--times --done`)
-  - `--only_times` output only the totals section (no action lines; implies `--times --done`)
-  - `--json_times` output a JSON object with timed items, per‑tag totals, and overall total (implies `--times --done`)
-
-Example outputs:
-
-```bash
-# Per‑action durations appended and totals table
-na next --times --human
-
-# Only totals table (Markdown), no action lines
-na tagged "tag*=bug" --only_times
-
-# JSON for scripting
-na next --json_times > times.json
-```
-
-Notes:
-
-- Any newly added or edited action text is scanned for natural‑language values in `@started(...)`/`@done(...)` and normalized to `YYYY‑MM‑DD HH:MM`.
-- The color of durations in output is configurable via the theme key `duration` (defaults to `{y}`).
-
 ##### changelog
 
 View recent changes with `na changelog` or `na changes`.
@@ -374,6 +373,49 @@ If you're using a single global file, you'll need `--cwd_as` to be `tag` or `pro
 <!--JEKYLL{:.tip}-->
 
 After installing a hook, you'll need to close your terminal and start a new session to initialize the new commands.
+
+### Time tracking
+
+`na` supports tracking elapsed time between a start and finish for actions using `@started(YYYY-MM-DD HH:MM)` and `@done(YYYY-MM-DD HH:MM)` tags. Durations are not stored; they are calculated on the fly from these tags.
+
+- Add/Finish/Update flags:
+  - `--started TIME` set a start time when creating or finishing an item
+  - `--end TIME` (alias `--finished`) set a done time
+  - `--duration DURATION` backfill start time from the provided end time
+  - All flags accept natural language (via Chronic) and shorthand: `30m ago`, `-2h`, `2h30m`, `2:30 ago`, `yesterday 5pm`
+
+Examples:
+
+```bash
+na add --started "30 minutes ago" "Investigate bug"
+na complete --finished now --duration 2h30m "Investigate bug"
+na update --started "yesterday 3pm" --end "yesterday 5:15pm" "Investigate bug"
+```
+
+- Display flags (next/tagged):
+  - `--times` show per‑action durations and a grand total (implies `--done`)
+  - `--human` format durations as human‑readable text instead of `DD:HH:MM:SS`
+  - `--only_timed` show only actions that have both `@started` and `@done` (implies `--times --done`)
+  - `--only_times` output only the totals section (no action lines; implies `--times --done`)
+  - `--json_times` output a JSON object with timed items, per‑tag totals, and overall total (implies `--times --done`)
+
+Example outputs:
+
+```bash
+# Per‑action durations appended and totals table
+na next --times --human
+
+# Only totals table (Markdown), no action lines
+na tagged "tag*=bug" --only_times
+
+# JSON for scripting
+na next --json_times > times.json
+```
+
+Notes:
+
+- Any newly added or edited action text is scanned for natural‑language values in `@started(...)`/`@done(...)` and normalized to `YYYY‑MM‑DD HH:MM`.
+- The color of durations in output is configurable via the theme key `duration` (defaults to `{y}`).
 
 ### Plugins
 
