@@ -1,0 +1,1 @@
+Write a commmit message that uses @ labels to specify what type of change each line is. Apply @new, @fixed, @changed, @improved, and @breaking as appropriate to each line. Only add @ labels to changes that affect the user, not technical details. Technical details can be included in the commit, just don't add @ labels to those lines.
