@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.86.
+The current version of `na` is 1.2.87.
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder.
 
@@ -76,7 +76,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.86
+    1.2.87
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -152,11 +152,14 @@ DESCRIPTION
 COMMAND OPTIONS
     --at=POSITION                   - Add task at [s]tart or [e]nd of target project (default: none)
     -d, --depth=DEPTH               - Search for files X directories deep (default: 1)
+    --duration=DURATION             - Duration (e.g. 45m, 2h, 1d2h30m, or minutes) (default: none)
+    --end, --finished=DATE          - End/Finished time (natural language or ISO) (default: none)
     -f, --file=PATH                 - Specify the file to which the task should be added (default: none)
     --finish, --done                - Mark task as @done with date
     --in, --todo=TODO_FILE          - Add to a known todo file, partial matches allowed (default: none)
     -n, --note                      - Prompt for additional notes. STDIN input (piped) will be treated as a note if present.
     -p, --priority=PRIO             - Add a priority level 1-5 or h, m, l (default: 0)
+    --started=DATE                  - Started time (natural language or ISO) (default: none)
     -t, --tag=TAG                   - Use a tag other than the default next action tag (default: none)
     --to, --project, --proj=PROJECT - Add action to specific project (default: Inbox)
     -x                              - Don't add next action tag to new entry
@@ -223,6 +226,7 @@ COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
     --[no-]done                            - Include @done actions
     -e, --regex                            - Interpret search pattern as regular expression
+    --human                                - Format durations in human-friendly form
     --in=TODO_PATH                         - Show actions from a specific todo file in history. May use wildcards (* and ?) (default: none)
     --nest                                 - Output actions nested by file
     --no_file                              - No filename in output
@@ -233,6 +237,7 @@ COMMAND OPTIONS
     --save=TITLE                           - Save this search for future use (default: none)
     --[no-]search_notes                    - Include notes in search (default: enabled)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
+    --times                                - Show per-action durations and total
     -v, --invert                           - Show actions not matching search pattern
     -x, --exact                            - Match pattern exactly
 
@@ -337,11 +342,15 @@ COMMAND OPTIONS
     --exact                                - Search query is exact text match (not tokens)
     --file=TODO_FILE                       - Display matches from specific todo file ([relative] path) (default: none)
     --hidden                               - Include hidden directories while traversing
+    --human                                - Format durations in human-friendly form
     --in, --todo=TODO                      - Display matches from a known todo file anywhere in history (short name) (may be used more than once, default: none)
+    --json_times                           - Output times as JSON object (implies --times and --done)
     --nest                                 - Output actions nested by file
     --no_file                              - No filename in output
     --[no-]notes                           - Include notes in output
     --omnifocus                            - Output actions nested by file and project
+    --only_timed                           - Show only actions that have a duration (@started and @done)
+    --only_times                           - Output only elapsed time totals (implies --times and --done)
     -p, --prio, --priority=PRIORITY        - Match actions with priority, allows <>= comparison (may be used more than once, default: none)
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --regex                                - Search query is regular expression
@@ -350,6 +359,7 @@ COMMAND OPTIONS
     --[no-]search_notes                    - Include notes in search (default: enabled)
     -t, --tag=TAG                          - Alternate tag to search for (default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
+    --times                                - Show per-action durations and total
 
 EXAMPLES
 
@@ -491,17 +501,22 @@ COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: 1)
     --[no-]done                            - Include @done actions
     --exact                                - Search query is exact text match (not tokens)
+    --human                                - Format durations in human-friendly form
     --in=TODO_PATH                         - Show actions from a specific todo file in history. May use wildcards (* and ?) (default: none)
+    --json_times                           - Output times as JSON object (implies --times and --done)
     --nest                                 - Output actions nested by file
     --no_file                              - No filename in output
     --[no-]notes                           - Include notes in output
     -o, --or                               - Combine tags with OR, displaying actions matching ANY of the tags
     --omnifocus                            - Output actions nested by file and project
+    --only_timed                           - Show only actions that have a duration (@started and @done)
+    --only_times                           - Output only elapsed time totals (implies --times and --done)
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --regex                                - Search query is regular expression
     --save=TITLE                           - Save this search for future use (default: none)
     --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
     --[no-]search_notes                    - Include notes in search (default: enabled)
+    --times                                - Show per-action durations and total
     -v, --invert                           - Show actions not matching tags
 
 EXAMPLES
@@ -595,8 +610,10 @@ COMMAND OPTIONS
     -d, --depth=DEPTH                      - Search for files X directories deep (default: 1)
     --delete                               - Delete an action
     --[no-]done                            - Include @done actions
+    --duration=DURATION                    - Duration (e.g. 45m, 2h, 1d2h30m, or minutes) (default: none)
     -e, --regex                            - Interpret search pattern as regular expression
     --edit                                 - Open action in editor (vim).             Natural language dates will be parsed and converted in date-based tags.
+    --end, --finished=DATE                 - End/Finished time (natural language or ISO) (default: none)
     -f, --finish                           - Add a @done tag to action
     --file=PATH                            - Specify the file to search for the task (default: none)
     --in, --todo=TODO_FILE                 - Use a known todo file, partial matches allowed (default: none)
@@ -609,6 +626,7 @@ COMMAND OPTIONS
     --restore                              - Remove @done tag from action
     --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
     --[no-]search_notes                    - Include notes in search (default: enabled)
+    --started=DATE                         - Started time (natural language or ISO) (default: none)
     -t, --tag=TAG                          - Add a tag to the action, @tag(values) allowed, use multiple times or combine multiple tags with a comma (may be used more than once, default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
     --to, --move=PROJECT                   - Move action to specific project (default: none)
@@ -625,6 +643,49 @@ EXAMPLES
     # Add @done to "My cool action" and immediately move to Archive
     na update --archive My cool action
 ```
+
+#### Time tracking
+
+`na` supports tracking elapsed time between a start and finish for actions using `@started(YYYY-MM-DD HH:MM)` and `@done(YYYY-MM-DD HH:MM)` tags. Durations are not stored; they are calculated on the fly from these tags.
+
+- Add/Finish/Update flags:
+  - `--started TIME` set a start time when creating or finishing an item
+  - `--end TIME` (alias `--finished`) set a done time
+  - `--duration DURATION` backfill start time from the provided end time
+  - All flags accept natural language (via Chronic) and shorthand: `30m ago`, `-2h`, `2h30m`, `2:30 ago`, `yesterday 5pm`
+
+Examples:
+
+```bash
+na add --started "30 minutes ago" "Investigate bug"
+na complete --finished now --duration 2h30m "Investigate bug"
+na update --started "yesterday 3pm" --end "yesterday 5:15pm" "Investigate bug"
+```
+
+- Display flags (next/tagged):
+  - `--times` show per???action durations and a grand total (implies `--done`)
+  - `--human` format durations as human???readable text instead of `DD:HH:MM:SS`
+  - `--only_timed` show only actions that have both `@started` and `@done` (implies `--times --done`)
+  - `--only_times` output only the totals section (no action lines; implies `--times --done`)
+  - `--json_times` output a JSON object with timed items, per???tag totals, and overall total (implies `--times --done`)
+
+Example outputs:
+
+```bash
+# Per???action durations appended and totals table
+na next --times --human
+
+# Only totals table (Markdown), no action lines
+na tagged "tag*=bug" --only_times
+
+# JSON for scripting
+na next --json_times > times.json
+```
+
+Notes:
+
+- Any newly added or edited action text is scanned for natural???language values in `@started(...)`/`@done(...)` and normalized to `YYYY???MM???DD HH:MM`.
+- The color of durations in output is configurable via the theme key `duration` (defaults to `{y}`).
 
 ##### changelog
 
@@ -655,7 +716,9 @@ COMMAND OPTIONS
     -a, --archive                          - Add a @done tag to action and move to Archive
     --all                                  - Act on all matches immediately (no menu)
     -d, --depth=DEPTH                      - Search for files X directories deep (default: 1)
+    --duration=DURATION                    - Duration (e.g. 45m, 2h, 1d2h30m, or minutes) (default: none)
     -e, --regex                            - Interpret search pattern as regular expression
+    --end, --finished=DATE                 - End/Finished time (natural language or ISO) (default: none)
     --file=PATH                            - Specify the file to search for the task (default: none)
     --in, --todo=TODO_FILE                 - Use a known todo file, partial matches allowed (default: none)
     -n, --note                             - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
@@ -663,6 +726,7 @@ COMMAND OPTIONS
     --proj, --project=PROJECT[/SUBPROJECT] - Affect actions from a specific project (default: none)
     --search, --find, --grep=QUERY         - Filter results using search terms (may be used more than once, default: none)
     --[no-]search_notes                    - Include notes in search (default: enabled)
+    --started=DATE                         - Started time (natural language or ISO) (default: none)
     --tagged=TAG                           - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
     --to, --move=PROJECT                   - Add a @done tag and move action to specific project (default: none)
     -x, --exact                            - Match pattern exactly

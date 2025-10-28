@@ -1,3 +1,44 @@
+### 1.2.87
+
+2025-10-28 06:21
+
+#### CHANGED
+
+- Default theme/templates include `%line`; users with custom theme may need to regenerate to see line numbers
+
+#### NEW
+
+- Display line numbers with actions across `na next` and selection
+- Support `PATH:LINE` targeting in `na update` and `na edit`
+- Multi-action editing in external editor using `# ------ PATH:LINE` markers; notes supported beneath each action
+- Add --started flag on add/complete(update) to set @started
+- Add --finished alias to --end on add/complete/update to set @done
+- Add --duration (add/complete/update); backfills @started from --end
+- Add --times (next/tagged) to show per-action durations and totals
+- Add --human (next/tagged) for human-friendly duration format
+- Add --only_timed (next/tagged) to show only items with @started/@done
+- Add --json_times to next/tagged (JSON of timed actions, tags, total)
+- Add --only_times to next/tagged (show only totals, no action list)
+
+#### IMPROVED
+
+- --times and --only_timed imply --done for next/tagged
+- Duration annotations render with theme colors in output
+- Natural-language dates for @started/@done normalized automatically
+- Support shorthand: 2h30m, 30m ago, -2:30, 2:05 ago
+- --only_timed, --times, and --json_times imply --done automatically
+- Per-tag duration totals rendered as aligned Markdown table with footer
+- Duration color configurable via theme key `duration` (default {y})
+
+#### FIXED
+
+- Incorrect colorization (unexpected bright green) in action output
+- Search highlighting no longer corrupts ANSI color codes or numbers in escape sequences
+- Multi-action editor now only includes the specifically selected lines (no duplicates)
+- Delete in update menu removes the correct lines
+- Multi-select updates process bottom-to-top to avoid line shifts
+- String wrapping now wraps at requested widths (e.g., 60 cols) and indents
+
 ### 1.2.86
 
 2025-10-28 02:29
