@@ -1,6 +1,22 @@
 ### 1.2.86
 
-2025-10-27 17:16
+2025-10-28 02:29
+
+#### CHANGED
+
+- Default theme/templates include `%line`; users with custom theme may need to regenerate to see line numbers
+
+#### NEW
+
+- Display line numbers with actions across `na next` and selection
+- Support `PATH:LINE` targeting in `na update` and `na edit`
+- Multi-action editing in external editor using `# ------ PATH:LINE` markers; notes supported beneath each action
+
+#### FIXED
+
+- Incorrect colorization (unexpected bright green) in action output
+- Search highlighting no longer corrupts ANSI color codes or numbers in escape sequences
+- Multi-action editor now only includes the specifically selected lines (no duplicates)
 
 ### 1.2.85
 

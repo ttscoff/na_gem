@@ -5,6 +5,17 @@ class App
   desc 'Find and mark an action as @done'
   arg_name 'ACTION'
   command %i[complete finish] do |c|
+    c.desc 'Started time (natural language or ISO)'
+    c.arg_name 'DATE'
+    c.flag %i[started], type: :date_begin
+
+    c.desc 'End/Finished time (natural language or ISO)'
+    c.arg_name 'DATE'
+    c.flag %i[end finished], type: :date_end
+
+    c.desc 'Duration (e.g. 45m, 2h, 1d2h30m, or minutes)'
+    c.arg_name 'DURATION'
+    c.flag %i[duration], type: :duration
     c.example 'na complete "An existing task"',
               desc: 'Find "An existing task" and mark @done'
     c.example 'na finish "An existing task"',

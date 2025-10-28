@@ -29,6 +29,12 @@ class App
     c.desc "Include notes in output"
     c.switch %i[notes], negatable: true, default_value: false
 
+    c.desc "Show per-action durations and total"
+    c.switch %i[times], negatable: false
+
+    c.desc "Format durations in human-friendly form"
+    c.switch %i[human], negatable: false
+
     c.desc "Include notes in search"
     c.switch %i[search_notes], negatable: true, default_value: true
 
@@ -175,7 +181,9 @@ class App
                             notes: options[:notes],
                             nest: options[:nest],
                             nest_projects: options[:omnifocus],
-                            no_files: options[:no_file] })
+                            no_files: options[:no_file],
+                            times: options[:times],
+                            human: options[:human] })
     end
   end
 end

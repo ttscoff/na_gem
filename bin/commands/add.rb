@@ -11,6 +11,17 @@ class App
   allow you to pick to which file the action gets added.'
   arg_name "ACTION"
   command :add do |c|
+    c.desc "Started time (natural language or ISO)"
+    c.arg_name "DATE"
+    c.flag %i[started], type: :date_begin
+
+    c.desc "End/Finished time (natural language or ISO)"
+    c.arg_name "DATE"
+    c.flag %i[end finished], type: :date_end
+
+    c.desc "Duration (e.g. 45m, 2h, 1d2h30m, or minutes)"
+    c.arg_name "DURATION"
+    c.flag %i[duration], type: :duration
     c.example 'na add "A cool feature I thought of @idea"', desc: "Add a new action to the Inbox, including a tag"
     c.example 'na add "A bug I need to fix" -p 4 -n',
               desc: "Add a new action to the Inbox, set its @priority to 4, and prompt for an additional note."
@@ -181,7 +192,26 @@ class App
       note.<< split_note unless split_note.nil?
       note.concat(line_note) unless line_note.nil?
 
-      NA.add_action(target, options[:project], action, note, finish: options[:finish], append: append)
+      # Compute started/done based on flags
+      started_at = options[:started]
+      started_at = NA::Types.parse_date_begin(started_at) if started_at && !started_at.is_a?(Time)
+      done_at = options[:end] || options[:finished]
+      done_at = NA::Types.parse_date_end(done_at) if done_at && !done_at.is_a?(Time)
+      duration_seconds = options[:duration]
+
+      NA.notify("ADD parsed started_at=#{started_at.inspect} done_at=#{done_at.inspect} duration=#{duration_seconds.inspect}", debug: true)
+
+      # Ensure @started is present in the action text if a start time was provided
+      if started_at
+        started_str = started_at.strftime('%Y-%m-%d %H:%M')
+        # remove any existing @start/@started tag before appending
+        action = action.gsub(/(?<=\A| )@start(?:ed)?\(.*?\)/i, '').strip
+        action = "#{action} @started(#{started_str})"
+      end
+
+      NA.add_action(target, options[:project], action, note,
+                    finish: options[:finish], append: append,
+                    started_at: started_at, done_at: done_at, duration_seconds: duration_seconds)
     end
   end
 end

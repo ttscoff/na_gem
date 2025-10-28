@@ -6,3 +6,5 @@ na*gem
 .vscode
 time-tracking.md
 line-tracking.md
+*.plan.md
+commit_message.txt

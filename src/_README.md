@@ -235,6 +235,49 @@ See the help output for a list of all available actions.
 @cli(bundle exec bin/na help update)
 ```
 
+#### Time tracking
+
+`na` supports tracking elapsed time between a start and finish for actions using `@started(YYYY-MM-DD HH:MM)` and `@done(YYYY-MM-DD HH:MM)` tags. Durations are not stored; they are calculated on the fly from these tags.
+
+- Add/Finish/Update flags:
+  - `--started TIME` set a start time when creating or finishing an item
+  - `--end TIME` (alias `--finished`) set a done time
+  - `--duration DURATION` backfill start time from the provided end time
+  - All flags accept natural language (via Chronic) and shorthand: `30m ago`, `-2h`, `2h30m`, `2:30 ago`, `yesterday 5pm`
+
+Examples:
+
+```bash
+na add --started "30 minutes ago" "Investigate bug"
+na complete --finished now --duration 2h30m "Investigate bug"
+na update --started "yesterday 3pm" --end "yesterday 5:15pm" "Investigate bug"
+```
+
+- Display flags (next/tagged):
+  - `--times` show per‑action durations and a grand total (implies `--done`)
+  - `--human` format durations as human‑readable text instead of `DD:HH:MM:SS`
+  - `--only_timed` show only actions that have both `@started` and `@done` (implies `--times --done`)
+  - `--only_times` output only the totals section (no action lines; implies `--times --done`)
+  - `--json_times` output a JSON object with timed items, per‑tag totals, and overall total (implies `--times --done`)
+
+Example outputs:
+
+```bash
+# Per‑action durations appended and totals table
+na next --times --human
+
+# Only totals table (Markdown), no action lines
+na tagged "tag*=bug" --only_times
+
+# JSON for scripting
+na next --json_times > times.json
+```
+
+Notes:
+
+- Any newly added or edited action text is scanned for natural‑language values in `@started(...)`/`@done(...)` and normalized to `YYYY‑MM‑DD HH:MM`.
+- The color of durations in output is configurable via the theme key `duration` (defaults to `{y}`).
+
 ##### changelog
 
 View recent changes with `na changelog` or `na changes`.

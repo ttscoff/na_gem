@@ -327,7 +327,22 @@ module NA
                       move: nil,
                       remove_tag: [],
                       replace: nil,
-                      tagged: nil)
+                      tagged: nil,
+                      started_at: nil,
+                      done_at: nil,
+                      duration_seconds: nil)
+      # Coerce date/time inputs if passed as strings
+      begin
+        started_at = NA::Types.parse_date_begin(started_at) if started_at && !started_at.is_a?(Time)
+      rescue StandardError
+        # leave as-is
+      end
+      begin
+        done_at = NA::Types.parse_date_end(done_at) if done_at && !done_at.is_a?(Time)
+      rescue StandardError
+        # leave as-is
+      end
+      NA.notify("UPDATE parsed started_at=#{started_at.inspect} done_at=#{done_at.inspect} duration=#{duration_seconds.inspect}", debug: true)
       # Expand target to absolute path to avoid path resolution issues
       target = File.expand_path(target) unless Pathname.new(target).absolute?
 
@@ -359,12 +374,20 @@ module NA
         # So we don't need to handle it here - the action is already edited
 
         add_tag ||= []
-        add.process(priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
+        NA.notify("PROCESS before add.process started_at=#{started_at.inspect} done_at=#{done_at.inspect}", debug: true)
+        add.process(priority: priority,
+                    finish: finish,
+                    add_tag: add_tag,
+                    remove_tag: remove_tag,
+                    started_at: started_at,
+                    done_at: done_at,
+                    duration_seconds: duration_seconds)
+        NA.notify("PROCESS after add.process action=\"#{add.action}\"", debug: true)
 
-        # Remove the original action and its notes
+        # Remove the original action and its notes if this is an existing action
         action_line = add.file_line
         note_lines = add.note.is_a?(Array) ? add.note.count : 0
-        contents.slice!(action_line, note_lines + 1)
+        contents.slice!(action_line, note_lines + 1) if action_line.is_a?(Integer)
 
         # Prepare updated note
         note = note.to_s.split("\n") unless note.is_a?(Array)
@@ -384,32 +407,52 @@ module NA
         # Format note for insertion
         note_str = updated_note.empty? ? '' : "\n#{indent}\t\t#{updated_note.join("\n#{indent}\t\t").strip}"
 
-        # Insert at correct location: if moving, insert at start/end of target project
-        if move && target_proj
-          insert_line = if append
-                          # End of project
-                          target_proj.last_line + 1
-                        else
-                          # Start of project (after project header)
-                          target_proj.line + 1
-                        end
-          contents.insert(insert_line, "#{indent}\t- #{add.action}#{note_str}")
+        # If delete was requested in this direct update path, do not re-insert
+        if delete
+          affected_actions << { action: add, desc: 'deleted' }
         else
-          # Not moving, update in-place
-          contents.insert(action_line, "#{indent}\t- #{add.action}#{note_str}")
+          # Insert at correct location
+          if target_proj
+            insert_line = if append
+                            # End of project
+                            target_proj.last_line + 1
+                          else
+                            # Start of project (after project header)
+                            target_proj.line + 1
+                          end
+            # Ensure @started tag persists if provided
+            final_action = add.action.dup
+            if started_at && final_action !~ /(?<=\A| )@start(?:ed)?\(/i
+              final_action = final_action.gsub(/(?<=\A| )@start(?:ed)?\(.*?\)/i, '').strip
+              final_action = "#{final_action} @started(#{started_at.strftime('%Y-%m-%d %H:%M')})"
+            end
+            NA.notify("INSERT at #{insert_line} final_action=\"#{final_action}\"", debug: true)
+            contents.insert(insert_line, "#{indent}\t- #{final_action}#{note_str}")
+          else
+            # Fallback: append to end of file
+            final_action = add.action.dup
+            if started_at && final_action !~ /(?<=\A| )@start(?:ed)?\(/i
+              final_action = final_action.gsub(/(?<=\A| )@start(?:ed)?\(.*?\)/i, '').strip
+              final_action = "#{final_action} @started(#{started_at.strftime('%Y-%m-%d %H:%M')})"
+            end
+            NA.notify("APPEND final_action=\"#{final_action}\"", debug: true)
+            contents << "#{indent}\t- #{final_action}#{note_str}"
+          end
+
+          notify(add.pretty)
         end
 
-        notify(add.pretty)
-
         # Track affected action and description
-        changes = ['updated']
-        changes << 'finished' if finish
-        changes << "priority=#{priority}" if priority.to_i.positive?
-        changes << "tags+#{add_tag.join(',')}" unless add_tag.nil? || add_tag.empty?
-        changes << "tags-#{remove_tag.join(',')}" unless remove_tag.nil? || remove_tag.empty?
-        changes << 'note updated' unless note.nil? || note.empty?
-        changes << "moved to #{target_proj.project}" if move && target_proj
-        affected_actions << { action: add, desc: changes.join(', ') }
+        unless delete
+          changes = ['updated']
+          changes << 'finished' if finish
+          changes << "priority=#{priority}" if priority.to_i.positive?
+          changes << "tags+#{add_tag.join(',')}" unless add_tag.nil? || add_tag.empty?
+          changes << "tags-#{remove_tag.join(',')}" unless remove_tag.nil? || remove_tag.empty?
+          changes << 'note updated' unless note.nil? || note.empty?
+          changes << "moved to #{target_proj.project}" if move && target_proj
+          affected_actions << { action: add, desc: changes.join(', ') }
+        end
       else
         # Check if search is actually target_line
         target_line = search.is_a?(Hash) && search[:target_line] ? search[:target_line] : nil
@@ -445,7 +488,13 @@ module NA
           # If replace is defined, use search to search and replace text in action
           action.action.sub!(Regexp.new(Regexp.escape(search), Regexp::IGNORECASE), replace) if replace
 
-          action.process(priority: priority, finish: finish, add_tag: add_tag, remove_tag: remove_tag)
+          action.process(priority: priority,
+                         finish: finish,
+                         add_tag: add_tag,
+                         remove_tag: remove_tag,
+                         started_at: started_at,
+                         done_at: done_at,
+                         duration_seconds: duration_seconds)
 
           target_proj = if target_proj
                           projects.select { |proj| proj.project =~ /^#{target_proj.project}$/ }.first
@@ -532,7 +581,7 @@ module NA
     # @param finish [Boolean] Mark as finished
     # @param append [Boolean] Append to project
     # @return [void]
-    def add_action(file, project, action, note = [], priority: 0, finish: false, append: false)
+    def add_action(file, project, action, note = [], priority: 0, finish: false, append: false, started_at: nil, done_at: nil, duration_seconds: nil)
       parent = project.split(%r{[:/]})
 
       if NA.global_file
@@ -545,8 +594,16 @@ module NA
 
       action = Action.new(file, project, parent, action, nil, note)
 
-      update_action(file, nil, add: action, project: project, add_tag: add_tag, priority: priority, finish: finish,
-                               append: append)
+      update_action(file, nil,
+                    add: action,
+                    project: project,
+                    add_tag: add_tag,
+                    priority: priority,
+                    finish: finish,
+                    append: append,
+                    started_at: started_at,
+                    done_at: done_at,
+                    duration_seconds: duration_seconds)
     end
 
     # Build a nested hash representing project hierarchy from actions

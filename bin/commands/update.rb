@@ -9,6 +9,17 @@ class App
   allow you to pick which file to act on.'
   arg_name 'ACTION'
   command %i[update] do |c|
+    c.desc 'Started time (natural language or ISO)'
+    c.arg_name 'DATE'
+    c.flag %i[started], type: :date_begin
+
+    c.desc 'End/Finished time (natural language or ISO)'
+    c.arg_name 'DATE'
+    c.flag %i[end finished], type: :date_end
+
+    c.desc 'Duration (e.g. 45m, 2h, 1d2h30m, or minutes)'
+    c.arg_name 'DURATION'
+    c.flag %i[duration], type: :duration
     c.example 'na update --remove na "An existing task"',
               desc: 'Find "An existing task" action and remove the @na tag from it'
     c.example 'na update --tag waiting "A bug I need to fix" -p 4 -n',
@@ -299,7 +310,10 @@ class App
         options[:archive],
         options[:restore],
         options[:delete],
-        options[:edit]
+        options[:edit],
+        options[:started],
+        (options[:end] || options[:finished]),
+        options[:duration]
       ].any?
       unless actionable
         # Interactive menu for actions
@@ -361,6 +375,21 @@ class App
           options[:delete] = true
         when :finish
           options[:finish] = true
+          # Timed finish? Prompt user for optional start/date inputs
+          if NA.yn(NA::Color.template("#{NA.theme[:prompt]}Timed?"), default: false)
+            # Ask for start date expression
+            start_expr = nil
+            if TTY::Which.exist?('gum')
+              gum = TTY::Which.which('gum')
+              prompt = 'Enter start date/time (e.g. "30 minutes ago" or "3pm"):'
+              start_expr = `#{gum} input --placeholder "#{prompt}"`.strip
+            else
+              print 'Enter start date/time (e.g. "30 minutes ago" or "3pm"): '
+              start_expr = (STDIN.gets || '').strip
+            end
+            start_time = NA::Types.parse_date_begin(start_expr)
+            options[:started] = start_time if start_time
+          end
         when :edit
           # Just set the flag - multi-action editor will handle it below
           options[:edit] = true
@@ -477,8 +506,8 @@ class App
           end
         end
 
-        # Update each action
-        action_list.each do |action_obj|
+        # Update each action (process from bottom to top to avoid line shifts)
+        action_list.sort_by(&:file_line).reverse.each do |action_obj|
           NA.update_action(file, nil,
             add: action_obj,
             add_tag: add_tags,
@@ -639,7 +668,10 @@ class App
                          remove_tag: remove_tags,
                          replace: options[:replace],
                          search_note: options[:search_notes],
-                         tagged: tags)
+                         tagged: tags,
+                         started_at: options[:started],
+                         done_at: (options[:end] || options[:finished]),
+                         duration_seconds: options[:duration])
       end
     end
   end

@@ -9,6 +9,7 @@ class App
       pagers = [
         'mdless',
         'mdcat',
+        'glow',
         'bat',
         ENV['PAGER'],
         'less -FXr',

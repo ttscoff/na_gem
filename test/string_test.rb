@@ -3,14 +3,15 @@ require "na/string"
 
 class StringExtTest < Minitest::Test
   def test_wrap_splits_long_lines_and_indents
-  s = "This is a very long line that should wrap at a certain width and indent. " * 5
-  wrapped = s.wrap(120, 2)
+    s = "This is a very long line that should wrap at a certain width and indent. " * 5
+    wrapped = s.wrap(60, 2)
+    
     # Should contain line breaks and indentation
-  # Only lines after the first are indented
-  assert wrapped.lines[1..].any? { |line| line =~ /^  / }, 'should have indented lines after wrapping (after first line)'
-  assert wrapped.lines.count > 1, 'should wrap to multiple lines'
-  # Should preserve all words
-  s.split.each { |word| assert_match(/#{word}/, wrapped) }
+    # Only lines after the first are indented
+    assert wrapped.lines[1..].any? { |line| line =~ /^  / }, 'should have indented lines after wrapping (after first line)'
+    assert wrapped.lines.count > 1, 'should wrap to multiple lines'
+    # Should preserve all words
+    s.split.each { |word| assert_match(/#{word}/, wrapped) }
   end
   def test_comment_prepends_hash
     s = "line1\nline2"

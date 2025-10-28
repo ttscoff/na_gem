@@ -26,11 +26,25 @@ module NA
           notes: false,
           nest: false,
           nest_projects: false,
-          no_files: false
+          no_files: false,
+          times: false,
+          human: false,
+          only_timed: false,
+          json_times: false
         }
         config = defaults.merge(config)
 
         return if config[:files].nil?
+
+        # Optionally filter to only actions with a computable duration (@started and @done)
+        filtered_actions = if config[:only_timed]
+                             self.select do |a|
+                               t = a.tags
+                               (t['started'] || t['start']) && t['done']
+                             end
+                           else
+                             self
+                           end
 
         if config[:nest]
           template = NA.theme[:templates][:default]
@@ -40,7 +54,7 @@ module NA
           out = []
 
           if config[:nest_projects]
-            each do |action|
+            filtered_actions.each do |action|
               parent_files[action.file] ||= []
               parent_files[action.file].push(action)
             end
@@ -54,7 +68,7 @@ module NA
             template = NA.theme[:templates][:default]
             template = NA.theme[:templates][:no_file] if config[:no_files]
 
-            each do |action|
+            filtered_actions.each do |action|
               parent_files[action.file] ||= []
               parent_files[action.file].push(action)
             end
@@ -94,12 +108,69 @@ module NA
 
           # Optimize output generation - compile all output first, then apply regexes
           output = String.new
+          total_seconds = 0
+          totals_by_tag = Hash.new(0)
+          timed_items = []
           NA::Benchmark.measure('Generate action strings') do
-            each_with_index do |action, idx|
+            filtered_actions.each_with_index do |action, idx|
               # Generate raw output without regex processing
-              output << action.pretty(template: { templates: { output: template } }, regexes: [], notes: config[:notes])
-              output << "\n" unless idx == size - 1
+              line = action.pretty(template: { templates: { output: template } }, regexes: [], notes: config[:notes])
+
+              if config[:times]
+                # compute duration from @started/@done
+                tags = action.tags
+                begun = tags['started'] || tags['start']
+                finished = tags['done']
+                if begun && finished
+                  begin
+                    start_t = Time.parse(begun)
+                    end_t = Time.parse(finished)
+                    secs = [end_t - start_t, 0].max.to_i
+                    total_seconds += secs
+                    dur_color = NA.theme[:duration] || '{y}'
+                    line << NA::Color.template(" #{dur_color}[#{format_duration(secs, human: config[:human])}]{x}")
+
+                    # collect for JSON output
+                    timed_items << {
+                      action: NA::Color.uncolor(action.action),
+                      started: start_t.iso8601,
+                      ended: end_t.iso8601,
+                      duration: secs
+                    }
+
+                    # accumulate per-tag durations (exclude time-control tags)
+                    tags.each_key do |k|
+                      next if k =~ /^(start|started|done)$/i
+
+                      totals_by_tag[k.sub(/^@/, '')] += secs
+                    end
+                  rescue StandardError
+                    # ignore parse errors
+                  end
+                end
+              end
+
+              unless config[:only_times]
+                output << line
+                output << "\n" unless idx == filtered_actions.size - 1
+              end
             end
+          end
+
+          # If JSON output requested, emit JSON and return immediately
+          if config[:json_times]
+            require 'json'
+            json = {
+              timed: timed_items,
+              tags: totals_by_tag.map { |k, v| { tag: k, duration: v } }.sort_by { |h| -h[:duration] },
+              total: {
+                seconds: total_seconds,
+                timestamp: format_duration(total_seconds, human: false),
+                human: format_duration(total_seconds, human: true)
+              }
+            }
+            puts JSON.pretty_generate(json)
+            return
           end
 
           # Apply regex highlighting to the entire output at once
@@ -109,10 +180,69 @@ module NA
             end
           end
 
+          if config[:times] && total_seconds.positive?
+            # Build Markdown table of per-tag totals
+            if totals_by_tag.empty?
+              # No tag totals, just show total line
+              dur_color = NA.theme[:duration] || '{y}'
+              output << "\n"
+              output << NA::Color.template("{x}#{dur_color}Total time: [#{format_duration(total_seconds, human: config[:human])}]{x}")
+            else
+              rows = totals_by_tag.sort_by { |_, v| -v }.map do |tag, secs|
+                disp = format_duration(secs, human: config[:human])
+                ["@#{tag}", disp]
+              end
+              # Pre-compute total display for width calculation
+              total_disp = format_duration(total_seconds, human: config[:human])
+              # Determine column widths, including footer labels/values
+              tag_header = 'Tag'
+              dur_header = config[:human] ? 'Duration (human)' : 'Duration'
+              tag_width = ([tag_header.length, 'Total'.length] + rows.map { |r| r[0].length }).max
+              dur_width = ([dur_header.length, total_disp.length] + rows.map { |r| r[1].length }).max
+
+              # Header
+              output << "\n"
+              output << "| #{tag_header.ljust(tag_width)} | #{dur_header.ljust(dur_width)} |\n"
+              # Separator for header
+              output << "| #{'-' * tag_width} | #{'-' * dur_width} |\n"
+              # Body rows
+              rows.each do |tag, disp|
+                output << "| #{tag.ljust(tag_width)} | #{disp.ljust(dur_width)} |\n"
+              end
+              # Footer separator (kramdown footer separator with '=') and footer row
+              output << "| #{'=' * tag_width} | #{'=' * dur_width} |\n"
+              output << "| #{'Total'.ljust(tag_width)} | #{total_disp.ljust(dur_width)} |\n"
+            end
+          end
+
           NA::Benchmark.measure('Pager.page call') do
             NA::Pager.page(output)
           end
         end
+      end
+    end
+
+    private
+
+    def format_duration(secs, human: false)
+      return '' if secs.nil?
+
+      secs = secs.to_i
+      days = secs / 86_400
+      rem = secs % 86_400
+      hours = rem / 3600
+      rem %= 3600
+      minutes = rem / 60
+      seconds = rem % 60
+      if human
+        parts = []
+        parts << "#{days} days" if days.positive?
+        parts << "#{hours} hours" if hours.positive?
+        parts << "#{minutes} minutes" if minutes.positive?
+        parts << "#{seconds} seconds" if seconds.positive? || parts.empty?
+        parts.join(', ')
+      else
+        format('%<d>02d:%<h>02d:%<m>02d:%<s>02d', d: days, h: hours, m: minutes, s: seconds)
       end
     end
   end

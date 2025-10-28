@@ -65,6 +65,21 @@ class App
     c.desc "Include notes in output"
     c.switch %i[notes], negatable: true, default_value: false
 
+    c.desc "Show per-action durations and total"
+    c.switch %i[times], negatable: false
+
+    c.desc "Format durations in human-friendly form"
+    c.switch %i[human], negatable: false
+
+    c.desc "Show only actions that have a duration (@started and @done)"
+    c.switch %i[only_timed], negatable: false
+
+    c.desc "Output times as JSON object (implies --times and --done)"
+    c.switch %i[json_times], negatable: false
+
+    c.desc "Output only elapsed time totals (implies --times and --done)"
+    c.switch %i[only_times], negatable: false
+
     c.desc "Include @done actions"
     c.switch %i[done]
 
@@ -189,7 +204,20 @@ class App
         end
       end
 
-      options[:done] = true if tags.any? { |tag| tag[:tag] =~ /done/ }
+      if options[:json_times]
+        options[:times] = true
+        options[:done] = true
+      elsif options[:only_times]
+        options[:times] = true
+        options[:done] = true
+      elsif options[:only_timed]
+        options[:times] = true
+        options[:done] = true
+      elsif options[:times]
+        options[:done] = true
+      else
+        options[:done] = true if tags.any? { |tag| tag[:tag] =~ /done/ }
+      end
 
       search_tokens = nil
       if options[:exact]
@@ -239,7 +267,12 @@ class App
                             nest: options[:nest],
                             nest_projects: options[:omnifocus],
                             notes: options[:notes],
-                            no_files: options[:no_file] })
+                            no_files: options[:no_file],
+                            times: options[:times],
+                            human: options[:human],
+                            only_timed: options[:only_timed],
+                            json_times: options[:json_times],
+                            only_times: options[:only_times] })
     end
   end
 end

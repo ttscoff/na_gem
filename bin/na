@@ -195,6 +195,12 @@ class App
       true
     end
   end
+
+  # Register custom GLI types for natural language dates and durations
+  # Return original string if parsing fails so commands can handle fallback parsing
+  accept(:date_begin) { |v| NA::Types.parse_date_begin(v) || v }
+  accept(:date_end) { |v| NA::Types.parse_date_end(v) || v }
+  accept(:duration) { |v| NA::Types.parse_duration_seconds(v) }
 end
 
 NA.stdin = $stdin.read.strip if $stdin.stat.size.positive? || $stdin.fcntl(Fcntl::F_GETFL, 0).zero?

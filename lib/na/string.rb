@@ -189,7 +189,7 @@ class ::String
   # @param indent [Integer] Number of spaces to indent each line
   # @return [String] Wrapped string
   def wrap(width, indent)
-    return "\n#{self}" if width <= 80
+    return to_s if width.nil? || width <= 0
 
     output = []
     line = []
@@ -310,7 +310,14 @@ class ::String
       m = Regexp.last_match
       t = m['tag']
       d = m['date']
-      future = t =~ /^(done|complete)/ ? false : true
+      # Determine whether to bias toward future or past parsing
+      # Non-done tags usually bias to future, except explicit past phrases like "ago", "yesterday", or "last ..."
+      explicit_past = d =~ /(\bago\b|yesterday|\blast\b)/i
+      future = if t =~ /^(done|complete)/
+                 false
+               else
+                 explicit_past ? false : true
+               end
       parsed_date = d =~ iso_rx ? Time.parse(d) : d.chronify(guess: :begin, future: future)
       parsed_date.nil? ? m[0] : "@#{t}(#{parsed_date.strftime('%F %R')})"
     end

@@ -57,6 +57,7 @@ module NA
           tags: '{m}',
           value_parens: '{m}',
           values: '{c}',
+          duration: '{y}',
           search_highlight: '{y}',
           note: '{dw}',
           dirname: '{xdw}',

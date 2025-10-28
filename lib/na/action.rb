@@ -63,8 +63,8 @@ module NA
     # @param note [Array<String>] Notes to set
     # @return [void]
     # @example
-    #   action.process(priority: 5, finish: true, add_tag: ['urgent'], remove_tag: ['waiting'], note: ['Call Bob'])
-    def process(priority: 0, finish: false, add_tag: [], remove_tag: [], note: [])
+    #   action.process(priority: 5, finish: true, add_tag: ["urgent"], remove_tag: ["waiting"], note: ["Call Bob"], started_at: Time.now, done_at: Time.now)
+    def process(priority: 0, finish: false, add_tag: [], remove_tag: [], note: [], started_at: nil, done_at: nil, duration_seconds: nil)
       string = @action.dup
 
       if priority&.positive?
@@ -84,9 +84,32 @@ module NA
         string += " @#{tag}"
       end
 
-      string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})" if finish && string !~ /(?<=\A| )@done/
+      # Compute started/done from duration if provided
+      if duration_seconds && (done_at || finish)
+        done_time = done_at || Time.now
+        started_at ||= done_time - duration_seconds.to_i
+      elsif duration_seconds && started_at
+        done_at ||= started_at + duration_seconds.to_i
+      end
+
+      # Insert @started if provided
+      if started_at
+        string.gsub!(/(?<=\A| )@start(?:ed)?\(.*?\)/i, '')
+        string.strip!
+        string += " @started(#{started_at.strftime('%Y-%m-%d %H:%M')})"
+      end
+
+      # Insert @done if provided or finishing
+      if done_at
+        string.gsub!(/(?<=\A| )@done\(.*?\)/i, '')
+        string.strip!
+        string += " @done(#{done_at.strftime('%Y-%m-%d %H:%M')})"
+      elsif finish && string !~ /(?<=\A| )@done/
+        string = "#{string.strip} @done(#{Time.now.strftime('%Y-%m-%d %H:%M')})"
+      end
 
       @action = string.expand_date_tags
+      @tags = scan_tags
       @note = note unless note.empty?
     end
 
