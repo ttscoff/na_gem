@@ -5,5 +5,5 @@
 module Na
   ##
   # Current version of the na gem.
-  VERSION = '1.2.88'
+  VERSION = '1.2.89'
 end
