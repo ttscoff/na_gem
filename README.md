@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.87.
+The current version of `na` is 1.2.88.
 
 `na` ("next action") is a command line tool designed to make it easy to see what your next actions are for any project, right from the command line. It works with TaskPaper-formatted files (but any plain text format will do), looking for `@na` tags (or whatever you specify) in todo files in your current folder.
 
@@ -76,7 +76,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.87
+    1.2.88
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -112,6 +112,7 @@ COMMANDS
     move                - Move an existing action to a different section
     next, show          - Show next actions
     open                - Open a todo file in the default editor
+    plugin              - Run a plugin on selected actions
     projects            - Show list of projects for a file
     prompt              - Show or install prompt hooks for the current shell
     restore, unfinish   - Find and remove @done tag from an action
@@ -224,15 +225,19 @@ DESCRIPTION
 
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
+    --divider=STRING                       - Divider string for text IO (default: none)
     --[no-]done                            - Include @done actions
     -e, --regex                            - Interpret search pattern as regular expression
     --human                                - Format durations in human-friendly form
     --in=TODO_PATH                         - Show actions from a specific todo file in history. May use wildcards (* and ?) (default: none)
+    --input=TYPE                           - Plugin input format (json|yaml|csv|text) (default: none)
     --nest                                 - Output actions nested by file
     --no_file                              - No filename in output
     --[no-]notes                           - Include notes in output
     -o, --or                               - Combine search tokens with OR, displaying actions matching ANY of the terms
     --omnifocus                            - Output actions nested by file and project
+    --output=TYPE                          - Plugin output format (json|yaml|csv|text) (default: none)
+    --plugin=NAME                          - Run a plugin on results (STDOUT only; no file writes) (default: none)
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --save=TITLE                           - Save this search for future use (default: none)
     --[no-]search_notes                    - Include notes in search (default: enabled)
@@ -338,12 +343,14 @@ DESCRIPTION
 COMMAND OPTIONS
     --all                                  - Show next actions from all known todo files (in any directory)
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
+    --divider=STRING                       - Divider string for text IO (default: none)
     --[no-]done                            - Include @done actions
     --exact                                - Search query is exact text match (not tokens)
     --file=TODO_FILE                       - Display matches from specific todo file ([relative] path) (default: none)
     --hidden                               - Include hidden directories while traversing
     --human                                - Format durations in human-friendly form
     --in, --todo=TODO                      - Display matches from a known todo file anywhere in history (short name) (may be used more than once, default: none)
+    --input=TYPE                           - Plugin input format (json|yaml|csv|text) (default: none)
     --json_times                           - Output times as JSON object (implies --times and --done)
     --nest                                 - Output actions nested by file
     --no_file                              - No filename in output
@@ -351,7 +358,9 @@ COMMAND OPTIONS
     --omnifocus                            - Output actions nested by file and project
     --only_timed                           - Show only actions that have a duration (@started and @done)
     --only_times                           - Output only elapsed time totals (implies --times and --done)
+    --output=TYPE                          - Plugin output format (json|yaml|csv|text) (default: none)
     -p, --prio, --priority=PRIORITY        - Match actions with priority, allows <>= comparison (may be used more than once, default: none)
+    --plugin=NAME                          - Run a plugin on results (STDOUT only; no file writes) (default: none)
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --regex                                - Search query is regular expression
     --save=TITLE                           - Save this search for future use (default: none)
@@ -499,10 +508,12 @@ DESCRIPTION
 
 COMMAND OPTIONS
     -d, --depth=DEPTH                      - Recurse to depth (default: 1)
+    --divider=STRING                       - Divider string for text IO (default: none)
     --[no-]done                            - Include @done actions
     --exact                                - Search query is exact text match (not tokens)
     --human                                - Format durations in human-friendly form
     --in=TODO_PATH                         - Show actions from a specific todo file in history. May use wildcards (* and ?) (default: none)
+    --input=TYPE                           - Plugin input format (json|yaml|csv|text) (default: none)
     --json_times                           - Output times as JSON object (implies --times and --done)
     --nest                                 - Output actions nested by file
     --no_file                              - No filename in output
@@ -511,6 +522,8 @@ COMMAND OPTIONS
     --omnifocus                            - Output actions nested by file and project
     --only_timed                           - Show only actions that have a duration (@started and @done)
     --only_times                           - Output only elapsed time totals (implies --times and --done)
+    --output=TYPE                          - Plugin output format (json|yaml|csv|text) (default: none)
+    --plugin=NAME                          - Run a plugin on results (STDOUT only; no file writes) (default: none)
     --proj, --project=PROJECT[/SUBPROJECT] - Show actions from a specific project (default: none)
     --regex                                - Search query is regular expression
     --save=TITLE                           - Save this search for future use (default: none)
@@ -609,6 +622,7 @@ COMMAND OPTIONS
     --at=POSITION                          - When moving task, add at [s]tart or [e]nd of target project (default: none)
     -d, --depth=DEPTH                      - Search for files X directories deep (default: 1)
     --delete                               - Delete an action
+    --divider=STRING                       - Divider string for text IO (default: none)
     --[no-]done                            - Include @done actions
     --duration=DURATION                    - Duration (e.g. 45m, 2h, 1d2h30m, or minutes) (default: none)
     -e, --regex                            - Interpret search pattern as regular expression
@@ -617,9 +631,12 @@ COMMAND OPTIONS
     -f, --finish                           - Add a @done tag to action
     --file=PATH                            - Specify the file to search for the task (default: none)
     --in, --todo=TODO_FILE                 - Use a known todo file, partial matches allowed (default: none)
+    --input=TYPE                           - Plugin input format (json|yaml|csv|text) (default: none)
     -n, --note                             - Prompt for additional notes. Input will be appended to any existing note.     If STDIN input (piped) is detected, it will be used as a note.
     -o, --overwrite                        - Overwrite note instead of appending
+    --output=TYPE                          - Plugin output format (json|yaml|csv|text) (default: none)
     -p, --priority=PRIO                    - Add/change a priority level 1-5 (default: 0)
+    --plugin=NAME                          - Run a plugin by name on selected actions (default: none)
     --proj, --project=PROJECT[/SUBPROJECT] - Affect actions from a specific project (default: none)
     -r, --remove=TAG                       - Remove a tag from the action, use multiple times or combine multiple tags with a comma,             wildcards (* and ?) allowed (may be used more than once, default: none)
     --replace=TEXT                         - Use with --find to find and replace with new text. Enables --exact when used (default: none)
@@ -898,6 +915,115 @@ If you're using a single global file, you'll need `--cwd_as` to be `tag` or `pro
 
 After installing a hook, you'll need to close your terminal and start a new session to initialize the new commands.
 
+### Plugins
+
+NA supports a plugin system that allows you to run external scripts to transform or process actions. Plugins are stored in `~/.local/share/na/plugins` and can be written in any language with a shebang.
+
+#### Getting Started
+
+The first time NA runs, it will create the plugins directory with a README and two sample plugins:
+- `Add Foo.py` - Adds a `@foo` tag with a timestamp
+- `Add Bar.sh` - Adds a `@bar` tag
+
+You can delete or modify these sample plugins as needed.
+
+#### Running Plugins
+
+Run a plugin with:
+```bash
+na plugin PLUGIN_NAME
+```
+
+Or use plugins through the `update` command's interactive menu, or pipe actions through plugins on display commands:
+
+```bash
+na update --plugin PLUGIN_NAME           # Run plugin on selected actions
+na next --plugin PLUGIN_NAME             # Transform output only (no file writes)
+na tagged bug --plugin PLUGIN_NAME       # Filter and transform
+na find "search term" --plugin PLUGIN_NAME
+```
+
+#### Plugin Metadata
+
+Plugins can specify their behavior in a metadata block after the shebang:
+
+```bash
+#!/usr/bin/env python3
+# name: My Plugin
+# input: json
+# output: json
+```
+
+Available metadata keys (case-insensitive):
+- `input`: Input format (`json`, `yaml`, `csv`, `text`)
+- `output`: Output format
+- `name` or `title`: Display name (defaults to filename)
+
+#### Input/Output Formats
+
+Plugins accept and return action data. Use `--input` and `--output` flags to override metadata:
+
+```bash
+na plugin MY_PLUGIN --input text --output json --divider "||"
+```
+
+**JSON/YAML Schema:**
+```json
+[
+  {
+    "file_path": "todo.taskpaper",
+    "line": 15,
+    "parents": ["Project", "Subproject"],
+    "text": "- Action text @tag(value)",
+    "note": "Note content",
+    "tags": [
+      { "name": "tag", "value": "value" }
+    ]
+  }
+]
+```
+
+**Text Format:**
+```
+ACTION||ARGS||file_path:line||parents||text||note||tags
+```
+
+Default divider is `||` (configurable with `--divider`).
+- `parents`: `Parent>Child>Leaf`
+- `tags`: `name(value);name;other(value)`
+
+If the first token isn???t a known action, it???s treated as `file_path:line` and the action defaults to UPDATE.
+
+#### Actions
+
+Plugins may return an optional ACTION with arguments. Supported (case-insensitive):
+- UPDATE (default; replace text/note/tags/parents)
+- DELETE
+- COMPLETE/FINISH
+- RESTORE/UNFINISH
+- ARCHIVE
+- ADD_TAG (args: one or more tags)
+- DELETE_TAG/REMOVE_TAG (args: one or more tags)
+- MOVE (args: target project path)
+
+#### Plugin Behavior
+
+**On `update` or `plugin` command:**
+- Plugins can modify text, notes, tags, and parents
+- Changing `parents` will move the action to the new project location
+- `file_path` and `line` cannot be changed
+
+**On display commands (`next`, `tagged`, `find`):**
+- Plugins only transform STDOUT (no file writes)
+- Use returned text/note/tags/parents for rendering
+- Parent changes affect display but not file structure
+
+#### Override Formats
+
+You can override plugin defaults with flags on any command that supports `--plugin`:
+```bash
+na next --plugin FOO --input csv --output text
+```
 
 [fzf]: https://github.com/junegunn/fzf
 [gum]: https://github.com/charmbracelet/gum

@@ -1,20 +1,41 @@
 ### 1.2.88
 
-2025-10-29 07:00
+2025-10-28 08:22
+
+#### CHANGED
+
+- Update command interactive menu lists available plugins
+- README: add detailed Plugins section with examples and schema
+- CHANGELOG: add 1.2.88 entry for plugins feature
 
 #### NEW
 
-- Plugin system: run scripts from `~/.local/share/na/plugins` to transform actions
-- `na plugin NAME` command to run plugins on selected actions
-- `--plugin NAME` flag on `update`, `next`, `tagged`, `find` for plugin processing
-- `--input/--output` flags (json|yaml|csv|text) for plugin IO formats
-- `--divider` flag for text-format field separation (default: `||`)
-- Plugin metadata block (after shebang): `input`, `output`, `name/title` keys
-- Plugins auto-create sample scripts (Add Foo.py, Add Bar.sh) on first run
-- Display commands (`next`, `tagged`, `find`) pipe through plugins for STDOUT-only transformation
-- Update menu shows available plugins; select to run on chosen actions
-- Plugin IO includes parent project hierarchy; plugins can move by changing parents array
-- Support CSV format for plugin input/output alongside JSON/YAML/Text
+- Plugin system with scripts in ~/.local/share/na/plugins
+- Na plugin command to run plugins on selected actions
+- --plugin/--input/--output/--divider flags on update/next/tagged/find
+- Plugin IO supports json, yaml, csv, and text formats
+- ACTION support in plugin IO (UPDATE/DELETE/COMPLETE/RESTORE/ARCHIVE/ADD_TAG/DELETE_TAG/MOVE)
+- Auto-create plugins dir with README and sample plugins (Add Foo.py, Add Bar.sh)
+- Display commands can pipe through plugins (STDOUT-only, no writes)
+- Add --json_times to next/tagged (JSON of timed actions, tags, total)
+- Add --only_times to next/tagged (show only totals, no action list)
+
+#### IMPROVED
+
+- Duration/time docs and output clarifications in README
+- Internal plugin README with metadata, IO, and examples
+- --only_timed, --times, and --json_times imply --done automatically
+- Per-tag duration totals rendered as aligned Markdown table with footer
+- Duration color configurable via theme key `duration` (default {y})
+
+#### FIXED
+
+- Plugin update path writing duplicate actions; now in-place by line
+- Plugin apply finds action via target_line, avoids Symbol->Integer error
+- String#wrap indentation and width handling for multi-line wrapping
+- Lint/DuplicateBranch in plugin parse_actions
+- Style/MapToHash in apply_plugin_result
+- String wrapping now wraps at requested widths (e.g., 60 cols) and indents
 
 ### 1.2.87
 
