@@ -98,6 +98,31 @@ class PluginsTest < Minitest::Test
       assert_equal 'foo', parsed.first['tags'].last['name']
     end
   end
+
+  def test_enable_disable_and_samples
+    with_tmp_plugins do |_dir|
+      # ensure creates disabled samples
+      NA::Plugins.ensure_plugins_home
+      disabled = NA::Plugins.list_plugins_disabled
+      assert disabled.keys.size >= 1, 'expected sample plugins in plugins_disabled'
+
+      # enable one
+      name = File.basename(disabled.values.first)
+      enabled_path = NA::Plugins.enable_plugin(name)
+      assert File.dirname(enabled_path) == NA::Plugins.plugins_home
+      # disable back
+      disabled_path = NA::Plugins.disable_plugin(File.basename(enabled_path))
+      assert File.dirname(disabled_path) == NA::Plugins.plugins_disabled_home
+    end
+  end
+
+  def test_create_plugin_infers_shebang
+    with_tmp_plugins do |_dir|
+      path = NA::Plugins.create_plugin('TestTool.rb')
+      first = File.open(path, 'r', &:readline).strip
+      assert_match(/ruby/, first)
+    end
+  end
 end
 
 

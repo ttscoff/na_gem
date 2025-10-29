@@ -30,6 +30,7 @@ The current version of `na` is <!--VER-->1.2.88<!--END VER-->.
   - [init, create](#init-create)
   - [move](#move)
   - [next, show](#next-show)
+  - [plugin](#plugin)
   - [projects](#projects)
   - [saved](#saved)
   - [scan](#scan)
@@ -180,6 +181,54 @@ To see all next actions across all known todos, use `na next "*"`. You can combi
 
 ```
 @cli(bundle exec bin/na help next)
+```
+
+##### plugin
+
+Manage and run external plugins. See also the Plugins section below.
+
+```
+@cli(na help plugin)
+```
+
+###### plugin new
+
+Create a new plugin script (aliases: `n`). Infers shebang by extension or `--language`.
+
+```
+@cli(na help plugin new)
+```
+
+###### plugin edit
+
+Open an existing plugin in your default editor. Prompts if no name is given.
+
+```
+@cli(na help plugin edit)
+```
+
+###### plugin run
+
+Run a plugin on selected actions (aliases: `x`). Supports input/output format flags and filters.
+
+```
+@cli(na help plugin run)
+```
+
+###### plugin enable
+
+Move a plugin from `plugins_disabled` to `plugins` (alias: `e`).
+
+```
+@cli(na help plugin enable)
+```
+
+###### plugin disable
+
+Move a plugin from `plugins` to `plugins_disabled` (alias: `d`).
+
+```
+@cli(na help plugin disable)
 ```
 
 ##### projects
@@ -431,19 +480,15 @@ You can delete or modify these sample plugins as needed.
 
 #### Running Plugins
 
-Run a plugin with:
-```bash
-na plugin PLUGIN_NAME
-```
+You can manage and run plugins using subcommands under `na plugin`:
 
-Or use plugins through the `update` command's interactive menu, or pipe actions through plugins on display commands:
+- `new`/`n`: scaffold a new plugin script
+- `edit`: open an existing plugin
+- `run`/`x`: run a plugin against selected actions
+- `enable`/`e`: move from disabled to enabled
+- `disable`/`d`: move from enabled to disabled
 
-```bash
-na update --plugin PLUGIN_NAME           # Run plugin on selected actions
-na next --plugin PLUGIN_NAME             # Transform output only (no file writes)
-na tagged bug --plugin PLUGIN_NAME       # Filter and transform
-na find "search term" --plugin PLUGIN_NAME
-```
+Plugins are executed with actions on STDIN and must return actions on STDOUT. Display commands can still pipe through plugins via `--plugin`, which only affects STDOUT (no writes).
 
 #### Plugin Metadata
 

@@ -4,8 +4,8 @@ require "na/string"
 class StringExtTest < Minitest::Test
   def test_wrap_splits_long_lines_and_indents
     s = "This is a very long line that should wrap at a certain width and indent. " * 5
-    wrapped = s.wrap(60, 2)
-    
+    wrapped = s.wrap(50, 2)
+
     # Should contain line breaks and indentation
     # Only lines after the first are indented
     assert wrapped.lines[1..].any? { |line| line =~ /^  / }, 'should have indented lines after wrapping (after first line)'

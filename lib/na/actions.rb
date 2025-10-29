@@ -40,7 +40,8 @@ module NA
         filtered_actions = if config[:only_timed]
                              self.select do |a|
                                t = a.tags
-                               (t['started'] || t['start']) && t['done']
+                               tl = t.transform_keys { |k| k.to_s.downcase }
+                               (tl['started'] || tl['start']) && tl['done']
                              end
                            else
                              self
@@ -118,7 +119,7 @@ module NA
 
               if config[:times]
                 # compute duration from @started/@done
-                tags = action.tags
+                tags = action.tags.transform_keys { |k| k.to_s.downcase }
                 begun = tags['started'] || tags['start']
                 finished = tags['done']
                 if begun && finished

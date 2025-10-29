@@ -28,6 +28,12 @@ module NA
       @note = note
     end
 
+    # Returns true if this action contains the current next-action tag (e.g. @na)
+    # @return [Boolean]
+    def na?
+      @tags.key?(NA.na_tag)
+    end
+
     # Convert action to plugin IO hash
     # @return [Hash]
     def to_plugin_io_hash

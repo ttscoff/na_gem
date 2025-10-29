@@ -13,18 +13,39 @@ module NA
       File.expand_path('~/.local/share/na/plugins')
     end
 
+    def plugins_disabled_home
+      File.expand_path('~/.local/share/na/plugins_disabled')
+    end
+
     def ensure_plugins_home
       dir = plugins_home
-      return if File.directory?(dir)
+      dis = plugins_disabled_home
+      FileUtils.mkdir_p(dir) unless File.directory?(dir)
+      FileUtils.mkdir_p(dis) unless File.directory?(dis)
 
-      FileUtils.mkdir_p(dir)
       readme = File.join(dir, 'README.md')
       File.write(readme, default_readme_contents) unless File.exist?(readme)
-      create_sample_plugins(dir)
+      create_sample_plugins(dis)
     end
 
     def list_plugins
       dir = plugins_home
+      return {} unless File.directory?(dir)
+
+      Dir.children(dir).each_with_object({}) do |entry, acc|
+        path = File.join(dir, entry)
+        next unless File.file?(path)
+        next if entry =~ /\.(md|bak)$/i
+        next unless shebang?(path)
+
+        base = File.basename(entry, File.extname(entry))
+        key = base.gsub(/[\s_]/, '')
+        acc[key.downcase] = path
+      end
+    end
+
+    def list_plugins_disabled
+      dir = plugins_disabled_home
       return {} unless File.directory?(dir)
 
       Dir.children(dir).each_with_object({}) do |entry, acc|
@@ -48,6 +69,10 @@ module NA
 
       # Fallback: try exact filename match in dir
       path = File.join(plugins_home, name)
+      return path if File.file?(path)
+
+      # Also check disabled folder
+      path = File.join(plugins_disabled_home, name)
       File.file?(path) ? path : nil
     end
 
@@ -58,6 +83,17 @@ module NA
         ''
       end
       first.start_with?('#!') ? first.sub('#!', '').strip : nil
+    end
+
+    def infer_shebang_for_extension(ext)
+      case ext.downcase
+      when '.rb' then '#!/usr/bin/env ruby'
+      when '.py' then '#!/usr/bin/env python3'
+      when '.zsh' then '#!/usr/bin/env zsh'
+      when '.fish' then '#!/usr/bin/env fish'
+      when '.js', '.mjs' then '#!/usr/bin/env node'
+      else '#!/usr/bin/env bash'
+      end
     end
 
     def parse_plugin_metadata(file)
@@ -101,6 +137,64 @@ module NA
         io.close_write
         io.read
       end
+    end
+
+    def enable_plugin(name)
+      # Try by resolved path; if already enabled, return
+      path = resolve_plugin(name)
+      return path if path && File.dirname(path) == plugins_home
+
+      # Find in disabled by normalized name
+      disabled_map = Dir.exist?(plugins_disabled_home) ? Dir.children(plugins_disabled_home) : []
+      from = disabled_map.map { |e| File.join(plugins_disabled_home, e) }
+                         .find { |p| File.basename(p).downcase.start_with?(name.to_s.downcase) }
+      from ||= File.join(plugins_disabled_home, name)
+      to = File.join(plugins_home, File.basename(from))
+      FileUtils.mv(from, to)
+      to
+    end
+
+    def disable_plugin(name)
+      path = resolve_plugin(name)
+      return path if path && File.dirname(path) == plugins_disabled_home
+
+      enabled_map = Dir.exist?(plugins_home) ? Dir.children(plugins_home) : []
+      from = enabled_map.map { |e| File.join(plugins_home, e) }
+                        .find { |p| File.basename(p).downcase.start_with?(name.to_s.downcase) }
+      from ||= File.join(plugins_home, name)
+      to = File.join(plugins_disabled_home, File.basename(from))
+      FileUtils.mv(from, to)
+      to
+    end
+
+    def create_plugin(name, language: nil)
+      base = File.basename(name)
+      ext = File.extname(base)
+      if ext.empty? && language
+        ext = language.start_with?('.') ? language : ".#{language.split('/').last}"
+      end
+      ext = '.sh' if ext.empty?
+      she = language&.start_with?('/') ? language : infer_shebang_for_extension(ext)
+      file = File.join(plugins_home, base.sub(File.extname(base), '') + ext)
+      content = []
+      content << she
+      content << "# name: #{base.sub(File.extname(base), '')}"
+      content << '# input: json'
+      content << '# output: json'
+      content << '# New plugin template'
+      content << ''
+      content << '# Read STDIN and echo back unchanged'
+      content << 'if command -v python3 >/dev/null 2>&1; then'
+      content << "  python3 - \"$@\" <<'PY'"
+      content << 'import sys, json'
+      content << 'data = json.load(sys.stdin)'
+      content << 'json.dump(data, sys.stdout)'
+      content << 'PY'
+      content << 'else'
+      content << '  cat'
+      content << 'fi'
+      File.write(file, content.join("\n"))
+      file
     end
 
     def serialize_actions(actions, format: 'json', divider: '||')

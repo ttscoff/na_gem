@@ -69,12 +69,16 @@ module NA
         return
       when 'MOVE'
         move_to = action_args.first.to_s
-        update_action(file, { target_line: line }, add: action, move: move_to, all: true)
+        update_action(file, { target_line: line }, add: action, move: move_to, all: true, suppress_prompt: true)
         return
       end
 
       # Replace content on the existing action then write back in-place
       original_line = action.file_line
+      original_project = action.project
+      original_parent_chain = action.parent.dup
+
+      # Update action content
       action.action = text
       action.note = note.to_s.split("\n")
       action.action.gsub!(/(?<=\A| )@\S+(?:\(.*?\))?/, '')
@@ -82,18 +86,13 @@ module NA
         tag_str = tags.map { |k, v| v.to_s.empty? ? "@#{k}" : "@#{k}(#{v})" }.join(' ')
         action.action = action.action.strip + (tag_str.empty? ? "" : " #{tag_str}")
       end
-      # Ensure we update this exact action in-place
-      update_action(file, { target_line: original_line }, add: action, all: true)
 
-      # If parents changed, set move target
-      move_to = nil
-      move_to = ([new_project] + new_parent_chain).join(':') if new_project.to_s.strip != action.project || new_parent_chain != action.parent
+      # Check if parents changed
+      parents_changed = new_project.to_s.strip != original_project || new_parent_chain != original_parent_chain
+      move_to = parents_changed ? ([new_project] + new_parent_chain).join(':') : nil
 
-      update_action(file, nil,
-                    add: action,
-                    project: action.project,
-                    overwrite: true,
-                    move: move_to)
+      # Update in-place (with move if parents changed)
+      update_action(file, { target_line: original_line }, add: action, move: move_to, all: true, suppress_prompt: true)
     end
     include NA::Editor
 
@@ -143,6 +142,7 @@ module NA
     # @return     [Boolean] result
     #
     def yn(prompt, default: true)
+      return default if ENV['NA_TEST'] == '1'
       return default unless $stdout.isatty
 
       tty_state = `stty -g`
@@ -422,7 +422,8 @@ module NA
                       tagged: nil,
                       started_at: nil,
                       done_at: nil,
-                      duration_seconds: nil)
+                      duration_seconds: nil,
+                      suppress_prompt: false)
       # Coerce date/time inputs if passed as strings
       begin
         started_at = NA::Types.parse_date_begin(started_at) if started_at && !started_at.is_a?(Time)
@@ -447,14 +448,19 @@ module NA
         move = move.sub(/:$/, '')
         target_proj = projects.select { |pr| pr.project =~ /#{move.gsub(':', '.*?:.*?')}/i }.first
         if target_proj.nil?
-          res = NA.yn(
-            NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{move}#{NA.theme[:warning]} doesn't exist, add it"), default: true
-          )
-          if res
-            target_proj = insert_project(target, move, projects)
+          if suppress_prompt || !$stdout.isatty
+            target_proj = insert_project(target, move)
             projects << target_proj
           else
-            NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
+            res = NA.yn(
+              NA::Color.template("#{NA.theme[:warning]}Project #{NA.theme[:file]}#{move}#{NA.theme[:warning]} doesn't exist, add it"), default: true
+            )
+            if res
+              target_proj = insert_project(target, move)
+              projects << target_proj
+            else
+              NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1)
+            end
           end
         end
       end

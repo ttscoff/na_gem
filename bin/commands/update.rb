@@ -455,7 +455,7 @@ class App
               new_proj_name = (STDIN.gets || '').strip
             end
             # Create the new project in the file
-            NA.insert_project(selected_file, new_proj_name, todo.projects)
+            NA.insert_project(selected_file, new_proj_name)
             options[:move] = new_proj_name
           else
             options[:move] = selected_project

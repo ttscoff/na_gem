@@ -19,8 +19,6 @@ class ArrayExtTest < Minitest::Test
 
   def test_wrap_returns_wrapped_and_colorized
     arr = ["This is a long line that should wrap nicely.", "Short line."]
-    # Stub String#wrap to just return the string for test
-    String.class_eval { def wrap(width, indent); self; end }
     result = arr.wrap(50, 2, "[color]")
     assert result.is_a?(Array) || result.is_a?(String)
     assert result.first.include?("[color]")
