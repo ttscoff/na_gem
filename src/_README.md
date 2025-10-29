@@ -188,7 +188,7 @@ To see all next actions across all known todos, use `na next "*"`. You can combi
 Manage and run external plugins. See also the Plugins section below.
 
 ```
-@cli(na help plugin)
+@cli(bundle exec bin/na help plugin)
 ```
 
 ###### plugin new
@@ -196,7 +196,7 @@ Manage and run external plugins. See also the Plugins section below.
 Create a new plugin script (aliases: `n`). Infers shebang by extension or `--language`.
 
 ```
-@cli(na help plugin new)
+@cli(bundle exec bin/na help plugin new)
 ```
 
 ###### plugin edit
@@ -204,7 +204,7 @@ Create a new plugin script (aliases: `n`). Infers shebang by extension or `--lan
 Open an existing plugin in your default editor. Prompts if no name is given.
 
 ```
-@cli(na help plugin edit)
+@cli(bundle exec bin/na help plugin edit)
 ```
 
 ###### plugin run
@@ -212,7 +212,7 @@ Open an existing plugin in your default editor. Prompts if no name is given.
 Run a plugin on selected actions (aliases: `x`). Supports input/output format flags and filters.
 
 ```
-@cli(na help plugin run)
+@cli(bundle exec bin/na help plugin run)
 ```
 
 ###### plugin enable
@@ -220,7 +220,7 @@ Run a plugin on selected actions (aliases: `x`). Supports input/output format fl
 Move a plugin from `plugins_disabled` to `plugins` (alias: `e`).
 
 ```
-@cli(na help plugin enable)
+@cli(bundle exec bin/na help plugin enable)
 ```
 
 ###### plugin disable
@@ -228,7 +228,7 @@ Move a plugin from `plugins_disabled` to `plugins` (alias: `e`).
 Move a plugin from `plugins` to `plugins_disabled` (alias: `d`).
 
 ```
-@cli(na help plugin disable)
+@cli(bundle exec bin/na help plugin disable)
 ```
 
 ##### projects

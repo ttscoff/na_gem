@@ -1,3 +1,39 @@
+### 1.2.89
+
+2025-10-29 06:36
+
+#### CHANGED
+
+- Completed plugin subcommand sections with aliases and context
+- Plugins section updated with management workflow and notes
+- Sample plugins can be regenerated with --generate-examples when deleted
+- Shortcut `na plugin NAME` works without run command flags (use `na plugin run NAME` for flags)
+- Update menu shows a single "Run Plugin" option leading to a plugin submenu
+- Documentation/blog now uses `na plugin run NAME` (keeps `na plugin NAME` as shortcut)
+
+#### NEW
+
+- Added plugin enable/disable and flow tests (update/move behaviors)
+- Document plugin subcommands (new/edit/run/enable/disable)
+- `--generate-examples` flag regenerates sample plugins and README
+- `na plugin NAME` shortcut defaults to `na plugin run NAME`
+
+#### IMPROVED
+
+- `na plugin run` prompts for plugin and action selection when no filters
+- README: brief descriptions for `plugin` subcommands
+- README plugin command docs with brief descriptions
+- Sample plugins only generated once (tracked via .samples_generated flag)
+- Plugin submenu lists only enabled plugins with input/output metadata
+- Blog post adds concise overview of plugin subcommands
+
+#### FIXED
+
+- Plugin-applied updates now modify in place (no duplicate actions)
+- Suppressed Y/N prompts during plugin operations and non-interactive runs
+- `--only_timed` filtering (case-insensitive tag keys) in output
+- Stabilized wrapping by removing test override of String#wrap
+
 ### 1.2.88
 
 2025-10-28 08:22

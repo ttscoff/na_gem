@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.88.
+The current version of `na` is 1.2.89.
 
 
 ### Table of contents
@@ -30,6 +30,7 @@ The current version of `na` is 1.2.88.
   - [init, create](#init-create)
   - [move](#move)
   - [next, show](#next-show)
+  - [plugin](#plugin)
   - [projects](#projects)
   - [saved](#saved)
   - [scan](#scan)
@@ -151,7 +152,7 @@ COMMANDS
     move                - Move an existing action to a different section
     next, show          - Show next actions
     open                - Open a todo file in the default editor
-    plugin              - Run a plugin on selected actions
+    plugin              - Manage and run plugins
     projects            - Show list of projects for a file
     prompt              - Show or install prompt hooks for the current shell
     restore, unfinish   - Find and remove @done tag from an action
@@ -419,6 +420,121 @@ EXAMPLES
 
     # display next actions for a project you visited in the past
     na next marked
+```
+
+##### plugin
+
+Manage and run external plugins. See also the Plugins section below.
+
+```
+NAME
+    plugin - Manage and run plugins
+
+SYNOPSIS
+
+    na [global options] plugin [command options] 
+
+    na [global options] plugin [command options] disable NAME
+
+    na [global options] plugin [command options] edit NAME
+
+    na [global options] plugin [command options] enable NAME
+
+    na [global options] plugin [command options] list [--type TYPE|-t TYPE]
+
+    na [global options] plugin [command options] new [--language LANG|--lang LANG] NAME
+
+    na [global options] plugin [command options] run [--divider STRING] [--done] [--file PATH|--in PATH] [--input TYPE] [--output TYPE] [--search QUERY|--find QUERY|--grep QUERY] [--tagged TAG] [-d DEPTH|--depth DEPTH] NAME
+
+COMMAND OPTIONS
+    --[no-]generate-examples - Regenerate sample plugins and README
+
+COMMANDS
+    <default>  - 
+    disable, d - Disable an enabled plugin
+    edit       - Edit an existing plugin
+    enable, e  - Enable a disabled plugin
+    list, ls   - List available plugins
+    new, n     - Create a new plugin
+    run, x     - Run a plugin on selected actions
+```
+
+###### plugin new
+
+Create a new plugin script (aliases: `n`). Infers shebang by extension or `--language`.
+
+```
+NAME
+    new - Create a new plugin
+
+SYNOPSIS
+
+    na [global options] plugin new [command options] NAME
+
+COMMAND OPTIONS
+    --language, --lang=LANG - Language/ext (e.g. rb, py, /usr/bin/env bash) (default: none)
+```
+
+###### plugin edit
+
+Open an existing plugin in your default editor. Prompts if no name is given.
+
+```
+NAME
+    edit - Edit an existing plugin
+
+SYNOPSIS
+
+    na [global options] plugin edit NAME
+```
+
+###### plugin run
+
+Run a plugin on selected actions (aliases: `x`). Supports input/output format flags and filters.
+
+```
+NAME
+    run - Run a plugin on selected actions
+
+SYNOPSIS
+
+    na [global options] plugin run [command options] NAME
+
+COMMAND OPTIONS
+    -d, --depth=DEPTH              - Search for files X directories deep (default: 1)
+    --divider=STRING               - Text divider when using --input/--output text (default: none)
+    --[no-]done                    - Include @done actions
+    --file, --in=PATH              - Specify the file to search for the task (default: none)
+    --input=TYPE                   - Input format (json|yaml|csv|text) (default: none)
+    --output=TYPE                  - Output format (json|yaml|csv|text) (default: none)
+    --search, --find, --grep=QUERY - Filter results using search terms (may be used more than once, default: none)
+    --tagged=TAG                   - Match actions containing tag. Allows value comparisons (may be used more than once, default: none)
+```
+
+###### plugin enable
+
+Move a plugin from `plugins_disabled` to `plugins` (alias: `e`).
+
+```
+NAME
+    enable - Enable a disabled plugin
+
+SYNOPSIS
+
+    na [global options] plugin enable NAME
+```
+
+###### plugin disable
+
+Move a plugin from `plugins` to `plugins_disabled` (alias: `d`).
+
+```
+NAME
+    disable - Disable an enabled plugin
+
+SYNOPSIS
+
+    na [global options] plugin disable NAME
 ```
 
 ##### projects
@@ -968,19 +1084,15 @@ You can delete or modify these sample plugins as needed.
 
 #### Running Plugins
 
-Run a plugin with:
-```bash
-na plugin PLUGIN_NAME
-```
+You can manage and run plugins using subcommands under `na plugin`:
 
-Or use plugins through the `update` command's interactive menu, or pipe actions through plugins on display commands:
+- `new`/`n`: scaffold a new plugin script
+- `edit`: open an existing plugin
+- `run`/`x`: run a plugin against selected actions
+- `enable`/`e`: move from disabled to enabled
+- `disable`/`d`: move from enabled to disabled
 
-```bash
-na update --plugin PLUGIN_NAME           # Run plugin on selected actions
-na next --plugin PLUGIN_NAME             # Transform output only (no file writes)
-na tagged bug --plugin PLUGIN_NAME       # Filter and transform
-na find "search term" --plugin PLUGIN_NAME
-```
+Plugins are executed with actions on STDIN and must return actions on STDOUT. Display commands can still pipe through plugins via `--plugin`, which only affects STDOUT (no writes).
 
 #### Plugin Metadata
 
