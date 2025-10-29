@@ -486,28 +486,28 @@ module NA
           json.dump(data, sys.stdout)
         PY
       end
-      return if File.exist?(sh)
-
-      File.write(sh, <<~SH)
-        #!/usr/bin/env bash
-        # name: Add Bar
-        # input: text
-        # output: text
-        while IFS= read -r line; do
-          if [[ -z "$line" ]]; then continue; fi
-          if [[ "$line" == *"||"* ]]; then
-            fileline=${line%%||*}
-            rest=${line#*||}
-            parents=${rest%%||*}; rest=${rest#*||}
-            text=${rest%%||*}; rest=${rest#*||}
-            note=${rest%%||*}; tags=${rest#*||}
-            if [[ -z "$tags" ]]; then tags="bar"; else tags="$tags;bar"; fi
-            echo "$fileline||$parents||$text||$note||$tags"
-          else
-            echo "$line"
-          fi
-        done
-      SH
+      unless File.exist?(sh)
+        File.write(sh, <<~SH)
+          #!/usr/bin/env bash
+          # name: Add Bar
+          # input: text
+          # output: text
+          while IFS= read -r line; do
+            if [[ -z "$line" ]]; then continue; fi
+            if [[ "$line" == *"||"* ]]; then
+              fileline=${line%%||*}
+              rest=${line#*||}
+              parents=${rest%%||*}; rest=${rest#*||}
+              text=${rest%%||*}; rest=${rest#*||}
+              note=${rest%%||*}; tags=${rest#*||}
+              if [[ -z "$tags" ]]; then tags="bar"; else tags="$tags;bar"; fi
+              echo "$fileline||$parents||$text||$note||$tags"
+            else
+              echo "$line"
+            fi
+          done
+        SH
+      end
     end
   end
 end
