@@ -496,7 +496,7 @@ module NA
       sh = File.join(dir, 'Add Bar.sh')
 
       if force || !File.exist?(py)
-        File.delete(py) if File.exist?(py)
+        FileUtils.rm_f(py)
         File.write(py, <<~PY)
           #!/usr/bin/env python3
           # name: Add Foo
@@ -537,7 +537,7 @@ module NA
 
       return unless force || !File.exist?(sh)
 
-      File.delete(sh) if File.exist?(sh)
+      FileUtils.rm_f(sh)
       File.write(sh, <<~SH)
         #!/usr/bin/env bash
         # name: Add Bar

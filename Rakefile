@@ -52,7 +52,7 @@ end
 require 'rake/testtask'
 Rake::TestTask.new do |t|
   t.libs << 'test'
-  t.test_files = FileList['test/*_test.rb', 'bin/commands/*.rb', 'bin/na']
+  t.test_files = FileList['test/*_test.rb']
 end
 
 desc 'Install current gem in all versions of asdf-controlled ruby'
