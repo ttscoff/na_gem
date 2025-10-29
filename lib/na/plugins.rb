@@ -17,7 +17,20 @@ module NA
       File.expand_path('~/.local/share/na/plugins_disabled')
     end
 
-    def ensure_plugins_home
+    def samples_generated_flag
+      File.expand_path('~/.local/share/na/.samples_generated')
+    end
+
+    def samples_generated?
+      File.exist?(samples_generated_flag)
+    end
+
+    def mark_samples_generated
+      FileUtils.mkdir_p(File.dirname(samples_generated_flag))
+      File.write(samples_generated_flag, Time.now.iso8601) unless File.exist?(samples_generated_flag)
+    end
+
+    def ensure_plugins_home(force_samples: false)
       dir = plugins_home
       dis = plugins_disabled_home
       FileUtils.mkdir_p(dir) unless File.directory?(dir)
@@ -25,7 +38,18 @@ module NA
 
       readme = File.join(dir, 'README.md')
       File.write(readme, default_readme_contents) unless File.exist?(readme)
+
+      return if samples_generated? || force_samples
+
       create_sample_plugins(dis)
+      mark_samples_generated
+    end
+
+    def generate_sample_plugins
+      dis = plugins_disabled_home
+      FileUtils.mkdir_p(dis) unless File.directory?(dis)
+      create_sample_plugins(dis, force: true)
+      mark_samples_generated
     end
 
     def list_plugins
@@ -467,10 +491,12 @@ module NA
       MD
     end
 
-    def create_sample_plugins(dir)
+    def create_sample_plugins(dir, force: false)
       py = File.join(dir, 'Add Foo.py')
       sh = File.join(dir, 'Add Bar.sh')
-      unless File.exist?(py)
+
+      if force || !File.exist?(py)
+        File.delete(py) if File.exist?(py)
         File.write(py, <<~PY)
           #!/usr/bin/env python3
           # name: Add Foo
@@ -485,9 +511,12 @@ module NA
               a['tags'] = tags
           json.dump(data, sys.stdout)
         PY
+        File.chmod(0o755, py)
       end
-      return if File.exist?(sh)
 
+      return unless force || !File.exist?(sh)
+
+      File.delete(sh) if File.exist?(sh)
       File.write(sh, <<~SH)
         #!/usr/bin/env bash
         # name: Add Bar
@@ -508,6 +537,7 @@ module NA
           fi
         done
       SH
+      File.chmod(0o755, sh)
     end
   end
 end

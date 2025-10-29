@@ -2,3 +2,5 @@ Write a commmit message that uses @ labels to specify what type of change each l
 
 
 Save this commit message to commit_message.txt. Overwrite existing contents.
+
+Save this commit message to commit_message.txt{% if args.reset %}. Overwrite existing contents.{% else %}. Update the file, merging changes, if file exists, otherwise create new.{% endif %}

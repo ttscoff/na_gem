@@ -5,6 +5,59 @@ class App
 
   desc 'Manage and run plugins'
   command %i[plugin] do |c|
+    c.desc "Regenerate sample plugins and README"
+    c.switch %i[generate-examples]
+
+    c.action do |_global, options, args|
+      # If --generate-examples flag is used
+      if options[:generate_examples]
+        NA::Plugins.generate_sample_plugins
+        readme = File.join(NA::Plugins.plugins_home, 'README.md')
+        File.write(readme, NA::Plugins.default_readme_contents)
+        NA.notify("#{NA.theme[:success]}Sample plugins and README regenerated")
+      elsif args.any? && !args.first.match?(/^(new|n|edit|run|x|enable|e|disable|d|list|ls)$/i)
+        # If first argument is not a recognized subcommand, treat it as a plugin name
+        # and default to 'run' command
+        # Note: GLI will route to subcommands first, so this only triggers if no subcommand matches
+        # Note: This shortcut doesn't support run command flags - use 'na plugin run NAME' for flags
+        plugin_name = args.first
+        path = NA::Plugins.resolve_plugin(plugin_name)
+        if path
+          # Execute run logic inline with defaults (no flags supported in shortcut)
+          NA::Plugins.ensure_plugins_home
+          meta = NA::Plugins.parse_plugin_metadata(path)
+          input_fmt = (meta['input'] || 'json').to_s
+          output_fmt = (meta['output'] || input_fmt).to_s
+          divider = '||'
+
+          # No filters for shortcut - always shows interactive menu
+          files = NA.find_files(depth: 1)
+          options_list = []
+          selection = []
+          files.each do |f|
+            todo = NA::Todo.new(file_path: f, done: false, require_na: false)
+            todo.actions.each do |a|
+              options_list << "#{File.basename(a.file_path)}:#{a.file_line}:#{a.parent.join('>')} | #{a.action}"
+              selection << a
+            end
+          end
+          NA.notify("#{NA.theme[:error]}No actions found", exit_code: 1) if options_list.empty?
+          chosen = NA.choose_from(options_list, prompt: 'Select actions to run plugin on', multiple: true)
+          NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1) unless chosen && !chosen.empty?
+          idxs = Array(chosen).map { |label| options_list.index(label) }.compact
+          actions = idxs.map { |i| selection[i] }
+
+          io_actions = actions.map(&:to_plugin_io_hash)
+          stdin_str = NA::Plugins.serialize_actions(io_actions, format: input_fmt, divider: divider)
+          stdout = NA::Plugins.run_plugin(path, stdin_str)
+          returned = NA::Plugins.parse_actions(stdout, format: output_fmt, divider: divider)
+          Array(returned).each { |h| NA.apply_plugin_result(h) }
+        else
+          NA.notify("#{NA.theme[:error]}Unknown plugin command or plugin name: #{plugin_name}", exit_code: 1)
+        end
+      end
+    end
+
     c.desc 'Create a new plugin'
     c.arg_name 'NAME'
     c.command %i[new n] do |cc|
@@ -37,6 +90,75 @@ class App
         path = NA::Plugins.resolve_plugin(target) || File.join(NA::Plugins.plugins_home, target)
         NA.notify("#{NA.theme[:error]}Plugin not found: #{target}", exit_code: 1) unless File.exist?(path)
         NA.os_open(path)
+      end
+    end
+
+    c.desc 'List available plugins'
+    c.command %i[list ls] do |cc|
+      cc.desc 'Filter by type: enabled or disabled (or e/d)'
+      cc.arg_name 'TYPE'
+      cc.flag %i[type t]
+      cc.action do |_g, options, _a|
+        NA::Plugins.ensure_plugins_home
+        enabled = NA::Plugins.list_plugins
+        disabled = NA::Plugins.list_plugins_disabled
+
+        # If --type is specified, output plain text only
+        if options[:type]
+          type_arg = options[:type].to_s.downcase
+          if type_arg.start_with?("e")
+            # Enabled only, plain text
+            enabled.each_value do |path|
+              basename = File.basename(path)
+              meta = NA::Plugins.parse_plugin_metadata(path)
+              display_name = meta['name'] || meta['title'] || basename
+              puts display_name
+            end
+          elsif type_arg.start_with?('d')
+            # Disabled only, plain text
+            disabled.each_value do |path|
+              basename = File.basename(path)
+              meta = NA::Plugins.parse_plugin_metadata(path)
+              display_name = meta['name'] || meta['title'] || basename
+              puts display_name
+            end
+          else
+            NA.notify("#{NA.theme[:error]}Invalid type: #{options[:type]}. Use 'enabled' or 'disabled' (or 'e'/'d')", exit_code: 1)
+          end
+        else
+          # Default formatted output
+          output = []
+          output << 'Available Plugins'
+          output << ''
+          output << '-' * 12
+          output << ''
+
+          if enabled.any?
+            output << NA::Color.template('{bg}Enabled:{x}')
+            enabled.each_value do |path|
+              basename = File.basename(path)
+              meta = NA::Plugins.parse_plugin_metadata(path)
+              display_name = meta['name'] || meta['title'] || basename
+              output << NA::Color.template("{x}- {by}#{display_name}{x}")
+            end
+            output << ''
+          end
+
+          if disabled.any?
+            output << NA::Color.template('{br}Disabled:{x}')
+            disabled.each_value do |path|
+              basename = File.basename(path)
+              meta = NA::Plugins.parse_plugin_metadata(path)
+              display_name = meta['name'] || meta['title'] || basename
+              output << NA::Color.template("{x}- {by}#{display_name}{x}")
+            end
+            output << ''
+          end
+
+          output << NA::Color.template("{x}No plugins found.{x}") if enabled.empty? && disabled.empty?
+
+          puts output.join("\n")
+        end
       end
     end
 
@@ -165,5 +287,3 @@ class App
     end
   end
 end
-
-
