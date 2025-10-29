@@ -344,14 +344,19 @@ class App
           { key: :archive, label: 'Archive', param: nil },
           { key: :note, label: 'Add Note', param: 'Note' }
         ]
-        # Append available plugins
+        # Add "Run Plugin" option if there are enabled plugins with metadata
+        available_plugins = []
         begin
           NA::Plugins.ensure_plugins_home
-          NA::Plugins.list_plugins.each do |_key, path|
+          NA::Plugins.list_plugins.each_value do |path|
             meta = NA::Plugins.parse_plugin_metadata(path)
+            # Only include plugins with both input and output metadata
+            next unless meta['input'] && meta['output']
+
             disp = meta['name'] || File.basename(path, File.extname(path))
-            actions_menu << { key: :_plugin, label: "Plugin: #{disp}", param: nil, plugin_path: path }
+            available_plugins << { key: :_plugin, label: disp, param: nil, plugin_path: path }
           end
+          actions_menu << { key: :run_plugin, label: 'Run Plugin', param: nil } if available_plugins.any?
         rescue StandardError
           # ignore plugin discovery errors in menu
         end
@@ -366,110 +371,136 @@ class App
         if selector
           require 'open3'
           input = menu_labels.join("\n")
-          output, _ = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{selector}")
+          output, = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{selector}")
           selected_action = output.strip
         else
           puts 'Select an action:'
-          menu_labels.each_with_index { |label, i| puts "#{i+1}. #{label}" }
-          idx = (STDIN.gets || '').strip.to_i - 1
+          menu_labels.each_with_index { |label, i| puts "#{i + 1}. #{label}" }
+          idx = ($stdin.gets || '').strip.to_i - 1
           selected_action = menu_labels[idx] if idx >= 0 && idx < menu_labels.size
         end
         action_obj = actions_menu.find { |a| a[:label] == selected_action }
-        if action_obj.nil?
-          NA.notify("#{NA.theme[:error]}No action selected, cancelled", exit_code: 1)
-        end
-        # Prompt for parameter if needed
-        param_value = nil
-        # Only prompt for param if not :move (which has custom menu logic)
-        if action_obj[:param] && action_obj[:key] != :move
-          if TTY::Which.exist?('gum')
-            gum = TTY::Which.which('gum')
-            prompt = "Enter #{action_obj[:param]}: "
-            param_value = `#{gum} input --placeholder "#{prompt}"`.strip
-          else
-            print "Enter #{action_obj[:param]}: "
-            param_value = (STDIN.gets || '').strip
-          end
-        end
-        # Set options for update
-        case action_obj[:key]
-        when :add_tag
-          options[:tag] = [param_value]
-        when :remove_tag
-          options[:remove] = [param_value]
-        when :delete
-          options[:delete] = true
-        when :finish
-          options[:finish] = true
-          # Timed finish? Prompt user for optional start/date inputs
-          if NA.yn(NA::Color.template("#{NA.theme[:prompt]}Timed?"), default: false)
-            # Ask for start date expression
-            start_expr = nil
-            if TTY::Which.exist?('gum')
-              gum = TTY::Which.which('gum')
-              prompt = 'Enter start date/time (e.g. "30 minutes ago" or "3pm"):'
-              start_expr = `#{gum} input --placeholder "#{prompt}"`.strip
-            else
-              print 'Enter start date/time (e.g. "30 minutes ago" or "3pm"): '
-              start_expr = (STDIN.gets || '').strip
-            end
-            start_time = NA::Types.parse_date_begin(start_expr)
-            options[:started] = start_time if start_time
-          end
-        when :edit
-          # Just set the flag - multi-action editor will handle it below
-          options[:edit] = true
-        when :priority
-          options[:priority] = param_value
-        when :move
-          # Gather projects from the same file as the selected action
-          selected_file = targets_for_selection[selected_indices.first][:file]
-          todo = NA::Todo.new(file_path: selected_file)
-          project_names = todo.projects.map { |proj| proj.project }
-          project_menu = project_names + ['New project']
-          move_selector = nil
+        NA.notify("#{NA.theme[:error]}No action selected, cancelled", exit_code: 1) if action_obj.nil?
+
+        # If "Run Plugin" was selected, show plugin selection menu
+        if action_obj[:key] == :run_plugin
+          plugin_labels = available_plugins.map { |p| p[:label] }
+          plugin_selector = nil
           if TTY::Which.exist?('fzf')
-            move_selector = 'fzf --prompt="Select project> "'
+            plugin_selector = 'fzf --prompt="Select plugin> "'
           elsif TTY::Which.exist?('gum')
-            move_selector = 'gum choose'
+            plugin_selector = 'gum choose'
           end
-          selected_project = nil
-          if move_selector
+          selected_plugin = nil
+          if plugin_selector
             require 'open3'
-            input = project_menu.join("\n")
-            output, _ = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{move_selector}")
-            selected_project = output.strip
+            input = plugin_labels.join("\n")
+            output, = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{plugin_selector}")
+            selected_plugin = output.strip
           else
-            puts 'Select a project:'
-            project_menu.each_with_index { |label, i| puts "#{i+1}. #{label}" }
-            idx = (STDIN.gets || '').strip.to_i - 1
-            selected_project = project_menu[idx] if idx >= 0 && idx < project_menu.size
+            puts 'Select a plugin:'
+            plugin_labels.each_with_index { |label, i| puts "#{i + 1}. #{label}" }
+            idx = ($stdin.gets || '').strip.to_i - 1
+            selected_plugin = plugin_labels[idx] if idx >= 0 && idx < plugin_labels.size
           end
-          if selected_project == 'New project'
+          plugin_obj = available_plugins.find { |p| p[:label] == selected_plugin }
+          NA.notify("#{NA.theme[:error]}No plugin selected, cancelled", exit_code: 1) if plugin_obj.nil?
+          # Set plugin path directly
+          options[:plugin] = plugin_obj[:plugin_path]
+        elsif action_obj[:key] == :_plugin
+          # Legacy support: if somehow a plugin was selected directly
+          options[:plugin] = action_obj[:plugin_path]
+        else
+          # Prompt for parameter if needed
+          param_value = nil
+          # Only prompt for param if not :move (which has custom menu logic)
+          if action_obj[:param] && action_obj[:key] != :move
             if TTY::Which.exist?('gum')
               gum = TTY::Which.which('gum')
-              prompt = 'Enter new project name: '
-              new_proj_name = `#{gum} input --placeholder "#{prompt}"`.strip
+              prompt = "Enter #{action_obj[:param]}: "
+              param_value = `#{gum} input --placeholder "#{prompt}"`.strip
             else
-              print 'Enter new project name: '
-              new_proj_name = (STDIN.gets || '').strip
+              print "Enter #{action_obj[:param]}: "
+              param_value = (STDIN.gets || '').strip
             end
-            # Create the new project in the file
-            NA.insert_project(selected_file, new_proj_name)
-            options[:move] = new_proj_name
-          else
-            options[:move] = selected_project
           end
-        when :restore
-          options[:restore] = true
-        when :archive
-          options[:archive] = true
-        when :note
-          options[:note] = true
-          note = [param_value]
-        when :_plugin
-          # Set plugin path directly
-          options[:plugin] = action_obj[:plugin_path]
+          # Set options for update
+          case action_obj[:key]
+          when :add_tag
+            options[:tag] = [param_value]
+          when :remove_tag
+            options[:remove] = [param_value]
+          when :delete
+            options[:delete] = true
+          when :finish
+            options[:finish] = true
+            # Timed finish? Prompt user for optional start/date inputs
+            if NA.yn(NA::Color.template("#{NA.theme[:prompt]}Timed?"), default: false)
+              # Ask for start date expression
+              start_expr = nil
+              if TTY::Which.exist?('gum')
+                gum = TTY::Which.which('gum')
+                prompt = 'Enter start date/time (e.g. "30 minutes ago" or "3pm"):'
+                start_expr = `#{gum} input --placeholder "#{prompt}"`.strip
+              else
+                print 'Enter start date/time (e.g. "30 minutes ago" or "3pm"): '
+                start_expr = (STDIN.gets || '').strip
+              end
+              start_time = NA::Types.parse_date_begin(start_expr)
+              options[:started] = start_time if start_time
+            end
+          when :edit
+            # Just set the flag - multi-action editor will handle it below
+            options[:edit] = true
+          when :priority
+            options[:priority] = param_value
+          when :move
+            # Gather projects from the same file as the selected action
+            selected_file = targets_for_selection[selected_indices.first][:file]
+            todo = NA::Todo.new(file_path: selected_file)
+            project_names = todo.projects.map { |proj| proj.project }
+            project_menu = project_names + ['New project']
+            move_selector = nil
+            if TTY::Which.exist?('fzf')
+              move_selector = 'fzf --prompt="Select project> "'
+            elsif TTY::Which.exist?('gum')
+              move_selector = 'gum choose'
+            end
+            selected_project = nil
+            if move_selector
+              require 'open3'
+              input = project_menu.join("\n")
+              output, _ = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{move_selector}")
+              selected_project = output.strip
+            else
+              puts 'Select a project:'
+              project_menu.each_with_index { |label, i| puts "#{i+1}. #{label}" }
+              idx = (STDIN.gets || '').strip.to_i - 1
+              selected_project = project_menu[idx] if idx >= 0 && idx < project_menu.size
+            end
+            if selected_project == 'New project'
+              if TTY::Which.exist?('gum')
+                gum = TTY::Which.which('gum')
+                prompt = 'Enter new project name: '
+                new_proj_name = `#{gum} input --placeholder "#{prompt}"`.strip
+              else
+                print 'Enter new project name: '
+                new_proj_name = (STDIN.gets || '').strip
+              end
+              # Create the new project in the file
+              NA.insert_project(selected_file, new_proj_name)
+              options[:move] = new_proj_name
+            else
+              options[:move] = selected_project
+            end
+          when :restore
+            options[:restore] = true
+          when :archive
+            options[:archive] = true
+          when :note
+            options[:note] = true
+            note = [param_value]
+          end
         end
       end
       did_direct_update = false
