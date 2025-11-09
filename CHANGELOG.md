@@ -1,3 +1,15 @@
+### 1.2.90
+
+2025-11-09 10:57
+
+#### CHANGED
+
+- Update menu shows a single "Run Plugin" option leading to a plugin submenu
+
+#### FIXED
+
+- No duplicate depth recursion matches
+
 ### 1.2.89
 
 2025-10-29 06:36
