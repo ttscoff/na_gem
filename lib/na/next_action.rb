@@ -796,8 +796,9 @@ module NA
             f.split('/').any? { |seg| seg.start_with?('.') && seg !~ /^\.\.?$/ }
           end
         end
+        files.map! { |f| f.sub(%r{\A\./}, '') }
         files.each { |f| save_working_dir(File.expand_path(f)) }
-        files
+        files.uniq
       end
     end
 
