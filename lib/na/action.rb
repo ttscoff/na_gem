@@ -318,6 +318,19 @@ module NA
         search_matches_none(none, include_note: include_note)
     end
 
+    def scan_tags
+      tags = {}
+      rx = /(?<= |^)@(?<tag>\S+?)(?:\((?<value>.*?)\))?(?= |$)/
+      all_tags = []
+      @action.scan(rx) { all_tags << Regexp.last_match }
+      all_tags.each do |m|
+        tag = m.named_captures.symbolize_keys
+        tags[tag[:tag]] = tag[:value]
+      end
+
+      tags
+    end
+
     private
 
     # Check if action and note do not match any regexes
@@ -472,19 +485,6 @@ module NA
           false
         end
       end
-    end
-
-    def scan_tags
-      tags = {}
-      rx = /(?<= |^)@(?<tag>\S+?)(?:\((?<value>.*?)\))?(?= |$)/
-      all_tags = []
-      @action.scan(rx) { all_tags << Regexp.last_match }
-      all_tags.each do |m|
-        tag = m.named_captures.symbolize_keys
-        tags[tag[:tag]] = tag[:value]
-      end
-
-      tags
     end
   end
 end
