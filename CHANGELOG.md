@@ -1,3 +1,11 @@
+### 1.2.91
+
+2025-11-11 18:17
+
+#### FIXED
+
+- Error calling scan_tags (Private Method) from next.rb
+
 ### 1.2.90
 
 2025-11-09 10:57
