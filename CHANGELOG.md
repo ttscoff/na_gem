@@ -1,3 +1,16 @@
+### 1.2.92
+
+2025-11-16 10:32
+
+#### NEW
+
+- Prompt to create missing project paths when using --to.
+
+#### FIXED
+
+- Insert newly created project sections at the correct hierarchy depth.
+- Display added actions with a single project path in confirmations.
+
 ### 1.2.91
 
 2025-11-11 18:17
