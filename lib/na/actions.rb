@@ -87,8 +87,8 @@ module NA
           # Optimize template selection
           template = if config[:no_files]
                        NA.theme[:templates][:no_file]
-                     elsif config[:files]&.count&.positive?
-                       config[:files].count == 1 ? NA.theme[:templates][:single_file] : NA.theme[:templates][:multi_file]
+                     elsif config[:files]&.any?
+                       config[:files].one? ? NA.theme[:templates][:single_file] : NA.theme[:templates][:multi_file]
                      elsif depth > 1
                        NA.theme[:templates][:multi_file]
                      else

@@ -272,13 +272,13 @@ module NA
                             tag: tagged,
                             done: done })
 
-      unless todo.actions.count.positive?
+      unless todo.actions.any?
         NA.notify("#{NA.theme[:error]}No matching actions found in #{File.basename(target,
                                                                                    ".#{NA.extension}").highlight_filename}")
         return [todo.projects, NA::Actions.new]
       end
 
-      return [todo.projects, todo.actions] if todo.actions.count == 1 || all
+      return [todo.projects, todo.actions] if todo.actions.one? || all
 
       # If target_line is specified, find the action at that specific line
       if target_line
@@ -327,13 +327,15 @@ module NA
       matches = nil
       path.each_with_index do |part, i|
         built.push(part)
-        matches = todo.projects.select { |proj| proj.project =~ /^#{built.join(':')}/i }
-        if matches.count.zero?
+        built_path = built.join(':')
+        matches = todo.projects.select { |proj| proj.project =~ /^#{Regexp.escape(built_path)}/i }
+        exact_match = matches.find { |proj| proj.project.casecmp(built_path).zero? }
+        if exact_match
+          last_match = exact_match
+        else
           final_match = last_match
           new_path = path.slice(i, path.count - i)
           break
-        else
-          last_match = matches.last
         end
       end
 
@@ -499,7 +501,24 @@ module NA
         projects = find_projects(target)
         # If move is set, update add.parent to the target project
         add.parent = target_proj.project.split(':') if move && target_proj
-        target_proj = projects.select { |proj| proj.project =~ /^#{add.parent.join(':')}$/i }.first
+        project_path = add.parent.join(':')
+        target_proj ||= projects.select { |proj| proj.project =~ /^#{project_path}$/i }.first
+
+        if target_proj.nil? && !project_path.empty?
+          display_path = project_path.tr(':', '/')
+          prompt = NA::Color.template(
+            "#{NA.theme[:warning]}Project #{NA.theme[:file]}#{display_path}#{NA.theme[:warning]} doesn't exist, create it?"
+          )
+          should_create = NA.yn(prompt, default: true)
+          NA.notify("#{NA.theme[:error]}Cancelled", exit_code: 1) unless should_create
+
+          created_proj = insert_project(target, project_path)
+          contents = target.read_file.split("\n")
+          projects = find_projects(target)
+          target_proj = projects.select { |proj| proj.project =~ /^#{project_path}$/i }.first || created_proj
+        end
+
+        add.parent = target_proj.project.split(':') if target_proj
         indent = target_proj ? ("\t" * target_proj.indent) : ''
 
         # Format note for insertion
@@ -681,6 +700,7 @@ module NA
     # @return [void]
     def add_action(file, project, action, note = [], priority: 0, finish: false, append: false, started_at: nil, done_at: nil, duration_seconds: nil)
       parent = project.split(%r{[:/]})
+      file_project = File.basename(file, ".#{NA.extension}")
 
       if NA.global_file
         if NA.cwd_is == :tag
@@ -690,7 +710,7 @@ module NA
         end
       end
 
-      action = Action.new(file, project, parent, action, nil, note)
+      action = Action.new(file, file_project, parent, action, nil, note)
 
       update_action(file, nil,
                     add: action,
@@ -869,7 +889,7 @@ module NA
       required = search.filter { |s| s[:required] && !s[:negate] }.map { |t| t[:token] }
       negated = search.filter { |s| s[:negate] }.map { |t| t[:token] }
 
-      optional.push('*') if optional.count.zero? && required.count.zero? && negated.count.positive?
+      optional.push('*') if optional.none? && required.none? && negated.any?
       if optional == negated
         required = ['*']
         optional = ['*']
@@ -886,7 +906,7 @@ module NA
       else
         dirs.delete_if do |d|
           !d.sub(/\.#{NA.extension}$/, '')
-            .dir_matches(any: optional, all: required, none: negated, distance: 2, require_last: false)
+            .dir_matches?(any: optional, all: required, none: negated, distance: 2, require_last: false)
         end
       end
 
@@ -1225,7 +1245,7 @@ module NA
       file = database_path(file: 'saved_searches.yml')
       searches = load_searches
 
-      NA.notify("#{NA.theme[:error]}No search definitions found", exit_code: 1) unless searches.count.positive?
+      NA.notify("#{NA.theme[:error]}No search definitions found", exit_code: 1) unless searches.any?
 
       editor = NA.default_editor
       NA.notify("#{NA.theme[:error]}No $EDITOR defined", exit_code: 1) unless editor && TTY::Which.exist?(editor)
@@ -1283,7 +1303,7 @@ module NA
               default_args = [%(--prompt="#{prompt}"), "--height=#{options.count + 2}", '--info=inline']
               default_args << '--multi' if multiple
               default_args << '--bind ctrl-a:select-all' if multiple
-              header = "esc: cancel,#{multiple ? ' tab: multi-select, ctrl-a: select all,' : ''} return: confirm"
+              header = "esc: cancel,#{' tab: multi-select, ctrl-a: select all,' if multiple} return: confirm"
               default_args << %(--header="#{header}")
               default_args.concat(fzf_args)
               options = NA::Color.uncolor(NA::Color.template(options.join("\n")))
@@ -1310,11 +1330,11 @@ module NA
                 mult_res = []
                 result = result.gsub(',', ' ').gsub(/ +/, ' ').split(/ /)
                 result.each do |r|
-                  mult_res << options[r.to_i - 1] if r.to_i&.positive?
+                  mult_res << options[r.to_i - 1] if r.to_i.positive?
                 end
                 mult_res.join("\n")
               else
-                result.to_i&.positive? ? options[result.to_i - 1] : nil
+                result.to_i.positive? ? options[result.to_i - 1] : nil
               end
             end
 

@@ -138,7 +138,7 @@ module NA
     # @example
     #   action.to_s #=> "{ project: 'Inbox', ... }"
     def to_s
-      note = if @note.count.positive?
+      note = if @note.any?
                "\n#{@note.join("\n")}"
              else
                ''
@@ -150,7 +150,7 @@ module NA
     #
     # @return [String]
     def to_s_pretty
-      note = if @note.count.positive?
+      note = if @note.any?
                "\n#{@note.join("\n")}"
              else
                ''
@@ -302,7 +302,7 @@ module NA
     # @param none [Array] Tags to match none
     # @return [Boolean]
     def tags_match?(any: [], all: [], none: [])
-      tag_matches_any(any) && tag_matches_all(all) && tag_matches_none(none)
+      tag_matches_any?(any) && tag_matches_all?(all) && tag_matches_none?(none)
     end
 
     # Check if action or note matches any, all, and none search criteria
@@ -313,9 +313,9 @@ module NA
     # @param include_note [Boolean] Include note in search
     # @return [Boolean]
     def search_match?(any: [], all: [], none: [], include_note: true)
-      search_matches_any(any, include_note: include_note) &&
-        search_matches_all(all, include_note: include_note) &&
-        search_matches_none(none, include_note: include_note)
+      search_matches_any?(any, include_note: include_note) &&
+        search_matches_all?(all, include_note: include_note) &&
+        search_matches_none?(none, include_note: include_note)
     end
 
     def scan_tags
@@ -338,7 +338,7 @@ module NA
     # @param regexes [Array] Regexes to check
     # @param include_note [Boolean] Include note in search
     # @return [Boolean]
-    def search_matches_none(regexes, include_note: true)
+    def search_matches_none?(regexes, include_note: true)
       regexes.each do |rx|
         regex = rx.is_a?(Regexp) ? rx : Regexp.new(rx, Regexp::IGNORECASE)
         note_matches = include_note && @note.join(' ').match(regex)
@@ -352,7 +352,7 @@ module NA
     # @param regexes [Array] Regexes to check
     # @param include_note [Boolean] Include note in search
     # @return [Boolean]
-    def search_matches_any(regexes, include_note: true)
+    def search_matches_any?(regexes, include_note: true)
       return true if regexes.empty?
 
       regexes.each do |rx|
@@ -368,7 +368,7 @@ module NA
     # @param regexes [Array] Regexes to check
     # @param include_note [Boolean] Include note in search
     # @return [Boolean]
-    def search_matches_all(regexes, include_note: true)
+    def search_matches_all?(regexes, include_note: true)
       regexes.each do |rx|
         regex = rx.is_a?(Regexp) ? rx : Regexp.new(rx, Regexp::IGNORECASE)
         note_matches = include_note && @note.join(' ').match(regex)
@@ -381,7 +381,7 @@ module NA
     #
     # @param tags [Array] Tags to check
     # @return [Boolean]
-    def tag_matches_none(tags)
+    def tag_matches_none?(tags)
       tags.each do |tag|
         return false if compare_tag(tag)
       end
@@ -392,7 +392,7 @@ module NA
     #
     # @param tags [Array] Tags to check
     # @return [Boolean]
-    def tag_matches_any(tags)
+    def tag_matches_any?(tags)
       return true if tags.empty?
 
       tags.each do |tag|
@@ -405,7 +405,7 @@ module NA
     #
     # @param tags [Array] Tags to check
     # @return [Boolean]
-    def tag_matches_all(tags)
+    def tag_matches_all?(tags)
       tags.each do |tag|
         return false unless compare_tag(tag)
       end

@@ -95,7 +95,7 @@ class ::String
   # Returns the project name if matched, otherwise nil.
   # @return [String, nil]
   def project
-    m = match(/^([ \t]*)([^\-][^@:]*?): *(@\S+ *)*$/)
+    m = match(/^([ \t]*)([^-][^@:]*?): *(@\S+ *)*$/)
     m ? m[2] : nil
   end
 
@@ -228,7 +228,7 @@ class ::String
   def dir_to_rx(distance: 1, require_last: true)
     "#{split(%r{[/:]}).map do |comp|
       comp.chars.join(".{0,#{distance}}").gsub('*', '[^ ]*?')
-    end.join('.*?/.*?')}#{require_last ? '[^/]*?$' : ''}"
+    end.join('.*?/.*?')}#{'[^/]*?$' if require_last}"
   end
 
   # Check if the string matches directory patterns using any, all, and none criteria.
@@ -238,11 +238,11 @@ class ::String
   # @param require_last [Boolean] Require last segment match
   # @param distance [Integer] Allowed character distance in regex
   # @return [Boolean] True if matches criteria
-  def dir_matches(any: [], all: [], none: [], require_last: true, distance: 1)
+  def dir_matches?(any: [], all: [], none: [], require_last: true, distance: 1)
     any_rx = any.map { |q| q.dir_to_rx(distance: distance, require_last: require_last) }
     all_rx = all.map { |q| q.dir_to_rx(distance: distance, require_last: require_last) }
     none_rx = none.map { |q| q.dir_to_rx(distance: distance, require_last: false) }
-    matches_any(any_rx) && matches_all(all_rx) && matches_none(none_rx)
+    matches_any?(any_rx) && matches_all?(all_rx) && matches_none?(none_rx)
   end
 
   # Check if the string matches any, all, and none regex patterns.
@@ -250,8 +250,8 @@ class ::String
   # @param all [Array] Patterns where all must match
   # @param none [Array] Patterns where none must match
   # @return [Boolean] True if matches criteria
-  def matches(any: [], all: [], none: [])
-    matches_any(any) && matches_all(all) && matches_none(none)
+  def matches?(any: [], all: [], none: [])
+    matches_any?(any) && matches_all?(all) && matches_none?(none)
   end
 
   # Convert wildcard characters to regular expressions
@@ -374,7 +374,7 @@ class ::String
   # Returns true if none of the regexes match the string.
   # @param regexes [Array] Array of regex patterns
   # @return [Boolean] True if none match
-  def matches_none(regexes)
+  def matches_none?(regexes)
     regexes.each do |rx|
       return false if match(Regexp.new(rx, Regexp::IGNORECASE))
     end
@@ -384,7 +384,7 @@ class ::String
   # Returns true if any of the regexes match the string.
   # @param regexes [Array] Array of regex patterns
   # @return [Boolean] True if any match
-  def matches_any(regexes)
+  def matches_any?(regexes)
     regexes.each do |rx|
       return true if match(Regexp.new(rx, Regexp::IGNORECASE))
     end
@@ -394,7 +394,7 @@ class ::String
   # Returns true if all of the regexes match the string.
   # @param regexes [Array] Array of regex patterns
   # @return [Boolean] True if all match
-  def matches_all(regexes)
+  def matches_all?(regexes)
     regexes.each do |rx|
       return false unless match(Regexp.new(rx, Regexp::IGNORECASE))
     end

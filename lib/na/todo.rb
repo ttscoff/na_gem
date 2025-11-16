@@ -180,7 +180,7 @@ module NA
                 action = line.action
                 new_action = NA::Action.new(file, File.basename(file, ".#{NA.extension}"), parent.dup, action, idx)
 
-                projects[-1].last_line = idx if projects.count.positive?
+                projects[-1].last_line = idx if projects.any?
 
                 # Tag matching
                 has_tag = !optional_tag.empty? || !required_tag.empty? || !negated_tag.empty?
@@ -191,8 +191,8 @@ module NA
                 actions.push(new_action)
                 in_action = true
               elsif in_action
-                actions[-1].note.push(line.strip) if actions.count.positive?
-                projects[-1].last_line = idx if projects.count.positive?
+                actions[-1].note.push(line.strip) if actions.any?
+                projects[-1].last_line = idx if projects.any?
               end
             end
             projects = projects.dup

@@ -89,6 +89,25 @@ class NextActionTest < Minitest::Test
     end
     File.delete("test_update.taskpaper")
   end
+
+  def test_update_action_creates_missing_project_path
+    file = "test_update_missing_project.taskpaper"
+    File.write(file, "Inbox:")
+    action = NA::Action.new(file, "Beta Release/Bugs", ["Beta Release", "Bugs"], "New task", nil)
+
+    NA.stub(:notify, ->(*args, **kwargs) { nil }) do
+      NA.stub(:yn, ->(*args, **kwargs) { true }) do
+        NA.update_action(file, nil, add: action, project: "Beta Release/Bugs")
+      end
+    end
+
+    content = File.read(file)
+    assert_match(/Beta Release:/, content)
+    assert_match(/\tBugs:/, content)
+    assert_match(/New task/, content)
+  ensure
+    File.delete(file) if File.exist?(file)
+  end
   def test_create_todo_creates_file_with_default_content
     File.delete("test_create.taskpaper") if File.exist?("test_create.taskpaper")
     NA.stub(:notify, ->(*args, **kwargs) { nil }) do
@@ -165,6 +184,20 @@ class NextActionTest < Minitest::Test
       assert_match(/SubProject2:/, content)
     end
     File.delete("test_insert.taskpaper")
+  end
+
+  def test_insert_project_adds_child_to_parent_with_existing_descendants
+    file = "test_insert_children.taskpaper"
+    File.write(file, "ProjectA:\n\tExistingChild:\n\t\t- Item\n")
+    NA.stub(:notify, ->(*args, **kwargs) { nil }) do
+      new_proj = NA.insert_project(file, "ProjectA:NewChild")
+      assert_equal "ProjectA:NewChild", new_proj.project
+      content = File.read(file)
+      assert_match(/\n\tNewChild:/, content)
+      refute_match(/\n\t\tNewChild:/, content)
+    end
+  ensure
+    File.delete(file) if File.exist?(file)
   end
 
   def test_insert_project_into_archive
