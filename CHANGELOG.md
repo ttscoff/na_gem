@@ -1,3 +1,11 @@
+### 1.2.93
+
+2025-11-29 21:51
+
+#### FIXED
+
+- Search strings containing special regex characters no longer cause RegexpError when regex option is false.
+
 ### 1.2.92
 
 2025-11-16 10:32
