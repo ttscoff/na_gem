@@ -94,8 +94,11 @@ module NA
             optional_tag.push({ tag: t })
           end
         end
+        # Track whether strings came from direct path (need escaping) or parse_search (already processed)
+        strings_from_direct_path = false
         unless settings[:search].nil? || (settings[:search].respond_to?(:empty?) && settings[:search].empty?)
           if settings[:regex] || settings[:search].is_a?(String)
+            strings_from_direct_path = true
             if settings[:negate]
               negated.push(settings[:search])
             else
@@ -113,9 +116,31 @@ module NA
         end
 
         # Pre-compile regexes for better performance
-        optional = optional.map { |rx| rx.is_a?(Regexp) ? rx : Regexp.new(rx, Regexp::IGNORECASE) }
-        required = required.map { |rx| rx.is_a?(Regexp) ? rx : Regexp.new(rx, Regexp::IGNORECASE) }
-        negated = negated.map { |rx| rx.is_a?(Regexp) ? rx : Regexp.new(rx, Regexp::IGNORECASE) }
+        # When regex is false and string came from direct path, escape special characters
+        # When regex is true, use as-is (it's already a regex pattern)
+        # Strings from parse_search are already processed by wildcard_to_rx, so use as-is
+        compile_regex = lambda do |rx|
+          if rx.is_a?(Regexp)
+            rx
+          elsif settings[:regex]
+            Regexp.new(rx, Regexp::IGNORECASE)
+          elsif strings_from_direct_path
+            Regexp.new(Regexp.escape(rx.to_s), Regexp::IGNORECASE)
+          else
+            # From parse_search, already processed by wildcard_to_rx
+            # Try to compile as-is, but if it fails, escape it (handles edge cases with special chars)
+            begin
+              Regexp.new(rx, Regexp::IGNORECASE)
+            rescue RegexpError
+              # If compilation fails, escape the string (fallback for edge cases)
+              Regexp.new(Regexp.escape(rx.to_s), Regexp::IGNORECASE)
+            end
+          end
+        end
+
+        optional = optional.map(&compile_regex)
+        required = required.map(&compile_regex)
+        negated = negated.map(&compile_regex)
 
         files = if !settings[:file_path].nil?
                   [settings[:file_path]]
