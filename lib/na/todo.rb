@@ -97,7 +97,7 @@ module NA
         # Track whether strings came from direct path (need escaping) or parse_search (already processed)
         strings_from_direct_path = false
         unless settings[:search].nil? || (settings[:search].respond_to?(:empty?) && settings[:search].empty?)
-          if settings[:regex] || settings[:search].is_a?(String)
+          if settings[:regex] || settings[:search].is_a?(String) || settings[:search].is_a?(Regexp)
             strings_from_direct_path = true
             if settings[:negate]
               negated.push(settings[:search])
