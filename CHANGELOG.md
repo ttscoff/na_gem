@@ -1,3 +1,11 @@
+### 1.2.94
+
+2025-12-01 09:22
+
+#### FIXED
+
+- Regex search in `na update` no longer raises errors when using `-e` with tokens that compile to a Regexp.
+
 ### 1.2.93
 
 2025-11-29 21:51
