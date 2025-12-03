@@ -1548,6 +1548,25 @@ module NA
         end
       end
 
+      # Expand TaskPaper type shortcuts at the start of the predicate expression:
+      #   project NAME  -> project = "NAME"
+      #   task NAME     -> NAME                  (we only search tasks anyway)
+      #   note NAME     -> NAME                  (approximate)
+      if inner =~ /\A(project|task|note)\s+(.+)\z/i
+        kind = Regexp.last_match(1).downcase
+        rest = Regexp.last_match(2).strip
+        case kind
+        when 'project'
+          name = rest
+          # Strip surrounding quotes if present
+          name = name[1..-2] if (name.start_with?('"') && name.end_with?('"')) || (name.start_with?("'") && name.end_with?("'"))
+          inner = %(project = "#{name}")
+        when 'task', 'note'
+          # For now, treat as a plain text search on the rest
+          inner = rest
+        end
+      end
+
       # Tokenize expression into TEXT, AND, OR, '(', ')', preserving quoted
       # strings and leaving `not` to be handled inside predicates.
       tokens = []

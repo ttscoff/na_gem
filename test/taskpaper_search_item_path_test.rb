@@ -70,4 +70,11 @@ class TaskpaperSearchItemPathTest < Minitest::Test
     refute_match(/Project A/, output)
     refute_match(/Archive/, output)
   end
+
+  def test_project_shortcut_expands_to_project_equals
+    clauses = NA.parse_taskpaper_search_clauses('@search(project Inbox)')
+    refute_empty clauses
+    clause = clauses.first
+    assert_equal 'Inbox', clause[:project]
+  end
 end
