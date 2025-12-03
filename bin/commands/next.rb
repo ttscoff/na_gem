@@ -136,6 +136,39 @@ class App
           options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
         end
 
+      # Detect TaskPaper-style @search() syntax in QUERY arguments and delegate
+      # directly to the TaskPaper search runner (supports item paths and
+      # advanced TaskPaper predicates).
+      joined_args = args.join(' ')
+      if joined_args =~ /@search\((.+)\)/
+        inner = Regexp.last_match(1)
+        expr = "@search(#{inner})"
+
+        file_path = options[:file] ? File.expand_path(options[:file]) : nil
+        NA::Pager.paginate = false if options[:omnifocus]
+
+        NA.run_taskpaper_search(
+          expr,
+          file: file_path,
+          options: {
+            depth: depth,
+            notes: options[:notes],
+            nest: options[:nest],
+            omnifocus: options[:omnifocus],
+            no_file: options[:no_file],
+            times: options[:times],
+            human: options[:human],
+            search_notes: options[:search_notes],
+            invert: false,
+            regex: options[:regex],
+            project: options[:project],
+            done: options[:done],
+            require_na: true
+          }
+        )
+        next
+      end
+
       if options[:exact] || options[:regex]
         search = options[:search].join(" ")
       else
@@ -263,6 +296,13 @@ class App
 
       file_path = options[:file] ? File.expand_path(options[:file]) : nil
 
+      # Support TaskPaper-style item paths in --project when value starts with '/'
+      project_filter_paths = nil
+      if options[:project]&.start_with?('/')
+        project_filter_paths = NA.resolve_item_path(path: options[:project], file: file_path, depth: depth)
+        options[:project] = nil
+      end
+
       todo = NA::Todo.new({ depth: depth,
                             hidden: options[:hidden],
                             done: options[:done],
@@ -278,6 +318,17 @@ class App
                   Run `na todos` to see available todo files.")
       end
       NA::Pager.paginate = false if options[:omnifocus]
+
+      # Apply item-path project filters, if any
+      if project_filter_paths && project_filter_paths.any?
+        todo.actions.delete_if do |a|
+          parents = Array(a.parent)
+          path = parents.join(':')
+          project_filter_paths.none? do |p|
+            path =~ /\A#{Regexp.escape(p)}(?::|\z)/i
+          end
+        end
+      end
 
       # If a plugin is specified, transform actions in memory for display only
       if options[:plugin]

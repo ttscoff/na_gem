@@ -85,15 +85,6 @@ class App
     c.flag %i[divider]
 
     c.action do |global_options, options, args|
-      # Detect TaskPaper-style @search() syntax in arguments
-      joined_args = args.join(' ')
-      taskpaper_search_expr = nil
-      if joined_args =~ /@search\((.+)\)/
-        inner = Regexp.last_match(1)
-        taskpaper_search_expr = "@search(#{inner})"
-        args = [] # Remaining args are ignored when using TaskPaper syntax
-      end
-
       options[:nest] = true if options[:omnifocus]
 
       if options[:save]
@@ -108,78 +99,96 @@ class App
           options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
         end
 
-      exclude_projects = []
+      # Detect TaskPaper-style @search() syntax in arguments and delegate
+      # directly to the TaskPaper search runner (supports OR and extended
+      # TaskPaper syntax).
+      joined_args = args.join(' ')
+      if joined_args =~ /@search\((.+)\)/
+        inner = Regexp.last_match(1)
+        expr = "@search(#{inner})"
+        NA.run_taskpaper_search(
+          expr,
+          file: nil,
+          options: {
+            depth: depth,
+            notes: options[:notes],
+            nest: options[:nest],
+            omnifocus: options[:omnifocus],
+            no_file: options[:no_file],
+            times: options[:times],
+            human: options[:human],
+            search_notes: options[:search_notes],
+            invert: options[:invert],
+            regex: options[:regex],
+            project: options[:project],
+            done: options[:done],
+            require_na: false
+          }
+        )
+        next
+      end
+
       tokens = nil
       tags = []
 
-      if taskpaper_search_expr
-        parsed = NA.parse_taskpaper_search(taskpaper_search_expr)
-        tokens = parsed[:tokens]
-        tags = parsed[:tags]
-        exclude_projects = parsed[:exclude_projects] || []
-        options[:done] = true if parsed[:include_done]
-        options[:project] ||= parsed[:project] if parsed[:project]
-        search = tokens.map { |t| t[:token] }.join(' ')
+      if options[:exact] || options[:regex]
+        search = args.join(" ")
       else
-        if options[:exact] || options[:regex]
-          search = args.join(" ")
-        else
-          rx = [
-            '(?<=\A|[ ,])(?<req>[+!-])?@(?<tag>[^ *=<>$*\^,@(]+)',
-            '(?:\((?<value>.*?)\)| *(?<op>[=<>~]{1,2}|[*$\^]=) *',
-            '(?<val>.*?(?=\Z|[,@])))?',
-          ].join("")
-          search = args.join(" ").gsub(Regexp.new(rx)) do
-            m = Regexp.last_match
-            string = if m["value"]
-                "#{m["req"]}#{m["tag"]}=#{m["value"]}"
-              else
-                m[0]
-              end
-            options[:tagged] << string.sub(/@/, "")
-            ""
-          end
+        rx = [
+          '(?<=\A|[ ,])(?<req>[+!-])?@(?<tag>[^ *=<>$*\^,@(]+)',
+          '(?:\((?<value>.*?)\)| *(?<op>[=<>~]{1,2}|[*$\^]=) *',
+          '(?<val>.*?(?=\Z|[,@])))?',
+        ].join("")
+        search = args.join(" ").gsub(Regexp.new(rx)) do
+          m = Regexp.last_match
+          string = if m["value"]
+              "#{m["req"]}#{m["tag"]}=#{m["value"]}"
+            else
+              m[0]
+            end
+          options[:tagged] << string.sub(/@/, "")
+          ""
         end
+      end
 
-        search = search.gsub(/ +/, " ").strip
+      search = search.gsub(/ +/, " ").strip
 
-        all_req = options[:tagged].join(" ") !~ /(?<=[, ])[+!-]/ && !options[:or]
-        options_tags = []
-        options[:tagged].join(",").split(/ *, */).each do |arg|
-          m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
+      all_req = options[:tagged].join(" ") !~ /(?<=[, ])[+!-]/ && !options[:or]
+      options_tags = []
+      options[:tagged].join(",").split(/ *, */).each do |arg|
+        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
 
-          options_tags.push({
-                              tag: m["tag"].wildcard_to_rx,
-                              comp: m["op"],
-                              value: m["val"],
-                              required: all_req || (!m["req"].nil? && m["req"] == "+"),
-                              negate: !m["req"].nil? && m["req"] =~ /[!-]/ ? true : false,
-                            })
-        end
+        options_tags.push({
+                            tag: m["tag"].wildcard_to_rx,
+                            comp: m["op"],
+                            value: m["val"],
+                            required: all_req || (!m["req"].nil? && m["req"] == "+"),
+                            negate: !m["req"].nil? && m["req"] =~ /[!-]/ ? true : false,
+                          })
+      end
 
-        search_for_done = false
-        options_tags.each { |tag| search_for_done = true if tag[:tag] =~ /done/ }
-        options[:done] = true if search_for_done
+      search_for_done = false
+      options_tags.each { |tag| search_for_done = true if tag[:tag] =~ /done/ }
+      options[:done] = true if search_for_done
 
-        tags = options_tags
+      tags = options_tags
 
-        if options[:exact]
-          tokens = search
-        elsif options[:regex]
-          tokens = Regexp.new(search, Regexp::IGNORECASE)
-        else
-          tokens = []
-          all_req = search !~ /(?<=[, ])[+!-]/ && !options[:or]
+      if options[:exact]
+        tokens = search
+      elsif options[:regex]
+        tokens = Regexp.new(search, Regexp::IGNORECASE)
+      else
+        tokens = []
+        all_req = search !~ /(?<=[, ])[+!-]/ && !options[:or]
 
-          search.split(/ /).each do |arg|
-            m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
+        search.split(/ /).each do |arg|
+          m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
 
-            tokens.push({
-                          token: m["tok"],
-                          required: all_req || (!m["req"].nil? && m["req"] == "+"),
-                          negate: !m["req"].nil? && m["req"] =~ /[!-]/ ? true : false,
-                        })
-          end
+          tokens.push({
+                        token: m["tok"],
+                        required: all_req || (!m["req"].nil? && m["req"] == "+"),
+                        negate: !m["req"].nil? && m["req"] =~ /[!-]/ ? true : false,
+                      })
         end
       end
 
@@ -196,6 +205,13 @@ class App
         end
       end
 
+      # Support TaskPaper-style item paths in --project when value starts with '/'
+      project_filter_paths = nil
+      if options[:project]&.start_with?('/')
+        project_filter_paths = NA.resolve_item_path(path: options[:project], depth: depth)
+        options[:project] = nil
+      end
+
       todo = NA::Todo.new({
                             depth: depth,
                             done: options[:done],
@@ -209,15 +225,13 @@ class App
                             require_na: false,
                           })
 
-      # Apply TaskPaper project exclusions, if any
-      unless exclude_projects.empty?
-        todo.actions.delete_if do |action|
-          parents = Array(action.parent)
-          last = parents.last.to_s
-          full = parents.join(':')
-          exclude_projects.any? do |proj|
-            proj_rx = Regexp.new(Regexp.escape(proj), Regexp::IGNORECASE)
-            last =~ proj_rx || full =~ /(^|:)#{Regexp.escape(proj)}$/i
+      # Apply item-path project filters, if any
+      if project_filter_paths && project_filter_paths.any?
+        todo.actions.delete_if do |a|
+          parents = Array(a.parent)
+          path = parents.join(':')
+          project_filter_paths.none? do |p|
+            path =~ /\A#{Regexp.escape(p)}(?::|\z)/i
           end
         end
       end

@@ -209,7 +209,25 @@ class App
         action = "#{action} @started(#{started_str})"
       end
 
-      NA.add_action(target, options[:project], action, note,
+      # Resolve TaskPaper-style item path in --to/--project if provided
+      project = options[:project]
+      if project && project.start_with?('/')
+        paths = NA.resolve_item_path(path: project, file: target)
+        if paths.count > 1
+          choices = paths.map { |p| "#{File.basename(target)}: #{p}" }
+          res = NA.choose_from(choices, prompt: 'Select target project', multiple: false)
+          if res
+            m = res.match(/: (.+)\z/)
+            project = m ? m[1] : project
+          else
+            NA.notify("#{NA.theme[:error]}No project selected, cancelled", exit_code: 1)
+          end
+        elsif paths.count == 1
+          project = paths.first
+        end
+      end
+
+      NA.add_action(target, project, action, note,
                     finish: options[:finish], append: append,
                     started_at: started_at, done_at: done_at, duration_seconds: duration_seconds)
     end

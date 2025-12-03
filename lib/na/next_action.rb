@@ -1149,6 +1149,170 @@ module NA
       end
     end
 
+    # Resolve a TaskPaper-style item path (subset) into NA project paths.
+    #
+    # Supported subset:
+    #   - Child axis: /Project/Sub
+    #   - Descendant axis: //Sub (e.g. /Inbox//Bugs)
+    #   - Wildcard step: * (matches any project name in that position)
+    #
+    # @param path [String] TaskPaper-style item path (must start with '/')
+    # @param file [String, nil] Optional single file to resolve against
+    # @param depth [Integer] Directory search depth when no file is given
+    # @return [Array<String>] Array of project paths like "Inbox:New Videos"
+    def resolve_item_path(path:, file: nil, depth: 1)
+      return [] if path.nil?
+
+      steps = parse_item_path(path)
+      return [] if steps.empty?
+
+      files = if file
+                [File.expand_path(file)]
+              else
+                find_files(depth: depth)
+              end
+      return [] if files.nil? || files.empty?
+
+      matches = []
+
+      files.each do |f|
+        todo = NA::Todo.new(require_na: false, file_path: f)
+        projects = todo.projects
+        next if projects.empty?
+
+        current = resolve_path_in_projects(projects, steps)
+        current.each do |proj|
+          matches << proj.project
+        end
+      end
+
+      matches.uniq
+    end
+
+    # Parse a TaskPaper-style item path string into steps with axis and text.
+    # Returns an Array of Hashes: { axis: :child|:desc, text: String,
+    # wildcard: Boolean }.
+    def parse_item_path(path)
+      s = path.to_s.strip
+      return [] unless s.start_with?('/')
+
+      steps = []
+      i = 0
+      len = s.length
+
+      while i < len
+        break unless s[i] == '/'
+
+        axis = :child
+        if i + 1 < len && s[i + 1] == '/'
+          axis = :desc
+          i += 1
+        end
+        i += 1
+
+        text = +''
+        quote = nil
+
+        while i < len
+          ch = s[i]
+          if quote
+            text << ch
+            quote = nil if ch == quote
+            i += 1
+            next
+          end
+
+          if ch == '"' || ch == "'"
+            quote = ch
+            text << ch
+            i += 1
+            next
+          end
+
+          break if ch == '/'
+
+          text << ch
+          i += 1
+        end
+
+        t = text.strip
+        wildcard = t.empty? || t == '*'
+        steps << { axis: axis, text: t, wildcard: wildcard }
+      end
+
+      steps
+    end
+
+    # Resolve a parsed item path against a list of NA::Project objects from a
+    # single file.
+    #
+    # @param projects [Array<NA::Project>]
+    # @param steps [Array<Hash>] Parsed steps from parse_item_path
+    # @return [Array<NA::Project>] Matching projects (last step)
+    def resolve_path_in_projects(projects, steps)
+      return [] if steps.empty? || projects.empty?
+
+      # First step: from a virtual root; child axis means top-level projects
+      # (no ':' in path), descendant axis means any project in the file.
+      first = steps.first
+      current = []
+
+      projects.each do |proj|
+        case first[:axis]
+        when :child
+          next unless proj.project.split(':').length == 1
+        when :desc
+          # any project is a descendant of the virtual root
+        end
+
+        current << proj if item_path_step_match?(first, proj)
+      end
+
+      steps[1..].each do |step|
+        next_current = []
+        current.each do |parent|
+          parent_path = parent.project
+          parent_depth = parent_path.split(':').length
+          projects.each do |proj|
+            next if proj.equal?(parent)
+
+            case step[:axis]
+            when :child
+              next unless proj.project.start_with?("#{parent_path}:")
+              next unless proj.project.split(':').length == parent_depth + 1
+            when :desc
+              next unless proj.project.start_with?("#{parent_path}:")
+            end
+
+            next unless item_path_step_match?(step, proj)
+
+            next_current << proj
+            pp next_current.inspect
+          end
+        end
+        current = next_current.uniq
+        break if current.empty?
+      end
+
+      current
+    end
+
+    # Check if a project matches a single item-path step.
+    def item_path_step_match?(step, proj)
+      return true if step[:wildcard]
+
+      name = proj.project.split(':').last.to_s
+      txt = step[:text]
+      return false if txt.nil? || txt.empty?
+
+      if txt =~ /[*?]/
+        rx = Regexp.new(txt.wildcard_to_rx, Regexp::IGNORECASE)
+        !!(name =~ rx)
+      else
+        name.downcase.include?(txt.downcase)
+      end
+    end
+
     # List todo files matching a query.
     # @param query [Array] Query tokens
     # @return [void]
@@ -1202,34 +1366,25 @@ module NA
     #   - @text REL VALUE  (treated as plain-text search on the line)
     #   - project = "Name", not project = "Name"
     #
-    # The result can be passed directly to NA::Todo via:
-    #   search:  result[:tokens]
-    #   tag:     result[:tags]
-    #   project: result[:project]
-    #   done:    result[:include_done]
+    # The result can be passed directly to NA::Todo via the returned clause
+    # hashes, which include keys :tokens, :tags, :project, :include_done, and
+    # :exclude_projects.
     #
     # @param expr [String] TaskPaper @search() expression or inner content
-    # @return [Hash] Parsed components
+    # @return [Hash] Parsed components for a single AND-joined clause
     def parse_taskpaper_search(expr)
-      out = {
-        tokens: [],
-        tags: [],
-        project: nil,
-        include_done: nil,
-        exclude_projects: []
-      }
+      clauses = parse_taskpaper_search_clauses(expr)
+      clauses.first || { tokens: [], tags: [], project: nil, include_done: nil, exclude_projects: [] }
+    end
 
-      return out if expr.nil?
-
-      inner = expr.to_s.strip
-      inner = Regexp.last_match(1).strip if inner =~ /\A@search\((.*)\)\s*\z/i
-
-      return out if inner.empty?
-
-      # NOTE: We currently support a flat "and"-joined expression. "or",
-      # parentheses, item paths, set operations, and slicing from TaskPaper's
-      # full search language are not yet implemented.
-      parts = inner.split(/\band\b/i).map(&:strip).reject(&:empty?)
+    # Internal: parse a single (AND-joined) TaskPaper clause into search
+    # components.
+    #
+    # @param clause [String] Clause content with no surrounding @search()
+    # @param out [Hash] Accumulator hash (tokens/tags/project/etc.)
+    # @return [Hash] The same +out+ hash
+    def parse_taskpaper_search_clause(clause, out)
+      parts = clause.split(/\band\b/i).map(&:strip).reject(&:empty?)
 
       parts.each do |raw_part|
         part = raw_part.dup
@@ -1325,11 +1480,246 @@ module NA
       out
     end
 
+    # Parse a TaskPaper-style @search() expression into multiple OR-joined
+    # clauses. Each clause is an AND-joined set of predicates represented as a
+    # hash compatible with NA::Todo options. Supports nested boolean
+    # expressions with parentheses using `and` / `or`. The unary `not`
+    # operator is handled inside individual predicates.
+    #
+    # Also supports an optional leading item path (subset) before predicates, e.g.:
+    #   @search(/Inbox//Testing and not @done)
+    # The leading path is exposed on each clause as :item_paths and is later
+    # resolved via resolve_item_path in run_taskpaper_search.
+    #
+    # @param expr [String] TaskPaper @search() expression or inner content
+    # @return [Array<Hash>] Array of clause hashes
+    def parse_taskpaper_search_clauses(expr)
+      return [] if expr.nil?
+
+      inner = expr.to_s.strip
+      inner = Regexp.last_match(1).strip if inner =~ /\A@search\((.*)\)\s*\z/i
+
+      return [] if inner.empty?
+
+      # Extract optional leading item path (must start with '/'). The remaining
+      # content is treated as the boolean expression for predicates. We allow
+      # spaces inside the path and stop at the first unquoted AND/OR keyword.
+      item_path = nil
+      if inner.start_with?('/')
+        i = 0
+        quote = nil
+        sep_index = nil
+        sep_len = nil
+        while i < inner.length
+          ch = inner[i]
+          if quote
+            quote = nil if ch == quote
+            i += 1
+            next
+          end
+
+          if ch == '"' || ch == "'"
+            quote = ch
+            i += 1
+            next
+          end
+
+          # Look for unquoted AND/OR separators
+          rest = inner[i..]
+          if rest =~ /\A\s+and\b/i
+            sep_index = i
+            sep_len = rest.match(/\A\s+and\b/i)[0].length
+            break
+          elsif rest =~ /\A\s+or\b/i
+            sep_index = i
+            sep_len = rest.match(/\A\s+or\b/i)[0].length
+            break
+          end
+
+          i += 1
+        end
+
+        if sep_index
+          item_path = inner[0...sep_index].strip
+          inner = inner[(sep_index + sep_len)..].to_s.strip
+        else
+          item_path = inner.strip
+          inner = ''
+        end
+      end
+
+      # Tokenize expression into TEXT, AND, OR, '(', ')', preserving quoted
+      # strings and leaving `not` to be handled inside predicates.
+      tokens = []
+      current = +''
+      quote = nil
+      i = 0
+
+      boundary = lambda do |str, idx, len|
+        before = idx.positive? ? str[idx - 1] : nil
+        after = (idx + len) < str.length ? str[idx + len] : nil
+        before_ok = before.nil? || before =~ /\s|\(/
+        after_ok = after.nil? || after =~ /\s|\)/
+        before_ok && after_ok
+      end
+
+      while i < inner.length
+        ch = inner[i]
+
+        if quote
+          current << ch
+          quote = nil if ch == quote
+          i += 1
+          next
+        end
+
+        if ch == '"' || ch == "'"
+          quote = ch
+          current << ch
+          i += 1
+          next
+        end
+
+        if ch == '(' || ch == ')'
+          tokens << [:TEXT, current] unless current.strip.empty?
+          current = +''
+          tokens << [ch, ch]
+          i += 1
+          next
+        end
+
+        if ch =~ /\s/
+          unless current.strip.empty?
+            tokens << [:TEXT, current]
+            current = +''
+          end
+          i += 1
+          next
+        end
+
+        rest = inner[i..]
+        if rest.downcase.start_with?('and') && boundary.call(inner, i, 3)
+          tokens << [:TEXT, current] unless current.strip.empty?
+          current = +''
+          tokens << [:AND, 'and']
+          i += 3
+          next
+        elsif rest.downcase.start_with?('or') && boundary.call(inner, i, 2)
+          tokens << [:TEXT, current] unless current.strip.empty?
+          current = +''
+          tokens << [:OR, 'or']
+          i += 2
+          next
+        else
+          current << ch
+          i += 1
+        end
+      end
+      tokens << [:TEXT, current] unless current.strip.empty?
+
+      # Recursive-descent parser producing DNF (array of AND-clauses)
+      index = 0
+
+      current_token = lambda { tokens[index] }
+      advance = lambda { index += 1 }
+
+      parse_primary = lambda do
+        tok = current_token.call
+        return [] unless tok
+
+        type, = tok
+        if type == '('
+          advance.call
+          clauses = parse_or.call
+          advance.call if current_token.call && current_token.call[0] == ')'
+          clauses
+        elsif type == :TEXT
+          parts = []
+          while current_token.call && current_token.call[0] == :TEXT
+            parts << current_token.call[1].strip
+            advance.call
+          end
+          pred = parts.join(' ').strip
+          return [] if pred.empty?
+
+          [parse_taskpaper_search_clause(pred, {
+                                           tokens: [],
+                                           tags: [],
+                                           project: nil,
+                                           include_done: nil,
+                                           exclude_projects: [],
+                                           item_paths: []
+                                         })]
+        else
+          advance.call
+          []
+        end
+      end
+
+      parse_and = lambda do
+        clauses = parse_primary.call
+        while current_token.call && current_token.call[0] == :AND
+          advance.call
+          right = parse_primary.call
+          combined = []
+          clauses.each do |left_clause|
+            right.each do |right_clause|
+              combined << {
+                tokens: left_clause[:tokens] + right_clause[:tokens],
+                tags: left_clause[:tags] + right_clause[:tags],
+                project: right_clause[:project] || left_clause[:project],
+                include_done: right_clause[:include_done].nil? ? left_clause[:include_done] : right_clause[:include_done],
+                exclude_projects: left_clause[:exclude_projects] + right_clause[:exclude_projects]
+              }
+            end
+          end
+          clauses = combined
+        end
+        clauses
+      end
+
+      parse_or = lambda do
+        clauses = parse_and.call
+        while current_token.call && current_token.call[0] == :OR
+          advance.call
+          right = parse_and.call
+          clauses.concat(right)
+        end
+        clauses
+      end
+
+      clauses = parse_or.call
+
+      # If there was only an item path and no predicates, create a single
+      # empty clause to carry the path.
+      if clauses.empty? && item_path
+        clauses = [{
+          tokens: [],
+          tags: [],
+          project: nil,
+          include_done: nil,
+          exclude_projects: [],
+          item_paths: []
+        }]
+      end
+
+      # Attach leading item path (if any) to all clauses
+      if item_path
+        clauses.each do |clause|
+          clause[:item_paths] ||= []
+          clause[:item_paths] << item_path
+        end
+      end
+
+      clauses
+    end
+
     # Load TaskPaper-style saved searches from todo files.
     #
-    # Looks for a project named "Search Definitions" in each todo file and
-    # collects child lines matching:
+    # Scans all lines in each file for:
     #   [WHITESPACE]TITLE @search(PARAMS)
+    # regardless of project name or indentation. This allows searches to live
+    # in any project (e.g. "Searches") or even at top level.
     #
     # @param depth [Integer] Directory depth to search for files
     # @return [Hash{String=>Hash}] Map of title to {:expr, :file}
@@ -1342,23 +1732,7 @@ module NA
         content = file.read_file
         next if content.nil? || content.empty?
 
-        in_block = false
-        header_indent = 0
-
         content.each_line do |line|
-          unless in_block
-            if line =~ /^(?<indent>\s*)Search Definitions:\s*$/
-              in_block = true
-              header_indent = Regexp.last_match(:indent).length
-            end
-            next
-          end
-
-          # End of "Search Definitions" block when indentation returns to or
-          # above header and we hit another project header.
-          current_indent = line[/^\s*/].length
-          break if current_indent <= header_indent && line.strip =~ /.+:\s*$/
-
           next if line.strip.empty?
           next unless line =~ /^\s*(.+?)\s+@search\((.+)\)\s*$/
 
@@ -1379,61 +1753,105 @@ module NA
     # @param options [Hash] Display/search options (subset of find.rb)
     # @return [void]
     def run_taskpaper_search(expr, file: nil, options: {})
-      parsed = parse_taskpaper_search(expr)
+      clauses = parse_taskpaper_search_clauses(expr)
+      return if clauses.empty?
 
       depth = options[:depth] || 1
-      search_tokens = parsed[:tokens]
-      tags = parsed[:tags]
-      include_done = parsed[:include_done]
-      exclude_projects = parsed[:exclude_projects] || []
-      project = parsed[:project] || options[:project]
+      all_actions = NA::Actions.new
+      all_files = []
 
-      todo_options = {
-        depth: depth,
-        done: include_done.nil? ? options[:done] : include_done,
-        query: nil,
-        search: search_tokens,
-        search_note: options.fetch(:search_notes, true),
-        tag: tags,
-        negate: options.fetch(:invert, false),
-        regex: options.fetch(:regex, false),
-        project: project,
-        require_na: options.fetch(:require_na, false)
-      }
-      todo_options[:file_path] = file if file
+      clauses.each do |parsed|
+        search_tokens = parsed[:tokens]
+        tags = parsed[:tags]
+        include_done = parsed[:include_done]
+        exclude_projects = parsed[:exclude_projects] || []
+        project = parsed[:project] || options[:project]
 
-      todo = NA::Todo.new(todo_options)
+        # Resolve any item-path filters declared on this clause
+        item_paths = Array(parsed[:item_paths]).compact
+        resolved_paths = []
+        item_paths.each do |p|
+          resolved_paths.concat(resolve_item_path(path: p, file: file, depth: depth))
+        end
 
-      # Apply project exclusions (e.g. "not project = \"Archive\"")
-      unless exclude_projects.empty?
-        todo.actions.delete_if do |action|
-          parents = Array(action.parent)
-          last = parents.last.to_s
-          full = parents.join(':')
-          exclude_projects.any? do |proj|
-            proj_rx = Regexp.new(Regexp.escape(proj), Regexp::IGNORECASE)
-            last =~ proj_rx || full =~ /(^|:)#{Regexp.escape(proj)}$/i
+        todo_options = {
+          depth: depth,
+          done: include_done.nil? ? options[:done] : include_done,
+          query: nil,
+          search: search_tokens,
+          search_note: options.fetch(:search_notes, true),
+          tag: tags,
+          negate: options.fetch(:invert, false),
+          regex: options.fetch(:regex, false),
+          project: project,
+          require_na: options.fetch(:require_na, false)
+        }
+        todo_options[:file_path] = file if file
+
+        todo = NA::Todo.new(todo_options)
+
+        # Apply project exclusions (e.g. "not project = \"Archive\"")
+        unless exclude_projects.empty?
+          todo.actions.delete_if do |action|
+            parents = Array(action.parent)
+            last = parents.last.to_s
+            full = parents.join(':')
+            exclude_projects.any? do |proj|
+              proj_rx = Regexp.new(Regexp.escape(proj), Regexp::IGNORECASE)
+              last =~ proj_rx || full =~ /(^|:)#{Regexp.escape(proj)}$/i
+            end
           end
         end
+
+        # Apply item-path project filters, if any
+        unless resolved_paths.empty?
+          todo.actions.delete_if do |action|
+            parents = Array(action.parent)
+            path = parents.join(':')
+            resolved_paths.none? do |p|
+              path =~ /\A#{Regexp.escape(p)}(?::|\z)/i
+            end
+          end
+        end
+
+        all_files.concat(todo.files)
+        todo.actions.each { |a| all_actions.push(a) }
       end
 
-      regexes = if search_tokens.is_a?(Array)
-                  search_tokens.delete_if { |token| token[:negate] }.map { |token| token[:token].wildcard_to_rx }
-                else
-                  [search_tokens]
-                end
+      # De-duplicate actions across clauses
+      seen = {}
+      merged_actions = NA::Actions.new
+      all_actions.each do |a|
+        key = "#{a.file_path}:#{a.file_line}"
+        next if seen[key]
 
-      todo.actions.output(depth,
-                          {
-                            files: todo.files,
-                            regexes: regexes,
-                            notes: options.fetch(:notes, false),
-                            nest: options.fetch(:nest, false),
-                            nest_projects: options.fetch(:omnifocus, false),
-                            no_files: options.fetch(:no_file, false),
-                            times: options.fetch(:times, false),
-                            human: options.fetch(:human, false)
-                          })
+        seen[key] = true
+        merged_actions.push(a)
+      end
+
+      # Build regexes for highlighting from all positive tokens across clauses
+      regexes = []
+      clauses.each do |parsed|
+        sts = parsed[:tokens]
+        if sts.is_a?(Array)
+          regexes.concat(sts.delete_if { |token| token[:negate] }.map { |token| token[:token].wildcard_to_rx })
+        elsif sts
+          regexes << sts
+        end
+      end
+      regexes.uniq!
+
+      merged_actions.output(depth,
+                            {
+                              files: all_files.uniq,
+                              regexes: regexes,
+                              notes: options.fetch(:notes, false),
+                              nest: options.fetch(:nest, false),
+                              nest_projects: options.fetch(:omnifocus, false),
+                              no_files: options.fetch(:no_file, false),
+                              times: options.fetch(:times, false),
+                              human: options.fetch(:human, false)
+                            })
     end
 
     # Load saved search definitions from YAML file
