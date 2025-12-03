@@ -902,7 +902,10 @@ module NA
       end}", debug: true)
 
       if require_last
-        dirs.delete_if { |d| !d.sub(/\.#{NA.extension}$/, '').dir_matches(any: optional, all: required, none: negated) }
+        dirs.delete_if do |d|
+          !d.sub(/\.#{NA.extension}$/, '')
+            .dir_matches?(any: optional, all: required, none: negated, require_last: true, distance: distance)
+        end
       else
         dirs.delete_if do |d|
           !d.sub(/\.#{NA.extension}$/, '')
