@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.94.
+The current version of `na` is 1.2.95.
 
 
 ### Table of contents

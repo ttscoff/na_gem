@@ -1,3 +1,26 @@
+### 1.2.95
+
+2025-12-03 08:23
+
+#### NEW
+
+- Support TaskPaper @search() syntax in `na find`, `na saved`, and `na next` queries.
+- Allow TaskPaper-style item paths (`/Inbox//Subproject`, `/*`) for targeting projects in `add --to`, `next --project`, and `find --project`.
+- Discover TaskPaper saved searches from any `TITLE @search(...)` line in todo files, regardless of project name.
+- Support TaskPaper type shortcuts (project, task, note) in @search() queries.
+- Allow slicing syntax ([index], [start:end], etc.) in TaskPaper @search() to limit results, including parenthesized expressions.
+
+#### IMPROVED
+
+- Saved searches from `saved_searches.yml` now recognize TaskPaper `@search(...)` values and execute them via the TaskPaper search engine instead of shelling commands.
+- TaskPaper `@search(...)` supports nested boolean expressions with `and`/`or`, tag predicates, `@text`, project filters, and `@done` handling.
+- Item-path filters in `@search(...)` restrict results to matching project subtrees (e.g. `/Inbox//Bugs and not @done`).
+- `na saved` and `na find` now combine TaskPaper and YAML saved searches, matching names across both sources.
+- TaskPaper typei shortcuts `project`, `task`, and `note` are interpreted in @search() expressions (e.g. `project Inbox` => `project = "Inbox"`).
+- TaskPaper @search() item paths integrate with next/find/saved and respect project hierarchies.
+- Tag-only predicates like @priority now match tags with any value (for example @priority(3)).
+- Na next/find/saved TaskPaper queries share the same evaluation engine, keeping behavior consistent across commands.
+
 ### 1.2.94
 
 2025-12-01 09:22
