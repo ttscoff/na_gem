@@ -22,6 +22,7 @@ The current version of `na` is <!--VER-->1.2.94<!--END VER-->.
   - [Adding todos](#adding-todos)
   - [Updating todos](#updating-todos)
 - [Terminology](#terminology)
+- [TaskPaper Syntax](#taskpaper-syntax)
 - [Usage](#usage)
   - [Commands](#commands)
   - [add](#add)
@@ -111,9 +112,143 @@ You can mark todos as complete, delete them, add and remove tags, change priorit
 
 ### TaskPaper Syntax
 
-NA has its own syntax for searching tags, titles, and notes, but it also understands most of the [TaskPaper query syntax](https://guide.taskpaper.com/reference/searches/).
+NA has its own syntax for searching tags, titles, and notes, but it also understands most of the [TaskPaper query syntax](https://guide.taskpaper.com/reference/searches/). TaskPaper-style searches are accepted anywhere you can pass a `@search(...)` expression, including:
 
-[DETAIL OUR IMPLEMENTATION HERE]
+- `na next "@search(...)"` (or via saved searches)
+- `na find "@search(...)"` and `na saved NAME` when the saved value is `@search(...)`
+- TaskPaper files themselves, on any line of the form `TITLE @search(PARAMS)` (these become runnable saved searches)
+
+What follows documents the subset and extensions of TaskPaper search that `na` supports.
+
+#### Predicates and tag searches
+
+- **Simple text**: Bare words are treated as plain-text search tokens on the action line, combined with `and` by default.
+- **Tag predicates**:
+  - `@tag` (no value) means "this tag exists with any value". For example, `@priority` matches `@priority(1)`, `@priority(3)`, etc.
+  - `@tag op VALUE` uses the following operators (TaskPaper relations are mapped to NA's comparison codes):
+    - `=` / `==` / no operator: equality
+    - `!=`: inequality (implemented as a negated equality)
+    - `<`, `>`, `<=`, `>=`: numeric or date comparison when the value parses as a time or number
+    - `contains` → `*=`: value substring match
+    - `beginswith` → `^=`: prefix match
+    - `endswith` → `$=`: suffix match
+    - `matches` → `=~`: regular expression match (case-insensitive)
+  - Relation modifiers like `[i]`, `[s]`, `[n]`, `[d]`, `[l]` are parsed and discarded; matching is always case-insensitive for string comparisons.
+- **`@text`**:
+  - `@text "foo"` is treated as a plain-text predicate on the action line (equivalent to searching for `"foo"`).
+  - `@text` without a value is ignored.
+- **`@done`**:
+  - `@done` sets an internal "include done" flag and is not treated as a normal tag filter.
+  - `not @done` (or `@done` combined with other predicates) correctly toggles whether completed actions are included.
+
+#### Project predicates
+
+- **Project equality**:
+  - `project = "Inbox"` or `project == "Inbox"` limits results to actions under the `Inbox` project (matching NA's project path).
+  - `project != "Archive"` excludes actions whose project chain ends in `Archive`.
+- **Shortcuts**:
+  - `project NAME` at the start of an expression is treated as a shortcut:
+    - If it is the entire predicate, it becomes `project = "NAME"`.
+    - If it is followed by additional logic, e.g. `project Inbox and @na`, the leading `NAME and` is dropped and the rest (`@na ...`) is parsed as normal. This matches TaskPaper's "type shortcut" usage rather than combining project name and text search.
+
+#### Type shortcuts
+
+TaskPaper defines type shortcuts that expand to `@type = ... and`. NA supports them in a way that is practical for task searches:
+
+- `project QUERY`:
+  - If used alone, becomes `project = "QUERY"`.
+  - If followed by more predicates joined by `and`/`or`, only the tail expression is used (e.g. `project Inbox and @na` becomes `@na`).
+- `task QUERY` and `note QUERY`:
+  - The leading keyword is removed and the rest of the expression is interpreted as a normal text/tag predicate.
+  - NA does not currently distinguish task vs note types for filtering; these shortcuts are primarily syntactic sugar.
+
+#### Boolean logic
+
+- `and` and `or` are supported with parentheses for grouping:
+  - `@na and not @done`
+  - `(@priority >= 3 and @na) or @today`
+- Expressions are parsed into an internal boolean AST and converted to disjunctive normal form (OR of AND-clauses) before evaluation, so:
+  - Complex nested groupings with multiple `and`/`or` operators behave as expected.
+  - The unary `not` operator is handled at the predicate level (e.g. `not @done`, `not @priority >= 3`).
+
+#### Item paths
+
+NA understands a subset of TaskPaper item-path syntax and maps it to project scopes in your todo files. Item paths can be used:
+
+- As the leading part of a `@search(...)` expression:
+  - `@search(/Inbox//Bugs and not @done)`
+- In TaskPaper saved searches (`TITLE @search(/Inbox//Project A and @na)`).
+
+Supported item-path features:
+
+- **Axes**:
+  - `/Name` selects top-level items whose title contains `Name`.
+  - `//Name` selects any descendants (at any depth) whose title contains `Name`.
+- **Wildcards**:
+  - `*` matches "all items" on that step.
+  - Example: `/*` selects all top-level projects; `/Inbox//*` selects everything under `Inbox`.
+- **Semantics in NA**:
+  - Each matching project path is turned into an NA project chain like `"Inbox:New Videos"`.
+  - Actions are filtered post-parse so that only actions whose parent chain starts with one of the resolved project paths are returned.
+
+Current limitations:
+
+- Set operations such as `union`, `intersect`, and `except` are not yet implemented.
+- Slicing on item-path steps (e.g. `project *//not @done[0]` where `[0]` is attached to a path step) is not yet interpreted; see "Slicing results" below for what is supported.
+
+#### Slicing results
+
+NA supports TaskPaper-style slicing on the **result set of a `@search(...)` expression**, not (yet) on individual item-path steps:
+
+- Supported forms:
+  - `[index]`
+  - `[start:end]`
+  - `[start:]`
+  - `[:end]`
+  - `[:]`
+- Examples:
+  - `@search((project Inbox and @na and not @done)[0])`:
+    - Evaluates the predicates, then returns only the first matching action.
+  - `@search(/Inbox//Bugs and @na and not @done[0])`:
+    - Restricts to the `Inbox/Bugs` subtree, then returns only the first incomplete `@na` action under that subtree.
+
+Slice semantics:
+
+- Slices are applied per clause after all tag/project/item-path filters:
+  - `[index]` → the single action at `index` (0-based) if it exists.
+  - `[start:end]` → actions in the half-open range `start...end`.
+  - `[start:]` → actions from `start` to the end.
+  - `[:end]` / `[:]` → from the beginning to `end` (or all actions).
+
+#### Saved searches and TaskPaper files
+
+- **YAML saved searches**:
+  - `~/.local/share/na/saved_searches.yml` values that are plain strings continue to use NA's original search syntax.
+  - Values of the form `@search(...)` are parsed using the TaskPaper engine described above and support the full feature set (predicates, boolean logic, item paths, slicing).
+- **TaskPaper-embedded saved searches**:
+  - Any line in a `.taskpaper` file that matches:
+    - `TITLE @search(PARAMS)`
+  - is treated as a saved search. `TITLE` becomes the search name, and `PARAMS` is parsed with the same TaskPaper engine. These searches are available via `na saved TITLE` and can coexist with YAML definitions.
+
+#### Supported vs. unsupported TaskPaper features
+
+In summary, NA's TaskPaper support includes:
+
+- Tag predicates with most TaskPaper relations and modifiers.
+- `@text` predicates for plain-text search.
+- `@done` handling wired into NA's "done" flag.
+- `project` equality and exclusions, plus a practical "project" type shortcut.
+- Boolean logic with `and`, `or`, `not`, and parentheses.
+- Item paths with `/`, `//`, and `*` to scope searches by project hierarchy.
+- Result slicing on entire `@search(...)` expressions.
+- Integration with `next`, `find`, and `saved` via `@search(...)`, including YAML and TaskPaper-defined saved searches.
+
+The following TaskPaper features are **not** yet implemented:
+
+- Item-path set operations (`union`, `intersect`, `except`).
+- Slicing applied directly to individual item-path steps (only whole-expression slicing is currently supported).
+
+Where NA already provided its own search syntax (e.g. `na find`, `na tagged`), TaskPaper searches are additive: you can choose whichever is more convenient for a given query, and `@search(...)` expressions are routed through a common TaskPaper engine so behavior is consistent across commands.
 
 ### Usage
 
@@ -149,7 +284,7 @@ Notes are not displayed by the `next/tagged/find` commands unless `--notes` is s
 
 Example: `na find cool feature idea`
 
-Unless `--exact` is specified, search is tokenized and combined with AND, so `na find cool feature idea` translates to `cool AND feature AND idea`, matching any string that contains all of the words. To make a token required and others optional, add a `+` before it (e.g. `cool +feature idea` is `(cool OR idea) AND feature`). Wildcards allowed (`*` and `?`), use `--regex` to interpret the search as a regular expression. Use `-v` to invert the results (display non-matching actions only).
+Unless `--exact` is specified, search is tokenized and combined with AND, so `na find cool feature idea` translates to `cool AND feature AND idea`, matching any string that contains all of the words. To make a token required and others optional, add a `+` before it (e.g. `cool +feature idea` is `(cool OR idea) AND feature`). Wildcards allowed (`*` and `?`), use `--regex` to interpret the search as a regular expression. Use `-v` to invert the results (display non-matching actions only). Searches accept both NA search syntax and TaskPaper search syntax (see [TaskPaper search section](#taskpaper-syntax) above).
 
 ```
 @cli(bundle exec bin/na help find)
@@ -183,7 +318,7 @@ Examples:
 - `na next -d 3` (list all next actions in the current directory and look for additional files 3 levels deep from there)
 - `na next marked2` (show next actions from another directory you've previously used na on)
 
-To see all next actions across all known todos, use `na next "*"`. You can combine multiple arguments to see actions across multiple todos, e.g. `na next marked nvultra`.
+To see all next actions across all known todos, use `na next "*"`. You can combine multiple arguments to see actions across multiple todos, e.g. `na next marked nvultra`. Filters and search terms accept both NA search syntax and TaskPaper search syntax (see [TaskPaper search section](#taskpaper-syntax) above).
 
 ```
 @cli(bundle exec bin/na help next)
@@ -251,7 +386,7 @@ The saved command runs saved searches. To save a search, add `--save SEARCH_NAME
 
 Search names can be partially matched when calling them, so if you have a search named "overdue," you can match it with `na saved over` (shortest match will be used).
 
-Run `na saved` without an argument to list your saved searches.
+Run `na saved` without an argument to list your saved searches. Saved searches preserve whether NA search syntax or TaskPaper search syntax was used, and both syntaxes are supported when defining or running them (see [TaskPaper search section](#taskpaper-syntax) above).
 
 > As a shortcut, if `na` is run with one argument that matches the name of a saved search, it will execute that search, so running `na maybe` is the same as running `na saved maybe`.
 <!--JEKYLL{:.tip}-->
