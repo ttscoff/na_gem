@@ -3,6 +3,9 @@
 # Next Action methods
 module NA
   class << self
+    attr_accessor :verbose, :extension, :include_ext, :na_tag, :command_line, :command, :globals, :global_file,
+                  :cwd_is, :cwd, :stdin, :show_cwd_indicator
+
     # Select actions across files using existing search pipeline
     # @return [Array<NA::Action>]
     def select_actions(file: nil, depth: 1, search: [], tagged: [], include_done: false)
@@ -95,9 +98,6 @@ module NA
       update_action(file, { target_line: original_line }, add: action, move: move_to, all: true, suppress_prompt: true)
     end
     include NA::Editor
-
-    attr_accessor :verbose, :extension, :include_ext, :na_tag, :command_line, :command, :globals, :global_file,
-                  :cwd_is, :cwd, :stdin, :show_cwd_indicator
 
     # Returns the current theme hash for color and style settings.
     # @return [Hash] The theme settings
@@ -1496,8 +1496,12 @@ module NA
     def parse_taskpaper_search_clauses(expr)
       return [] if expr.nil?
 
+      NA.notify("TP DEBUG expr: #{expr.inspect}", debug: true) if NA.verbose
+
       inner = expr.to_s.strip
+      NA.notify("TP DEBUG inner initial: #{inner.inspect}", debug: true) if NA.verbose
       inner = Regexp.last_match(1).strip if inner =~ /\A@search\((.*)\)\s*\z/i
+      NA.notify("TP DEBUG inner after @search strip: #{inner.inspect}", debug: true) if NA.verbose
 
       return [] if inner.empty?
 
@@ -1547,6 +1551,46 @@ module NA
           inner = ''
         end
       end
+      NA.notify("TP DEBUG item_path: #{item_path.inspect} inner now: #{inner.inspect}", debug: true) if NA.verbose
+
+      # Extract optional trailing slice, e.g.:
+      #   [index], [start:end], [start:], [:end], [:]
+      # from the entire inner expression (including parenthesized forms like
+      # (expr)[0]).
+      slice = nil
+      if inner =~ /\A(.+)\[(\d*:?(\d*)?)\]\s*\z/m
+        expr_part = Regexp.last_match(1).strip
+        slice_str = Regexp.last_match(2)
+
+        if slice_str.include?(':')
+          start_str, end_str = slice_str.split(':', 2)
+          slice = {
+            start: (start_str.nil? || start_str.empty? ? nil : start_str.to_i),
+            end: (end_str.nil? || end_str.empty? ? nil : end_str.to_i)
+          }
+        else
+          slice = { index: slice_str.to_i }
+        end
+
+        inner = expr_part
+      end
+      NA.notify("TP DEBUG slice: #{slice.inspect} inner after slice: #{inner.inspect}", debug: true) if NA.verbose
+
+      # If the entire expression is wrapped in a single pair of parentheses,
+      # strip them so shortcuts like `project Inbox and @na` can be recognized.
+      if inner.start_with?('(') && inner.end_with?(')')
+        depth = 0
+        balanced = true
+        inner.chars.each_with_index do |ch, idx|
+          depth += 1 if ch == '('
+          depth -= 1 if ch == ')'
+          if depth.zero? && idx < inner.length - 1
+            balanced = false
+            break
+          end
+        end
+        inner = inner[1..-2].strip if balanced
+      end
 
       # Expand TaskPaper type shortcuts at the start of the predicate expression:
       #   project NAME  -> project = "NAME"
@@ -1557,15 +1601,32 @@ module NA
         rest = Regexp.last_match(2).strip
         case kind
         when 'project'
-          name = rest
-          # Strip surrounding quotes if present
-          name = name[1..-2] if (name.start_with?('"') && name.end_with?('"')) || (name.start_with?("'") && name.end_with?("'"))
-          inner = %(project = "#{name}")
+          # If this is just `project NAME`, treat it as a project constraint.
+          # If it contains additional boolean logic (and/or), drop the
+          # `project NAME` prefix and leave the rest of the expression
+          # unchanged for normal predicate parsing.
+          if rest =~ /\b(and|or)\b/i
+            # Drop leading "NAME and" and keep the remainder, e.g.
+            # "Inbox and @na and not @done" -> "@na and not @done"
+            # then strip the leading "and" to leave "@na and not @done".
+            inner = if rest =~ /\A(\S+)\s+and\s+(.+)\z/mi
+                      Regexp.last_match(2).strip
+                    else
+                      rest
+                    end
+          else
+            name = rest
+            # Strip surrounding quotes if present
+            name = name[1..-2] if (name.start_with?('"') && name.end_with?('"')) || (name.start_with?("'") && name.end_with?("'"))
+            inner = %(project = "#{name}")
+          end
         when 'task', 'note'
           # For now, treat as a plain text search on the rest
           inner = rest
         end
       end
+
+      NA.notify("TP DEBUG inner before tokenizing: #{inner.inspect}", debug: true) if NA.verbose
 
       # Tokenize expression into TEXT, AND, OR, '(', ')', preserving quoted
       # strings and leaving `not` to be handled inside predicates.
@@ -1642,6 +1703,9 @@ module NA
       current_token = lambda { tokens[index] }
       advance = lambda { index += 1 }
 
+      # Declare parse_or in outer scope so it's visible inside parse_primary
+      parse_or = nil
+
       parse_primary = lambda do
         tok = current_token.call
         return [] unless tok
@@ -1667,7 +1731,8 @@ module NA
                                            project: nil,
                                            include_done: nil,
                                            exclude_projects: [],
-                                           item_paths: []
+                                           item_paths: [],
+                                           slice: slice
                                          })]
         else
           advance.call
@@ -1718,7 +1783,8 @@ module NA
           project: nil,
           include_done: nil,
           exclude_projects: [],
-          item_paths: []
+          item_paths: [],
+          slice: slice
         }]
       end
 
@@ -1764,16 +1830,17 @@ module NA
       searches
     end
 
-    # Execute a TaskPaper-style @search() expression using NA::Todo and output
-    # results with the standard formatting options.
+    # Evaluate a TaskPaper-style @search() expression and return matching
+    # actions and files, without printing.
     #
     # @param expr [String] TaskPaper @search() expression
     # @param file [String,nil] Optional single file to search within
     # @param options [Hash] Display/search options (subset of find.rb)
-    # @return [void]
-    def run_taskpaper_search(expr, file: nil, options: {})
+    # @return [Array(NA::Actions, Array<String>, Array<Hash>)] actions, files, clauses
+    def evaluate_taskpaper_search(expr, file: nil, options: {})
       clauses = parse_taskpaper_search_clauses(expr)
-      return if clauses.empty?
+      NA.notify("TP DEBUG clauses: #{clauses.inspect}", debug: true) if NA.verbose
+      return [NA::Actions.new, [], []] if clauses.empty?
 
       depth = options[:depth] || 1
       all_actions = NA::Actions.new
@@ -1785,6 +1852,7 @@ module NA
         include_done = parsed[:include_done]
         exclude_projects = parsed[:exclude_projects] || []
         project = parsed[:project] || options[:project]
+        slice = parsed[:slice]
 
         # Resolve any item-path filters declared on this clause
         item_paths = Array(parsed[:item_paths]).compact
@@ -1809,9 +1877,19 @@ module NA
 
         todo = NA::Todo.new(todo_options)
 
+        # Start from the full action list for this clause
+        clause_actions = todo.actions.to_a
+        if NA.verbose
+          NA.notify("TP DEBUG initial actions count: #{clause_actions.size}", debug: true)
+          clause_actions.each do |a|
+            NA.notify("TP DEBUG action: #{a.action.inspect} parents=#{Array(a.parent).inspect}", debug: true)
+          end
+        end
+
         # Apply project exclusions (e.g. "not project = \"Archive\"")
         unless exclude_projects.empty?
-          todo.actions.delete_if do |action|
+          before = clause_actions.size
+          clause_actions.delete_if do |action|
             parents = Array(action.parent)
             last = parents.last.to_s
             full = parents.join(':')
@@ -1820,21 +1898,38 @@ module NA
               last =~ proj_rx || full =~ /(^|:)#{Regexp.escape(proj)}$/i
             end
           end
+          NA.notify("TP DEBUG after exclude_projects: #{clause_actions.size} (was #{before})", debug: true) if NA.verbose
         end
 
         # Apply item-path project filters, if any
         unless resolved_paths.empty?
-          todo.actions.delete_if do |action|
+          before = clause_actions.size
+          clause_actions.delete_if do |action|
             parents = Array(action.parent)
             path = parents.join(':')
             resolved_paths.none? do |p|
               path =~ /\A#{Regexp.escape(p)}(?::|\z)/i
             end
           end
+          NA.notify("TP DEBUG after item_path filter: #{clause_actions.size} (was #{before})", debug: true) if NA.verbose
+        end
+
+        # Apply slice, if present, to the filtered clause actions
+        if slice
+          before = clause_actions.size
+          if slice[:index]
+            idx = slice[:index].to_i
+            clause_actions = idx.negative? ? [] : [clause_actions[idx]].compact
+          else
+            start_idx = slice[:start] || 0
+            end_idx = slice[:end] || clause_actions.length
+            clause_actions = clause_actions[start_idx...end_idx] || []
+          end
+          NA.notify("TP DEBUG after slice #{slice.inspect}: #{clause_actions.size} (was #{before})", debug: true) if NA.verbose
         end
 
         all_files.concat(todo.files)
-        todo.actions.each { |a| all_actions.push(a) }
+        clause_actions.each { |a| all_actions.push(a) }
       end
 
       # De-duplicate actions across clauses
@@ -1848,6 +1943,27 @@ module NA
         merged_actions.push(a)
       end
 
+      if NA.verbose
+        NA.notify("TP DEBUG merged_actions count: #{merged_actions.size}", debug: true)
+        merged_actions.each do |a|
+          NA.notify("TP DEBUG merged action: #{a.file_path}:#{a.file_line} #{a.action.inspect}", debug: true)
+        end
+      end
+
+      [merged_actions, all_files.uniq, clauses]
+    end
+
+    # Execute a TaskPaper-style @search() expression using NA::Todo and output
+    # results with the standard formatting options.
+    #
+    # @param expr [String] TaskPaper @search() expression
+    # @param file [String,nil] Optional single file to search within
+    # @param options [Hash] Display/search options (subset of find.rb)
+    # @return [void]
+    def run_taskpaper_search(expr, file: nil, options: {})
+      actions, files, clauses = evaluate_taskpaper_search(expr, file: file, options: options)
+      depth = options[:depth] || 1
+
       # Build regexes for highlighting from all positive tokens across clauses
       regexes = []
       clauses.each do |parsed|
@@ -1860,17 +1976,17 @@ module NA
       end
       regexes.uniq!
 
-      merged_actions.output(depth,
-                            {
-                              files: all_files.uniq,
-                              regexes: regexes,
-                              notes: options.fetch(:notes, false),
-                              nest: options.fetch(:nest, false),
-                              nest_projects: options.fetch(:omnifocus, false),
-                              no_files: options.fetch(:no_file, false),
-                              times: options.fetch(:times, false),
-                              human: options.fetch(:human, false)
-                            })
+      actions.output(depth,
+                     {
+                       files: files,
+                       regexes: regexes,
+                       notes: options.fetch(:notes, false),
+                       nest: options.fetch(:nest, false),
+                       nest_projects: options.fetch(:omnifocus, false),
+                       no_files: options.fetch(:no_file, false),
+                       times: options.fetch(:times, false),
+                       human: options.fetch(:human, false)
+                     })
     end
 
     # Load saved search definitions from YAML file

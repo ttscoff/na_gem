@@ -109,6 +109,12 @@ You can mark todos as complete, delete them, add and remove tags, change priorit
 
 **Note**: Refers to lines appearing between action lines that start without hyphens. The note is attached to the preceding action regardless of indentation.
 
+### TaskPaper Syntax
+
+NA has its own syntax for searching tags, titles, and notes, but it also understands most of the [TaskPaper query syntax](https://guide.taskpaper.com/reference/searches/).
+
+[DETAIL OUR IMPLEMENTATION HERE]
+
 ### Usage
 
 ```

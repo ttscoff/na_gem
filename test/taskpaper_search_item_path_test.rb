@@ -77,4 +77,45 @@ class TaskpaperSearchItemPathTest < Minitest::Test
     clause = clauses.first
     assert_equal 'Inbox', clause[:project]
   end
+
+  def test_slice_applied_to_entire_expression
+    # Two @na, not-done actions and one done; slice [0] should return only the
+    # first matching action.
+    file = 'slice_test.taskpaper'
+    File.write(file, <<~TP)
+      Inbox:
+      \t- First @na
+      \t- Second @na
+      \t- Third @na @done(2025-01-01)
+    TP
+
+    NA.debug = true
+    NA.verbose = true
+
+    actions, = NA.evaluate_taskpaper_search(
+      '@search((project Inbox and @na and not @done)[0])',
+      file: file,
+      options: {
+        depth: 1,
+        notes: false,
+        nest: false,
+        omnifocus: false,
+        no_file: false,
+        times: false,
+        human: false,
+        search_notes: true,
+        invert: false,
+        regex: false,
+        project: nil,
+        done: false,
+        require_na: false
+      }
+    )
+
+    assert_equal 1, actions.size
+    assert_includes actions.first.action, 'First'
+    refute_includes actions.first.action, 'Second'
+  ensure
+    FileUtils.rm_f(file)
+  end
 end

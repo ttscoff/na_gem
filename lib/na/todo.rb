@@ -165,6 +165,10 @@ module NA
             content = file.read_file
             indent_level = 0
             parent = []
+            # Track the indentation level of each project in the current parent
+            # chain so we can correctly assign actions to the nearest ancestor
+            # project based on their own indentation.
+            project_indent_stack = []
             in_yaml = false
             in_action = false
             content.split("\n").each.with_index do |line, idx|
@@ -179,11 +183,15 @@ module NA
 
                 if indent.zero? # top level project
                   parent = [proj]
+                  project_indent_stack = [indent]
                 elsif indent <= indent_level # if indent level is same or less, split parent before indent level and append
                   parent.slice!(indent, parent.count - indent)
+                  project_indent_stack.slice!(indent, project_indent_stack.count - indent)
                   parent.push(proj)
+                  project_indent_stack << indent
                 else # if indent level is greater, append project to parent
                   parent.push(proj)
+                  project_indent_stack << indent
                 end
 
                 projects.push(NA::Project.new(parent.join(':'), indent, idx, idx))
@@ -194,18 +202,49 @@ module NA
               elsif line.action?
                 in_action = false
 
+                action_indent = line.indent_level
+
+                # Determine the effective parent chain for this action based on
+                # its indentation. An action belongs to the deepest project
+                # whose indentation is strictly less than the action's
+                # indentation. If none match (e.g., top-level actions), fall
+                # back to the last project in the stack.
+                effective_parent = parent.dup
+                unless project_indent_stack.empty?
+                  chosen_index = nil
+                  project_indent_stack.each_with_index.reverse_each do |proj_indent, i|
+                    if proj_indent < action_indent
+                      chosen_index = i
+                      break
+                    end
+                  end
+
+                  chosen_index ||= project_indent_stack.length - 1
+                  effective_parent = parent[0..chosen_index]
+                end
+
                 # Early exits before creating Action object
                 next if line.done? && !settings[:done]
 
                 next if settings[:require_na] && !line.na?
 
-                next if project_regex && parent.join('/') !~ project_regex
+                next if project_regex && effective_parent.join('/') !~ project_regex
 
                 # Only create Action if we passed basic filters
                 action = line.action
-                new_action = NA::Action.new(file, File.basename(file, ".#{NA.extension}"), parent.dup, action, idx)
+                new_action = NA::Action.new(file, File.basename(file, ".#{NA.extension}"), effective_parent, action, idx)
 
-                projects[-1].last_line = idx if projects.any?
+                # Update the last_line for the owning project (the deepest
+                # project in the effective parent chain), rather than always
+                # the most recently seen project.
+                if projects.any? && effective_parent.any?
+                  owning_path = effective_parent.join(':')
+                  if (owning_project = projects.reverse.find { |p| p.project == owning_path })
+                    owning_project.last_line = idx
+                  end
+                elsif projects.any?
+                  projects[-1].last_line = idx
+                end
 
                 # Tag matching
                 has_tag = !optional_tag.empty? || !required_tag.empty? || !negated_tag.empty?

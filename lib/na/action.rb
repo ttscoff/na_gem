@@ -422,7 +422,9 @@ module NA
       return false if keys.empty?
 
       key = keys[0]
-      return true if tag[:comp].nil?
+      # If no comparator is provided, treat this as an "existence" check:
+      # any value for this tag name is acceptable.
+      return true if tag[:comp].nil? || tag[:comp].to_s.empty?
 
       tag_val = @tags[key]
       val = tag[:value]
