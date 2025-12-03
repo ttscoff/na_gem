@@ -1188,6 +1188,254 @@ module NA
       NA.notify("#{NA.theme[:success]}Search #{NA.theme[:filename]}#{title}#{NA.theme[:success]} saved", exit_code: 0)
     end
 
+    # Parse a TaskPaper-style @search() expression into NA search components.
+    #
+    # TaskPaper expressions are of the form (subset of full syntax):
+    #   @search(@tag, @tag = 1, @tag contains 1, not @tag, project = "Name", not project = "Name", plain, "text")
+    #
+    # Supported operators (mapped from TaskPaper searches, see:
+    # https://guide.taskpaper.com/reference/searches/):
+    #   - boolean: and / not   (or/parentheses are not yet fully supported)
+    #   - @tag, not @tag
+    #   - @tag = VALUE, @tag > VALUE, @tag < VALUE, @tag >= VALUE, @tag <= VALUE, @tag =~ VALUE
+    #   - @tag contains VALUE, beginswith VALUE, endswith VALUE, matches VALUE
+    #   - @text REL VALUE  (treated as plain-text search on the line)
+    #   - project = "Name", not project = "Name"
+    #
+    # The result can be passed directly to NA::Todo via:
+    #   search:  result[:tokens]
+    #   tag:     result[:tags]
+    #   project: result[:project]
+    #   done:    result[:include_done]
+    #
+    # @param expr [String] TaskPaper @search() expression or inner content
+    # @return [Hash] Parsed components
+    def parse_taskpaper_search(expr)
+      out = {
+        tokens: [],
+        tags: [],
+        project: nil,
+        include_done: nil,
+        exclude_projects: []
+      }
+
+      return out if expr.nil?
+
+      inner = expr.to_s.strip
+      inner = Regexp.last_match(1).strip if inner =~ /\A@search\((.*)\)\s*\z/i
+
+      return out if inner.empty?
+
+      # NOTE: We currently support a flat "and"-joined expression. "or",
+      # parentheses, item paths, set operations, and slicing from TaskPaper's
+      # full search language are not yet implemented.
+      parts = inner.split(/\band\b/i).map(&:strip).reject(&:empty?)
+
+      parts.each do |raw_part|
+        part = raw_part.dup
+        neg = false
+
+        if part =~ /\Anot\s+(.+)\z/i
+          neg = true
+          part = Regexp.last_match(1).strip
+        end
+
+        # @tag, @tag OP VALUE, or @attribute OP VALUE
+        if part =~ /\A@([A-Za-z0-9_\-:.]+)\s*(?:(=|==|!=|>=|<=|>|<|=~|contains(?:\[[^\]]+\])?|beginswith(?:\[[^\]]+\])?|endswith(?:\[[^\]]+\])?|matches(?:\[[^\]]+\])?)\s*(.+))?\z/i
+          tag = Regexp.last_match(1)
+          op  = Regexp.last_match(2)
+          val = Regexp.last_match(3)&.strip
+          val = val[1..-2] if val && ((val.start_with?('"') && val.end_with?('"')) || (val.start_with?("'") && val.end_with?("'")))
+
+          # Handle @text as a plain-text predicate on the line
+          if tag.casecmp('text').zero?
+            if val
+              token_val = val
+              out[:tokens] << {
+                token: token_val,
+                required: !neg,
+                negate: neg
+              }
+            end
+            next
+          end
+
+          if tag.casecmp('done').zero?
+            # Handle done specially via :include_done; do NOT add a tag filter,
+            # otherwise Todo.parse would force include @done actions.
+            out[:include_done] = !neg
+            next
+          end
+
+          # Normalize operator: strip TaskPaper relation modifiers and map
+          # relation names to our internal comparison codes.
+          op = op.to_s.downcase
+          # Strip relation modifiers like [i], [sl], [dn], etc.
+          op = op.sub(/\[.*\]\z/, '')
+
+          # Translate "!=" into a negated equality check
+          if op == '!='
+            op = '='
+            neg = true
+          elsif op == 'contains'
+            op = '*='
+          elsif op == 'beginswith'
+            op = '^='
+          elsif op == 'endswith'
+            op = '$='
+          elsif op == 'matches'
+            op = '=~'
+          end
+
+          tag_hash = {
+            tag: tag.wildcard_to_rx,
+            comp: op,
+            value: val,
+            required: !neg,
+            negate: neg
+          }
+          out[:tags] << tag_hash
+          next
+        end
+
+        # project = "Name", project != "Name"
+        if part =~ /\Aproject\s*(=|==|!=)\s*(.+)\z/i
+          op = Regexp.last_match(1)
+          val = Regexp.last_match(2).strip
+          val = val[1..-2] if (val.start_with?('"') && val.end_with?('"')) || (val.start_with?("'") && val.end_with?("'"))
+
+          if neg || op == '!='
+            out[:exclude_projects] << val
+          else
+            out[:project] = val
+          end
+          next
+        end
+
+        # Fallback: treat as a plain text token
+        token = part
+        token = token[1..-2] if (token.start_with?('"') && token.end_with?('"')) || (token.start_with?("'") && token.end_with?("'"))
+        out[:tokens] << {
+          token: token,
+          required: !neg,
+          negate: neg
+        }
+      end
+
+      out
+    end
+
+    # Load TaskPaper-style saved searches from todo files.
+    #
+    # Looks for a project named "Search Definitions" in each todo file and
+    # collects child lines matching:
+    #   [WHITESPACE]TITLE @search(PARAMS)
+    #
+    # @param depth [Integer] Directory depth to search for files
+    # @return [Hash{String=>Hash}] Map of title to {:expr, :file}
+    def load_taskpaper_searches(depth: 1)
+      searches = {}
+      files = find_files(depth: depth)
+      return searches if files.nil? || files.empty?
+
+      files.each do |file|
+        content = file.read_file
+        next if content.nil? || content.empty?
+
+        in_block = false
+        header_indent = 0
+
+        content.each_line do |line|
+          unless in_block
+            if line =~ /^(?<indent>\s*)Search Definitions:\s*$/
+              in_block = true
+              header_indent = Regexp.last_match(:indent).length
+            end
+            next
+          end
+
+          # End of "Search Definitions" block when indentation returns to or
+          # above header and we hit another project header.
+          current_indent = line[/^\s*/].length
+          break if current_indent <= header_indent && line.strip =~ /.+:\s*$/
+
+          next if line.strip.empty?
+          next unless line =~ /^\s*(.+?)\s+@search\((.+)\)\s*$/
+
+          title = Regexp.last_match(1).strip
+          expr = "@search(#{Regexp.last_match(2).strip})"
+          searches[title] = { expr: expr, file: file }
+        end
+      end
+
+      searches
+    end
+
+    # Execute a TaskPaper-style @search() expression using NA::Todo and output
+    # results with the standard formatting options.
+    #
+    # @param expr [String] TaskPaper @search() expression
+    # @param file [String,nil] Optional single file to search within
+    # @param options [Hash] Display/search options (subset of find.rb)
+    # @return [void]
+    def run_taskpaper_search(expr, file: nil, options: {})
+      parsed = parse_taskpaper_search(expr)
+
+      depth = options[:depth] || 1
+      search_tokens = parsed[:tokens]
+      tags = parsed[:tags]
+      include_done = parsed[:include_done]
+      exclude_projects = parsed[:exclude_projects] || []
+      project = parsed[:project] || options[:project]
+
+      todo_options = {
+        depth: depth,
+        done: include_done.nil? ? options[:done] : include_done,
+        query: nil,
+        search: search_tokens,
+        search_note: options.fetch(:search_notes, true),
+        tag: tags,
+        negate: options.fetch(:invert, false),
+        regex: options.fetch(:regex, false),
+        project: project,
+        require_na: options.fetch(:require_na, false)
+      }
+      todo_options[:file_path] = file if file
+
+      todo = NA::Todo.new(todo_options)
+
+      # Apply project exclusions (e.g. "not project = \"Archive\"")
+      unless exclude_projects.empty?
+        todo.actions.delete_if do |action|
+          parents = Array(action.parent)
+          last = parents.last.to_s
+          full = parents.join(':')
+          exclude_projects.any? do |proj|
+            proj_rx = Regexp.new(Regexp.escape(proj), Regexp::IGNORECASE)
+            last =~ proj_rx || full =~ /(^|:)#{Regexp.escape(proj)}$/i
+          end
+        end
+      end
+
+      regexes = if search_tokens.is_a?(Array)
+                  search_tokens.delete_if { |token| token[:negate] }.map { |token| token[:token].wildcard_to_rx }
+                else
+                  [search_tokens]
+                end
+
+      todo.actions.output(depth,
+                          {
+                            files: todo.files,
+                            regexes: regexes,
+                            notes: options.fetch(:notes, false),
+                            nest: options.fetch(:nest, false),
+                            nest_projects: options.fetch(:omnifocus, false),
+                            no_files: options.fetch(:no_file, false),
+                            times: options.fetch(:times, false),
+                            human: options.fetch(:human, false)
+                          })
+    end
+
     # Load saved search definitions from YAML file
     #
     # @return [Hash] Hash of saved searches

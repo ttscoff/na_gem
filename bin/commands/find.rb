@@ -85,6 +85,15 @@ class App
     c.flag %i[divider]
 
     c.action do |global_options, options, args|
+      # Detect TaskPaper-style @search() syntax in arguments
+      joined_args = args.join(' ')
+      taskpaper_search_expr = nil
+      if joined_args =~ /@search\((.+)\)/
+        inner = Regexp.last_match(1)
+        taskpaper_search_expr = "@search(#{inner})"
+        args = [] # Remaining args are ignored when using TaskPaper syntax
+      end
+
       options[:nest] = true if options[:omnifocus]
 
       if options[:save]
@@ -99,63 +108,78 @@ class App
           options[:depth].nil? ? global_options[:depth].to_i : options[:depth].to_i
         end
 
-      if options[:exact] || options[:regex]
-        search = args.join(" ")
-      else
-        rx = [
-          '(?<=\A|[ ,])(?<req>[+!-])?@(?<tag>[^ *=<>$*\^,@(]+)',
-          '(?:\((?<value>.*?)\)| *(?<op>[=<>~]{1,2}|[*$\^]=) *',
-          '(?<val>.*?(?=\Z|[,@])))?',
-        ].join("")
-        search = args.join(" ").gsub(Regexp.new(rx)) do
-          m = Regexp.last_match
-          string = if m["value"]
-              "#{m["req"]}#{m["tag"]}=#{m["value"]}"
-            else
-              m[0]
-            end
-          options[:tagged] << string.sub(/@/, "")
-          ""
-        end
-      end
-
-      search = search.gsub(/ +/, " ").strip
-
-      all_req = options[:tagged].join(" ") !~ /(?<=[, ])[+!-]/ && !options[:or]
-      tags = []
-      options[:tagged].join(",").split(/ *, */).each do |arg|
-        m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
-
-        tags.push({
-                    tag: m["tag"].wildcard_to_rx,
-                    comp: m["op"],
-                    value: m["val"],
-                    required: all_req || (!m["req"].nil? && m["req"] == "+"),
-                    negate: !m["req"].nil? && m["req"] =~ /[!-]/ ? true : false,
-                  })
-      end
-
-      search_for_done = false
-      tags.each { |tag| search_for_done = true if tag[:tag] =~ /done/ }
-      options[:done] = true if search_for_done
-
+      exclude_projects = []
       tokens = nil
-      if options[:exact]
-        tokens = search
-      elsif options[:regex]
-        tokens = Regexp.new(search, Regexp::IGNORECASE)
+      tags = []
+
+      if taskpaper_search_expr
+        parsed = NA.parse_taskpaper_search(taskpaper_search_expr)
+        tokens = parsed[:tokens]
+        tags = parsed[:tags]
+        exclude_projects = parsed[:exclude_projects] || []
+        options[:done] = true if parsed[:include_done]
+        options[:project] ||= parsed[:project] if parsed[:project]
+        search = tokens.map { |t| t[:token] }.join(' ')
       else
-        tokens = []
-        all_req = search !~ /(?<=[, ])[+!-]/ && !options[:or]
+        if options[:exact] || options[:regex]
+          search = args.join(" ")
+        else
+          rx = [
+            '(?<=\A|[ ,])(?<req>[+!-])?@(?<tag>[^ *=<>$*\^,@(]+)',
+            '(?:\((?<value>.*?)\)| *(?<op>[=<>~]{1,2}|[*$\^]=) *',
+            '(?<val>.*?(?=\Z|[,@])))?',
+          ].join("")
+          search = args.join(" ").gsub(Regexp.new(rx)) do
+            m = Regexp.last_match
+            string = if m["value"]
+                "#{m["req"]}#{m["tag"]}=#{m["value"]}"
+              else
+                m[0]
+              end
+            options[:tagged] << string.sub(/@/, "")
+            ""
+          end
+        end
 
-        search.split(/ /).each do |arg|
-          m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
+        search = search.gsub(/ +/, " ").strip
 
-          tokens.push({
-                        token: m["tok"],
-                        required: all_req || (!m["req"].nil? && m["req"] == "+"),
-                        negate: !m["req"].nil? && m["req"] =~ /[!-]/ ? true : false,
-                      })
+        all_req = options[:tagged].join(" ") !~ /(?<=[, ])[+!-]/ && !options[:or]
+        options_tags = []
+        options[:tagged].join(",").split(/ *, */).each do |arg|
+          m = arg.match(/^(?<req>[+!-])?(?<tag>[^ =<>$~\^]+?) *(?:(?<op>[=<>~]{1,2}|[*$\^]=) *(?<val>.*?))?$/)
+
+          options_tags.push({
+                              tag: m["tag"].wildcard_to_rx,
+                              comp: m["op"],
+                              value: m["val"],
+                              required: all_req || (!m["req"].nil? && m["req"] == "+"),
+                              negate: !m["req"].nil? && m["req"] =~ /[!-]/ ? true : false,
+                            })
+        end
+
+        search_for_done = false
+        options_tags.each { |tag| search_for_done = true if tag[:tag] =~ /done/ }
+        options[:done] = true if search_for_done
+
+        tags = options_tags
+
+        if options[:exact]
+          tokens = search
+        elsif options[:regex]
+          tokens = Regexp.new(search, Regexp::IGNORECASE)
+        else
+          tokens = []
+          all_req = search !~ /(?<=[, ])[+!-]/ && !options[:or]
+
+          search.split(/ /).each do |arg|
+            m = arg.match(/^(?<req>[+\-!])?(?<tok>.*?)$/)
+
+            tokens.push({
+                          token: m["tok"],
+                          required: all_req || (!m["req"].nil? && m["req"] == "+"),
+                          negate: !m["req"].nil? && m["req"] =~ /[!-]/ ? true : false,
+                        })
+          end
         end
       end
 
@@ -184,6 +208,19 @@ class App
                             project: options[:project],
                             require_na: false,
                           })
+
+      # Apply TaskPaper project exclusions, if any
+      unless exclude_projects.empty?
+        todo.actions.delete_if do |action|
+          parents = Array(action.parent)
+          last = parents.last.to_s
+          full = parents.join(':')
+          exclude_projects.any? do |proj|
+            proj_rx = Regexp.new(Regexp.escape(proj), Regexp::IGNORECASE)
+            last =~ proj_rx || full =~ /(^|:)#{Regexp.escape(proj)}$/i
+          end
+        end
+      end
 
       regexes = if tokens.is_a?(Array)
           tokens.delete_if { |token| token[:negate] }.map { |token| token[:token].wildcard_to_rx }

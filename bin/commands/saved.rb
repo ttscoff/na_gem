@@ -27,29 +27,64 @@ class App
       NA.edit_searches if options[:edit]
 
       if args.empty? && !options[:select]
-        searches = NA.load_searches
+        yaml_searches = NA.load_searches
+        taskpaper_searches = NA.load_taskpaper_searches(depth: 1)
         NA.notify("#{NA.theme[:success]}Saved searches stored in #{NA.database_path(file: 'saved_searches.yml').highlight_filename}")
-        NA.notify(searches.map { |k, v| "#{NA.theme[:filename]}#{k}: #{NA.theme[:values]}#{v}" }.join("\n"))
+        lines = yaml_searches.map do |k, v|
+          "#{NA.theme[:filename]}#{k}: #{NA.theme[:values]}#{v}"
+        end
+        unless taskpaper_searches.empty?
+          lines << "#{NA.theme[:prompt]}TaskPaper saved searches:"
+          lines.concat(
+            taskpaper_searches.map do |k, v|
+              "#{NA.theme[:filename]}#{k}: #{NA.theme[:values]}#{v[:expr]} #{NA.theme[:note]}(#{File.basename(v[:file])})"
+            end
+          )
+        end
+        NA.notify(lines.join("\n"))
       else
         NA.delete_search(args.join(',').split(/[ ,]/)) if options[:delete]
 
         if options[:select]
-          searches = NA.load_searches
-          res = NA.choose_from(searches.map { |k, v| "#{NA.theme[:filename]}#{k} #{NA.theme[:value]}(#{v})" }, multiple: true)
+          yaml_searches = NA.load_searches
+          taskpaper_searches = NA.load_taskpaper_searches(depth: 1)
+          combined = {}
+          yaml_searches.each { |k, v| combined[k] = { source: :yaml, value: v } }
+          taskpaper_searches.each { |k, v| combined[k] ||= { source: :taskpaper, value: v } }
+
+          res = NA.choose_from(
+            combined.map do |k, info|
+              val = info[:source] == :yaml ? info[:value] : info[:value][:expr]
+              "#{NA.theme[:filename]}#{k} #{NA.theme[:value]}(#{val})"
+            end,
+            multiple: true
+          )
           NA.notify("#{NA.theme[:error]}Nothing selected", exit_code: 0) if res&.empty?
           args = res.map { |r| r.match(/(\S+)(?= \()/)[1] }
         end
 
         args.each do |arg|
-          searches = NA.load_searches
+          yaml_searches = NA.load_searches
+          taskpaper_searches = NA.load_taskpaper_searches(depth: 1)
+          all_keys = (yaml_searches.keys + taskpaper_searches.keys).uniq
 
-          keys = searches.keys.delete_if { |k| k !~ /#{arg.wildcard_to_rx}/ }
+          keys = all_keys.delete_if { |k| k !~ /#{arg.wildcard_to_rx}/ }
           NA.notify("#{NA.theme[:error]}Search #{arg} not found", exit_code: 1) if keys.empty?
 
           keys.each do |key|
             NA.notify("#{NA.theme[:prompt]}Saved search #{NA.theme[:filename]}#{key}#{NA.theme[:warning]}:")
-            cmd = Shellwords.shellsplit(searches[key])
-            run(cmd)
+            if yaml_searches.key?(key)
+              value = yaml_searches[key]
+              if value.to_s.strip =~ /\A@search\(.+\)\s*\z/
+                NA.run_taskpaper_search(value)
+              else
+                cmd = Shellwords.shellsplit(value)
+                run(cmd)
+              end
+            elsif taskpaper_searches.key?(key)
+              info = taskpaper_searches[key]
+              NA.run_taskpaper_search(info[:expr], file: info[:file])
+            end
           end
         end
       end
