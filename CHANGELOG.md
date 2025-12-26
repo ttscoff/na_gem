@@ -1,3 +1,15 @@
+### 1.2.96
+
+2025-12-26 02:38
+
+#### CHANGED
+
+- Bump gem version to 1.2.96.
+
+#### FIXED
+
+- Fix crash in `na next` when matching project directories.
+
 ### 1.2.95
 
 2025-12-03 08:23
