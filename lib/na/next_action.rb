@@ -3,7 +3,7 @@
 # Next Action methods
 module NA
   class << self
-    attr_accessor :verbose, :extension, :include_ext, :na_tag, :command_line, :command, :globals, :global_file,
+    attr_accessor :verbose, :debug, :extension, :include_ext, :na_tag, :command_line, :command, :globals, :global_file,
                   :cwd_is, :cwd, :stdin, :show_cwd_indicator
 
     # Select actions across files using existing search pipeline
@@ -1502,7 +1502,6 @@ module NA
       NA.notify("TP DEBUG expr: #{expr.inspect}", debug: true) if NA.verbose
 
       inner = expr.to_s.strip
-      NA.notify("TP DEBUG inner initial: #{inner.inspect}", debug: true) if NA.verbose
       inner = Regexp.last_match(1).strip if inner =~ /\A@search\((.*)\)\s*\z/i
       NA.notify("TP DEBUG inner after @search strip: #{inner.inspect}", debug: true) if NA.verbose
 
@@ -1756,7 +1755,8 @@ module NA
                 tags: left_clause[:tags] + right_clause[:tags],
                 project: right_clause[:project] || left_clause[:project],
                 include_done: right_clause[:include_done].nil? ? left_clause[:include_done] : right_clause[:include_done],
-                exclude_projects: left_clause[:exclude_projects] + right_clause[:exclude_projects]
+                exclude_projects: left_clause[:exclude_projects] + right_clause[:exclude_projects],
+                item_paths: Array(left_clause[:item_paths]) + Array(right_clause[:item_paths]), slice: right_clause[:slice] || left_clause[:slice]
               }
             end
           end

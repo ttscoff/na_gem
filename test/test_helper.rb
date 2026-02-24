@@ -5,6 +5,35 @@ SimpleCov.start do
 end
 
 require "minitest/autorun"
+
+# Ensure `stub` is available even if `minitest/mock` is missing in the environment
+begin
+  require "minitest/mock"
+rescue LoadError
+  module TestStubShim
+    # Simple stub implementation compatible with the usage in this test suite:
+    #   NA.stub(:notify, ->(*) { nil }) { ... }
+    #   Process.stub(:exit, ->(code = 0) { ... }) { ... }
+    def stub(name, replacement)
+      original = method(name)
+      old_verbose = $VERBOSE
+      $VERBOSE = nil
+      define_singleton_method(name) do |*args, **kwargs, &block|
+        if replacement.respond_to?(:call)
+          replacement.call(*args, **kwargs, &block)
+        else
+          replacement
+        end
+      end
+      yield
+    ensure
+      define_singleton_method(name, original)
+      $VERBOSE = old_verbose
+    end
+  end
+
+  Object.include(TestStubShim) unless Object.method_defined?(:stub)
+end
 $LOAD_PATH.unshift File.join(__dir__, '..', 'lib')
 require 'na'
 require 'fileutils'

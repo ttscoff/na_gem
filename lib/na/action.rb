@@ -179,9 +179,9 @@ module NA
     # @param template [Hash] Color template
     # @param regexes [Array] Regexes to highlight
     # @param notes [Boolean] Include notes
-    # @param detect_width [Boolean] Detect terminal width
+    # @param detect_width [Boolean] Detect terminal width (defaults to true only when output is a TTY)
     # @return [String]
-    def pretty(extension: 'taskpaper', template: {}, regexes: [], notes: false, detect_width: true)
+    def pretty(extension: 'taskpaper', template: {}, regexes: [], notes: false, detect_width: $stdout.tty?)
       NA::Benchmark.measure('Action.pretty') do
         # Use cached theme instead of loading every time
         theme = NA.theme

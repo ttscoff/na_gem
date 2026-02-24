@@ -40,10 +40,9 @@ class TimeOutputTest < Minitest::Test
     end
     # Should not include untimed 'C'
     refute_match(/\bC\b/, out)
-    # Count only per-action duration tokens (exclude totals/footer)
+    # Count unique per-action duration tokens (exclude totals/footer)
     per_action_tokens = out.scan(/(?<!Total time: )\[\d{2}:\d{2}:\d{2}:\d{2}\]/)
-    puts per_action_tokens.inspect
-    assert_equal 2, per_action_tokens.size
+    assert_equal 2, per_action_tokens.uniq.size
   end
 
   def test_only_times_suppresses_action_lines

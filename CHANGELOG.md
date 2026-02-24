@@ -1,3 +1,24 @@
+### 1.2.97
+
+2026-02-24 05:18
+
+#### CHANGED
+
+- Bump gem version to 1.2.96.
+- Make plugins appear as first-class update actions
+- Tighten csv runtime dependency to ~> 3.2
+
+#### IMPROVED
+
+- Allow using na update --plugin NAME as only operation
+- Simplify gemspec dependencies and enable MFA
+
+#### FIXED
+
+- Fix crash in `na next` when matching project directories.
+- Keep tags with parentheses when rewriting action text
+- Tag stripping breaking on spaces within tag value
+
 ### 1.2.96
 
 2025-12-26 02:38

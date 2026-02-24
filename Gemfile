@@ -12,3 +12,5 @@ group :development do
 end
 gem 'chronic'
 gem 'csv'
+
+gem "yard", "~> 0.9.38", group: :development
