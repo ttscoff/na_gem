@@ -37,7 +37,7 @@ module NA
       action_args = Array(action_block['arguments'])
 
       # Load current action
-      _projects, actions = find_actions(file, nil, nil, all: true, done: true, project: nil, search_note: true, target_line: line)
+      _projects, actions = find_actions(file, nil, nil, done: true, project: nil, search_note: true, target_line: line)
       action = actions&.first
       return unless action
 

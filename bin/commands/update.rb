@@ -297,7 +297,7 @@ class App
             # Track which candidates have been matched to avoid duplicates
             selected_indices = []
             candidate_actions.each_index do |i|
-              if selected.include?(candidate_actions[i])
+              if selected.include?(candidate_actions[i].strip)
                 selected_indices << i unless selected_indices.include?(i)
               end
             end
@@ -328,7 +328,8 @@ class App
         options[:edit],
         options[:started],
         (options[:end] || options[:finished]),
-        options[:duration]
+        options[:duration],
+        !options[:plugin].nil?
       ].any?
       unless actionable
         # Interactive menu for actions
