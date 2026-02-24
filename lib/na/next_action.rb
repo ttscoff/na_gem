@@ -84,7 +84,7 @@ module NA
       # Update action content
       action.action = text
       action.note = note.to_s.split("\n")
-      action.action.gsub!(/(?<=\A| )@\S+(?:\(.*?\))?/, '')
+      action.action.gsub!(/(?<=\A| )@[^( \s\n]+(?:\(.*?\))?/, '')
       unless tags.empty?
         tag_str = tags.map { |k, v| v.to_s.empty? ? "@#{k}" : "@#{k}(#{v})" }.join(' ')
         action.action = action.action.strip + (tag_str.empty? ? "" : " #{tag_str}")

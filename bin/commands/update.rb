@@ -328,7 +328,8 @@ class App
         options[:edit],
         options[:started],
         (options[:end] || options[:finished]),
-        options[:duration]
+        options[:duration],
+        !options[:plugin].to_s.empty?
       ].any?
       unless actionable
         # Interactive menu for actions
@@ -344,9 +345,9 @@ class App
           { key: :archive, label: 'Archive', param: nil },
           { key: :note, label: 'Add Note', param: 'Note' }
         ]
-        # Add "Run Plugin" option if there are enabled plugins with metadata
-        available_plugins = []
+        # Add plugin options directly to the actions menu if there are enabled plugins with metadata
         begin
+          available_plugins = []
           NA::Plugins.ensure_plugins_home
           NA::Plugins.list_plugins.each_value do |path|
             meta = NA::Plugins.parse_plugin_metadata(path)
@@ -354,9 +355,16 @@ class App
             next unless meta['input'] && meta['output']
 
             disp = meta['name'] || File.basename(path, File.extname(path))
-            available_plugins << { key: :_plugin, label: disp, param: nil, plugin_path: path }
+            available_plugins << { label: disp, plugin_path: path }
           end
-          actions_menu << { key: :run_plugin, label: 'Run Plugin', param: nil } if available_plugins.any?
+          available_plugins.each do |plugin|
+            actions_menu << {
+              key: :_plugin,
+              label: "Plugin: #{plugin[:label]}",
+              param: nil,
+              plugin_path: plugin[:plugin_path]
+            }
+          end
         rescue StandardError
           # ignore plugin discovery errors in menu
         end
@@ -382,33 +390,8 @@ class App
         action_obj = actions_menu.find { |a| a[:label] == selected_action }
         NA.notify("#{NA.theme[:error]}No action selected, cancelled", exit_code: 1) if action_obj.nil?
 
-        # If "Run Plugin" was selected, show plugin selection menu
-        if action_obj[:key] == :run_plugin
-          plugin_labels = available_plugins.map { |p| p[:label] }
-          plugin_selector = nil
-          if TTY::Which.exist?('fzf')
-            plugin_selector = 'fzf --prompt="Select plugin> "'
-          elsif TTY::Which.exist?('gum')
-            plugin_selector = 'gum choose'
-          end
-          selected_plugin = nil
-          if plugin_selector
-            require 'open3'
-            input = plugin_labels.join("\n")
-            output, = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{plugin_selector}")
-            selected_plugin = output.strip
-          else
-            puts 'Select a plugin:'
-            plugin_labels.each_with_index { |label, i| puts "#{i + 1}. #{label}" }
-            idx = ($stdin.gets || '').strip.to_i - 1
-            selected_plugin = plugin_labels[idx] if idx >= 0 && idx < plugin_labels.size
-          end
-          plugin_obj = available_plugins.find { |p| p[:label] == selected_plugin }
-          NA.notify("#{NA.theme[:error]}No plugin selected, cancelled", exit_code: 1) if plugin_obj.nil?
-          # Set plugin path directly
-          options[:plugin] = plugin_obj[:plugin_path]
-        elsif action_obj[:key] == :_plugin
-          # Legacy support: if somehow a plugin was selected directly
+        if action_obj[:key] == :_plugin
+          # Plugin selected directly from the main actions menu
           options[:plugin] = action_obj[:plugin_path]
         else
           # Prompt for parameter if needed
