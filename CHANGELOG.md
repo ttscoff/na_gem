@@ -1,3 +1,23 @@
+### 1.2.98
+
+2026-02-24 11:26
+
+#### CHANGED
+
+- Bump gem version to 1.2.96.
+- Make plugins appear as first-class update actions
+- Tighten csv runtime dependency to ~> 3.2
+- Allow using na update --plugin NAME as only operation
+- Simplify gemspec dependencies and enable MFA
+- Detect terminal width only when stdout is a TTY
+- Filter only-timed output while maintaining tag duration totals
+- Silence test-time stub redefinition warnings
+- Switch gemspec to unified add_dependency style and require MFA
+- Fix crash in `na next` when matching project directories.
+- Keep tags with parentheses when rewriting action text
+- Tag stripping breaking on spaces within tag value
+- Slice handling in TaskPaper @search expressions
+
 ### 1.2.97
 
 2026-02-24 05:20
