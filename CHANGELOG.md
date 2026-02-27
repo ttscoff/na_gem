@@ -1,3 +1,11 @@
+### 1.2.100
+
+2026-02-27 09:53
+
+#### FIXED
+
+- Match unique nested projects by leaf name in add/update
+
 ### 1.2.98
 
 2026-02-24 11:26
