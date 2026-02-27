@@ -108,6 +108,21 @@ class NextActionTest < Minitest::Test
   ensure
     File.delete(file) if File.exist?(file)
   end
+
+  def test_add_action_uses_unique_leaf_project_name
+    file = "test_add_nested_project.taskpaper"
+    File.write(file, "Inbox:\nParentA:\n\tProject X:\nParentB:\n\tOther:\n")
+
+    NA.stub(:notify, ->(*args, **kwargs) { nil }) do
+      NA.add_action(file, "Project X", "New nested task", [])
+    end
+
+    content = File.read(file)
+    # Ensure the action was added under the nested ParentA:Project X project
+    assert_match(/ParentA:\n\tProject X:\n\t\t- New nested task/, content)
+  ensure
+    File.delete(file) if File.exist?(file)
+  end
   def test_create_todo_creates_file_with_default_content
     File.delete("test_create.taskpaper") if File.exist?("test_create.taskpaper")
     NA.stub(:notify, ->(*args, **kwargs) { nil }) do

@@ -502,7 +502,17 @@ module NA
         # If move is set, update add.parent to the target project
         add.parent = target_proj.project.split(':') if move && target_proj
         project_path = add.parent.join(':')
-        target_proj ||= projects.select { |proj| proj.project =~ /^#{project_path}$/i }.first
+        target_proj ||= projects.select { |proj| proj.project =~ /^#{Regexp.escape(project_path)}$/i }.first
+
+        if target_proj.nil? && !project_path.empty? && !project_path.include?(':')
+          # Fallback: if a bare leaf name was provided and it uniquely matches
+          # the final segment of an existing nested project, use that project
+          candidates = projects.select do |proj|
+            leaf = proj.project.to_s.split(':').last
+            leaf&.casecmp?(project_path)
+          end
+          target_proj = candidates.first if candidates.size == 1
+        end
 
         if target_proj.nil? && !project_path.empty?
           display_path = project_path.tr(':', '/')
@@ -515,7 +525,7 @@ module NA
           created_proj = insert_project(target, project_path)
           contents = target.read_file.split("\n")
           projects = find_projects(target)
-          target_proj = projects.select { |proj| proj.project =~ /^#{project_path}$/i }.first || created_proj
+          target_proj = projects.select { |proj| proj.project =~ /^#{Regexp.escape(project_path)}$/i }.first || created_proj
         end
 
         add.parent = target_proj.project.split(':') if target_proj
