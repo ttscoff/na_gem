@@ -7,6 +7,30 @@ module NA
       super
     end
 
+    # Return the first available action per project path.
+    #
+    # @param require_na [Boolean] If true, only consider actions with the NA tag
+    # @return [NA::Actions] A new Actions collection with at most one action per project
+    def first_available_per_project(require_na: true)
+      NA::Benchmark.measure('Actions.first_available_per_project') do
+        seen = {}
+        selected = NA::Actions.new
+
+        each do |action|
+          next if require_na && !action.respond_to?(:na?) ? false : (require_na && !action.na?)
+
+          project_path = Array(action.parent).join(':')
+          next if project_path.empty?
+          next if seen.key?(project_path)
+
+          seen[project_path] = true
+          selected << action
+        end
+
+        selected
+      end
+    end
+
     # Pretty print a list of actions
     #
     # @param depth [Integer] The depth of the action

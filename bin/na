@@ -116,7 +116,7 @@ class App
     NA::Plugins.ensure_plugins_home
     NA.verbose = global[:debug]
     NA::Pager.paginate = global[:pager] && $stdout.isatty
-    NA::Color.coloring = global[:color] && $stdout.isatty
+    NA::Color.coloring = global[:color] && ($stdout.isatty || NA.globals.include?('--color'))
     NA.extension = global[:ext]
     NA.include_ext = global[:include_ext]
     NA.na_tag = global[:na_tag]

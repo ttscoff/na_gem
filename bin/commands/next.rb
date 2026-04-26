@@ -25,6 +25,9 @@ class App
     c.desc "Show next actions from all known todo files (in any directory)"
     c.switch %i[all], negatable: false, default_value: false
 
+    c.desc "Show only the first available action per project"
+    c.switch %i[a available], negatable: false
+
     c.desc "Display matches from a known todo file anywhere in history (short name)"
     c.arg_name "TODO"
     c.flag %i[in todo], multiple: true
@@ -169,6 +172,8 @@ class App
         next
       end
 
+      available = options[:available]
+
       if options[:exact] || options[:regex]
         search = options[:search].join(" ")
       else
@@ -288,9 +293,22 @@ class App
       end
 
       NA.na_tag = options[:tag] unless options[:tag].nil?
-      require_na = true
 
-      tag = [{ tag: NA.na_tag, value: nil, required: true, negate: false }]
+      # When -a/--available is combined with --all or any filtering flags,
+      # relax the implicit NA_TAG requirement and show the first available
+      # action that matches the filters instead.
+      filtered_mode = options[:all] ||
+                      options[:save] ||
+                      !options[:tag].nil? ||
+                      options[:project] ||
+                      options[:tagged].any? ||
+                      options[:priority].any? ||
+                      (options[:search].respond_to?(:any?) && options[:search].any?)
+
+      require_na = !(available && filtered_mode)
+
+      tag = []
+      tag << { tag: NA.na_tag, value: nil, required: true, negate: false } if require_na
       tag << { tag: "done", value: nil, negate: true } unless options[:done]
       tag.concat(tags)
 
@@ -378,17 +396,24 @@ class App
           end
         end
       end
-      todo.actions.output(depth,
-                          { files: todo.files,
-                            nest: options[:nest],
-                            nest_projects: options[:omnifocus],
-                            notes: options[:notes],
-                            no_files: options[:no_file],
-                            times: options[:times],
-                            human: options[:human],
-                            only_timed: options[:only_timed],
-                            json_times: options[:json_times],
-                            only_times: options[:only_times] })
+
+      actions = if available
+                  todo.actions.first_available_per_project(require_na: require_na)
+                else
+                  todo.actions
+                end
+
+      actions.output(depth,
+                     { files: todo.files,
+                       nest: options[:nest],
+                       nest_projects: options[:omnifocus],
+                       notes: options[:notes],
+                       no_files: options[:no_file],
+                       times: options[:times],
+                       human: options[:human],
+                       only_timed: options[:only_timed],
+                       json_times: options[:json_times],
+                       only_times: options[:only_times] })
     end
   end
 end
