@@ -9,7 +9,7 @@
 _If you're one of the rare people like me who find this useful, feel free to
 [buy me some coffee][donate]._
 
-The current version of `na` is 1.2.100.
+The current version of `na` is 1.2.101.
 
 
 ### Table of contents
@@ -257,7 +257,7 @@ SYNOPSIS
     na [global options] command [command options] [arguments...]
 
 VERSION
-    1.2.100
+    1.2.101
 
 GLOBAL OPTIONS
     -a, --add               - Add a next action (deprecated, for backwards compatibility)
@@ -522,6 +522,7 @@ DESCRIPTION
     Next actions are actions which contain the next action tag (default @na),   do not contain @done, and are not in the Archive project.   Arguments will target a todo file from history, whether it's in the current   directory or not. Todo file queries can include path components separated by /   or :, and may use wildcards (`*` to match any text, `?` to match a single character). Multiple queries allowed (separate arguments or separated by comma). 
 
 COMMAND OPTIONS
+    -a, --available                        - Show only the first available action per project
     --all                                  - Show next actions from all known todo files (in any directory)
     -d, --depth=DEPTH                      - Recurse to depth (default: none)
     --divider=STRING                       - Divider string for text IO (default: none)

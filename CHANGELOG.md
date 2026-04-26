@@ -1,3 +1,21 @@
+### 1.2.101
+
+2026-04-26 12:06
+
+#### CHANGED
+
+- Allow next --available with filters to match actions without the default @na tag.
+- Bump the gem version to 1.2.101.
+
+#### NEW
+
+- Add next --available/-a to show the first available action per project.
+
+#### FIXED
+
+- Match unique nested projects by leaf name in add/update
+- Make --color force colored output even when stdout is not a TTY.
+
 ### 1.2.100
 
 2026-02-27 09:53
