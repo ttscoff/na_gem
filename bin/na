@@ -9,6 +9,8 @@ require 'na/benchmark'
 require 'fcntl'
 require 'tempfile'
 
+ORIGINAL_ARGV = ARGV.dup
+
 NA::Benchmark.init
 NA::Benchmark.measure('Gem loading') { nil } # Measures time up to this point
 
@@ -116,7 +118,7 @@ class App
     NA::Plugins.ensure_plugins_home
     NA.verbose = global[:debug]
     NA::Pager.paginate = global[:pager] && $stdout.isatty
-    NA::Color.coloring = global[:color] && ($stdout.isatty || NA.globals.include?('--color'))
+    NA::Color.coloring = global[:color] && ($stdout.isatty || ORIGINAL_ARGV.include?('--color'))
     NA.extension = global[:ext]
     NA.include_ext = global[:include_ext]
     NA.na_tag = global[:na_tag]
@@ -175,7 +177,7 @@ class App
   on_error do |exception|
     case exception
     when GLI::UnknownCommand
-      if NA.command_line.count == 1
+      if NA.command_line.one?
         cmd = ['saved']
         cmd.concat(ARGV.unshift(NA.command_line[0]))
 

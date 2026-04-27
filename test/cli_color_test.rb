@@ -42,6 +42,17 @@ class CliColorTest < Minitest::Test
     end
   end
 
+  def test_explicit_color_after_global_file_forces_color_when_stdout_is_not_tty
+    with_temp_home do |home, dir|
+      todo = write_todo(dir)
+
+      stdout, stderr, status = run_na('-f', todo, '--color', home: home)
+
+      assert status.success?, stderr
+      assert_match ANSI_REGEX, stdout
+    end
+  end
+
   def test_default_color_remains_plain_when_stdout_is_not_tty
     with_temp_home do |home, dir|
       todo = write_todo(dir)
