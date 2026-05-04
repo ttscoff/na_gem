@@ -264,6 +264,24 @@ class NextActionTest < Minitest::Test
     end
     File.delete("test_action.taskpaper")
   end
+
+  def test_find_actions_target_line_filters_before_all_shortcut
+    File.write("test_action.taskpaper", "Inbox:\n\t- First Action\n\t- Second Action\n")
+    NA.stub(:notify, ->(*args, **kwargs) { nil }) do
+      _projects, actions = NA.find_actions("test_action.taskpaper",
+                                            { target_line: 2 },
+                                            nil,
+                                            all: true,
+                                            done: false,
+                                            project: nil,
+                                            search_note: true,
+                                            target_line: 2)
+
+      assert_equal 1, actions.count
+      assert_includes actions.first.action, "Second Action"
+    end
+    File.delete("test_action.taskpaper")
+  end
   def test_notify_debug
     NA.verbose = true
     called = false

@@ -202,7 +202,12 @@ class App
           # Verify file exists
           if File.exist?(target_file)
             options[:file] = target_file
-            options[:target_line] = target_line
+            # PATH:LINE uses 1-based editor line numbers; find_actions matches Action#line (0-based index).
+            user_line = target_line
+            if user_line < 1
+              NA.notify("#{NA.theme[:error]}Invalid line number (use 1-based line like file.taskpaper:3)", exit_code: 1)
+            end
+            options[:target_line] = user_line - 1
             action = nil  # Skip search processing
           else
             NA.notify("#{NA.theme[:error]}File not found: #{target_file}", exit_code: 1)
@@ -240,366 +245,368 @@ class App
         tokens = nil # No search, list all
       end
 
-      # Gather all candidate actions for selection
-      candidate_actions = []
-      targets_for_selection = []
-      files = NA.find_files_matching({
-        depth: options[:depth],
-        done: options[:done],
-        project: options[:project],
-        regex: options[:regex],
-        require_na: false,
-        search: tokens,
-        tag: tags
-      })
-      files.each do |file|
-        safe_search = (tokens.is_a?(String) || tokens.is_a?(Array) || tokens.is_a?(Regexp)) ? tokens : nil
-        todo = NA::Todo.new({
-          search: safe_search,
-          search_note: options[:search_notes],
-          require_na: false,
-          file_path: file,
+      unless options[:target_line] && options[:file]
+        # Gather all candidate actions for selection
+        candidate_actions = []
+        targets_for_selection = []
+        files = NA.find_files_matching({
+          depth: options[:depth],
+          done: options[:done],
           project: options[:project],
-          tag: tags,
-          done: options[:done]
+          regex: options[:regex],
+          require_na: false,
+          search: tokens,
+          tag: tags
         })
-        todo.actions.each do |action_obj|
-          # Format: filename:LINENUM:parent > action
-          # Include line number in display for unique matching
-          display = "#{File.basename(action_obj.file_path)}:#{action_obj.file_line}:#{action_obj.parent.join('>')} | #{action_obj.action}"
-          candidate_actions << display
-          targets_for_selection << { file: action_obj.file_path, line: action_obj.file_line, action: action_obj }
-        end
-      end
-
-      # Multi-select using fzf or gum if available
-      selected_indices = []
-      if candidate_actions.any?
-        selector = nil
-        if TTY::Which.exist?('fzf')
-          selector = 'fzf --multi --prompt="Select tasks> "'
-        elsif TTY::Which.exist?('gum')
-          selector = 'gum choose --no-limit'
-        end
-        if selector
-          require 'open3'
-          input = candidate_actions.join("\n")
-
-          # Use popen3 to properly handle stdin for fzf
-          Open3.popen3(selector) do |stdin, stdout, stderr, wait_thr|
-            stdin.write(input)
-            stdin.close
-
-            output = stdout.read
-
-            selected = output.split("\n").map(&:strip).reject(&:empty?)
-
-            # Track which candidates have been matched to avoid duplicates
-            selected_indices = []
-            candidate_actions.each_index do |i|
-              if selected.include?(candidate_actions[i])
-                selected_indices << i unless selected_indices.include?(i)
-              end
-            end
-          end
-        else
-          # Fallback: select all or prompt for search string
-          selected_indices = (0...candidate_actions.size).to_a
-        end
-      end
-
-      # If no actions found, notify and exit
-      if selected_indices.empty?
-        NA.notify("#{NA.theme[:error]}No matching actions found for selection", exit_code: 1)
-      end
-
-      # Apply update to selected actions
-      actionable = [
-        options[:note],
-        (options[:priority].to_i if options[:priority]).to_i.positive?,
-        !options[:move].to_s.empty?,
-        !(options[:tag].nil? || options[:tag].empty?),
-        !(options[:remove].nil? || options[:remove].empty?),
-        !options[:replace].to_s.empty?,
-        options[:finish],
-        options[:archive],
-        options[:restore],
-        options[:delete],
-        options[:edit],
-        options[:started],
-        (options[:end] || options[:finished]),
-        options[:duration],
-        !options[:plugin].to_s.empty?
-      ].any?
-      unless actionable
-        # Interactive menu for actions
-        actions_menu = [
-          { key: :add_tag, label: 'Add Tag', param: 'Tag' },
-          { key: :remove_tag, label: 'Remove Tag', param: 'Tag' },
-          { key: :delete, label: 'Delete', param: nil },
-          { key: :finish, label: 'Finish (mark done)', param: nil },
-          { key: :edit, label: 'Edit', param: nil },
-          { key: :priority, label: 'Set Priority', param: 'Priority (1-5)' },
-          { key: :move, label: 'Move to Project', param: 'Project' },
-          { key: :restore, label: 'Restore', param: nil },
-          { key: :archive, label: 'Archive', param: nil },
-          { key: :note, label: 'Add Note', param: 'Note' }
-        ]
-        # Add plugin options directly to the actions menu if there are enabled plugins with metadata
-        begin
-          available_plugins = []
-          NA::Plugins.ensure_plugins_home
-          NA::Plugins.list_plugins.each_value do |path|
-            meta = NA::Plugins.parse_plugin_metadata(path)
-            # Only include plugins with both input and output metadata
-            next unless meta['input'] && meta['output']
-
-            disp = meta['name'] || File.basename(path, File.extname(path))
-            available_plugins << { label: disp, plugin_path: path }
-          end
-          available_plugins.each do |plugin|
-            actions_menu << {
-              key: :_plugin,
-              label: "Plugin: #{plugin[:label]}",
-              param: nil,
-              plugin_path: plugin[:plugin_path]
-            }
-          end
-        rescue StandardError
-          # ignore plugin discovery errors in menu
-        end
-        selector = nil
-        if TTY::Which.exist?('fzf')
-          selector = 'fzf --prompt="Select action> "'
-        elsif TTY::Which.exist?('gum')
-          selector = 'gum choose'
-        end
-        menu_labels = actions_menu.map { |a| a[:label] }
-        selected_action = nil
-        if selector
-          require 'open3'
-          input = menu_labels.join("\n")
-          output, = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{selector}")
-          selected_action = output.strip
-        else
-          puts 'Select an action:'
-          menu_labels.each_with_index { |label, i| puts "#{i + 1}. #{label}" }
-          idx = ($stdin.gets || '').strip.to_i - 1
-          selected_action = menu_labels[idx] if idx >= 0 && idx < menu_labels.size
-        end
-        action_obj = actions_menu.find { |a| a[:label] == selected_action }
-        NA.notify("#{NA.theme[:error]}No action selected, cancelled", exit_code: 1) if action_obj.nil?
-
-        if action_obj[:key] == :_plugin
-          # Plugin selected directly from the main actions menu
-          options[:plugin] = action_obj[:plugin_path]
-        else
-          # Prompt for parameter if needed
-          param_value = nil
-          # Only prompt for param if not :move (which has custom menu logic)
-          if action_obj[:param] && action_obj[:key] != :move
-            if TTY::Which.exist?('gum')
-              gum = TTY::Which.which('gum')
-              prompt = "Enter #{action_obj[:param]}: "
-              param_value = `#{gum} input --placeholder "#{prompt}"`.strip
-            else
-              print "Enter #{action_obj[:param]}: "
-              param_value = (STDIN.gets || '').strip
-            end
-          end
-          # Set options for update
-          case action_obj[:key]
-          when :add_tag
-            options[:tag] = [param_value]
-          when :remove_tag
-            options[:remove] = [param_value]
-          when :delete
-            options[:delete] = true
-          when :finish
-            options[:finish] = true
-            # Timed finish? Prompt user for optional start/date inputs
-            if NA.yn(NA::Color.template("#{NA.theme[:prompt]}Timed?"), default: false)
-              # Ask for start date expression
-              start_expr = nil
-              if TTY::Which.exist?('gum')
-                gum = TTY::Which.which('gum')
-                prompt = 'Enter start date/time (e.g. "30 minutes ago" or "3pm"):'
-                start_expr = `#{gum} input --placeholder "#{prompt}"`.strip
-              else
-                print 'Enter start date/time (e.g. "30 minutes ago" or "3pm"): '
-                start_expr = (STDIN.gets || '').strip
-              end
-              start_time = NA::Types.parse_date_begin(start_expr)
-              options[:started] = start_time if start_time
-            end
-          when :edit
-            # Just set the flag - multi-action editor will handle it below
-            options[:edit] = true
-          when :priority
-            options[:priority] = param_value
-          when :move
-            # Gather projects from the same file as the selected action
-            selected_file = targets_for_selection[selected_indices.first][:file]
-            todo = NA::Todo.new(file_path: selected_file)
-            project_names = todo.projects.map { |proj| proj.project }
-            project_menu = project_names + ['New project']
-            move_selector = nil
-            if TTY::Which.exist?('fzf')
-              move_selector = 'fzf --prompt="Select project> "'
-            elsif TTY::Which.exist?('gum')
-              move_selector = 'gum choose'
-            end
-            selected_project = nil
-            if move_selector
-              require 'open3'
-              input = project_menu.join("\n")
-              output, _ = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{move_selector}")
-              selected_project = output.strip
-            else
-              puts 'Select a project:'
-              project_menu.each_with_index { |label, i| puts "#{i+1}. #{label}" }
-              idx = (STDIN.gets || '').strip.to_i - 1
-              selected_project = project_menu[idx] if idx >= 0 && idx < project_menu.size
-            end
-            if selected_project == 'New project'
-              if TTY::Which.exist?('gum')
-                gum = TTY::Which.which('gum')
-                prompt = 'Enter new project name: '
-                new_proj_name = `#{gum} input --placeholder "#{prompt}"`.strip
-              else
-                print 'Enter new project name: '
-                new_proj_name = (STDIN.gets || '').strip
-              end
-              # Create the new project in the file
-              NA.insert_project(selected_file, new_proj_name)
-              options[:move] = new_proj_name
-            else
-              options[:move] = selected_project
-            end
-          when :restore
-            options[:restore] = true
-          when :archive
-            options[:archive] = true
-          when :note
-            options[:note] = true
-            note = [param_value]
-          end
-        end
-      end
-      did_direct_update = false
-
-      # Group selected actions by file for batch processing
-      actions_by_file = {}
-      selected_indices.each do |idx|
-        file = targets_for_selection[idx][:file]
-        actions_by_file[file] ||= []
-        actions_by_file[file] << targets_for_selection[idx][:action]
-      end
-
-      # If a plugin is specified, run it on all selected actions and apply results
-      if options[:plugin]
-        plugin_path = options[:plugin]
-        unless File.exist?(plugin_path)
-          # Resolve by name via registry
-          resolved = NA::Plugins.resolve_plugin(plugin_path)
-          plugin_path = resolved if resolved
-        end
-        meta = NA::Plugins.parse_plugin_metadata(plugin_path)
-        input_fmt = (options[:input] || meta['input'] || 'json').to_s
-        output_fmt = (options[:output] || meta['output'] || input_fmt).to_s
-        divider = (options[:divider] || '||')
-
-        all_actions = []
-        actions_by_file.each_value { |list| all_actions.concat(list) }
-        io_actions = all_actions.map(&:to_plugin_io_hash)
-        stdin_str = NA::Plugins.serialize_actions(io_actions, format: input_fmt, divider: divider)
-        stdout = NA::Plugins.run_plugin(plugin_path, stdin_str)
-        returned = NA::Plugins.parse_actions(stdout, format: output_fmt, divider: divider)
-        Array(returned).each { |h| NA.apply_plugin_result(h) }
-        did_direct_update = true
-        next
-      end
-
-      # Process each file's actions (non-plugin paths)
-      actions_by_file.each do |file, action_list|
-        # Rebuild all derived variables from options after menu-driven assignment
-        add_tags = options[:tag] ? options[:tag].join(',').split(/ *, */).map { |t| t.sub(/^@/, '') } : []
-        remove_tags = options[:remove] ? options[:remove].join(',').split(/ *, */).map { |t| t.sub(/^@/, '') } : []
-        remove_tags << 'done' if options[:restore]
-        priority = options[:priority].to_i if options[:priority]&.to_i&.positive?
-        target_proj = if options[:move]
-                        options[:move]
-                      elsif NA.respond_to?(:cwd_is) && NA.cwd_is == :project
-                        NA.cwd
-                      end
-        note_val = note
-        if options[:note] && defined?(param_value) && param_value
-          note_val = [param_value]
-        end
-
-        # Handle edit with multiple actions
-        if options[:edit]
-          # Open editor once with all actions for this file
-          editor_content = NA::Editor.format_multi_action_input(action_list)
-          edited_content = NA::Editor.fork_editor(editor_content)
-          edited_actions = NA::Editor.parse_multi_action_output(edited_content)
-
-          # If markers were removed but we have the same number of actions, match by position
-          if edited_actions.empty? && action_list.size > 0
-            # Parse content line by line, skipping comments and blanks
-            non_comment_lines = edited_content.lines.map(&:strip).reject { |l| l.empty? || l.start_with?('#') }
-
-            # Match each non-comment line to an action by position
-            action_list.each_with_index do |action_obj, idx|
-              if non_comment_lines[idx]
-                # Split into action and notes
-                lines = non_comment_lines[idx..-1]
-                action_text = lines[0]
-                note_lines = lines[1..-1] || []
-
-                # Store by file:line key
-                key = "#{action_obj.file_path}:#{action_obj.file_line}"
-                edited_actions[key] = [action_text, note_lines]
-              end
-            end
-          end
-
-          # Update each action with edited content
-          action_list.each do |action_obj|
-            key = "#{action_obj.file_path}:#{action_obj.file_line}"
-            if edited_actions[key]
-              action_obj.action, action_obj.note = edited_actions[key]
-            end
-          end
-        end
-
-        # Update each action (process from bottom to top to avoid line shifts)
-        action_list.sort_by(&:file_line).reverse.each do |action_obj|
-          NA.update_action(file, nil,
-            add: action_obj,
-            add_tag: add_tags,
-            all: true,
-            append: append,
-            delete: options[:delete],
-            done: options[:done],
-            edit: false,  # Already handled above
-            finish: options[:finish],
-            move: target_proj,
-            note: note_val,
-            overwrite: options[:overwrite],
-            priority: priority,
-            project: options[:project],
-            remove_tag: remove_tags,
-            replace: options[:replace],
+        files.each do |file|
+          safe_search = (tokens.is_a?(String) || tokens.is_a?(Array) || tokens.is_a?(Regexp)) ? tokens : nil
+          todo = NA::Todo.new({
+            search: safe_search,
             search_note: options[:search_notes],
-            tagged: nil)
+            require_na: false,
+            file_path: file,
+            project: options[:project],
+            tag: tags,
+            done: options[:done]
+          })
+          todo.actions.each do |action_obj|
+            # Format: filename:LINENUM:parent > action
+            # Include line number in display for unique matching
+            display = "#{File.basename(action_obj.file_path)}:#{action_obj.file_line}:#{action_obj.parent.join('>')} | #{action_obj.action}"
+            candidate_actions << display
+            targets_for_selection << { file: action_obj.file_path, line: action_obj.file_line, action: action_obj }
+          end
         end
-        did_direct_update = true
-      end
-      if did_direct_update
-        next
-      end
 
+        # Multi-select using fzf or gum if available
+        selected_indices = []
+        if candidate_actions.any?
+          selector = nil
+          if TTY::Which.exist?('fzf')
+            selector = 'fzf --multi --prompt="Select tasks> "'
+          elsif TTY::Which.exist?('gum')
+            selector = 'gum choose --no-limit'
+          end
+          if selector
+            require 'open3'
+            input = candidate_actions.join("\n")
+
+            # Use popen3 to properly handle stdin for fzf
+            Open3.popen3(selector) do |stdin, stdout, stderr, wait_thr|
+              stdin.write(input)
+              stdin.close
+
+              output = stdout.read
+
+              selected = output.split("\n").map(&:strip).reject(&:empty?)
+
+              # Track which candidates have been matched to avoid duplicates
+              selected_indices = []
+              candidate_actions.each_index do |i|
+                if selected.include?(candidate_actions[i])
+                  selected_indices << i unless selected_indices.include?(i)
+                end
+              end
+            end
+          else
+            # Fallback: select all or prompt for search string
+            selected_indices = (0...candidate_actions.size).to_a
+          end
+        end
+
+        # If no actions found, notify and exit
+        if selected_indices.empty?
+          NA.notify("#{NA.theme[:error]}No matching actions found for selection", exit_code: 1)
+        end
+
+        # Apply update to selected actions
+        actionable = [
+          options[:note],
+          (options[:priority].to_i if options[:priority]).to_i.positive?,
+          !options[:move].to_s.empty?,
+          !(options[:tag].nil? || options[:tag].empty?),
+          !(options[:remove].nil? || options[:remove].empty?),
+          !options[:replace].to_s.empty?,
+          options[:finish],
+          options[:archive],
+          options[:restore],
+          options[:delete],
+          options[:edit],
+          options[:started],
+          (options[:end] || options[:finished]),
+          options[:duration],
+          !options[:plugin].to_s.empty?
+        ].any?
+        unless actionable
+          # Interactive menu for actions
+          actions_menu = [
+            { key: :add_tag, label: 'Add Tag', param: 'Tag' },
+            { key: :remove_tag, label: 'Remove Tag', param: 'Tag' },
+            { key: :delete, label: 'Delete', param: nil },
+            { key: :finish, label: 'Finish (mark done)', param: nil },
+            { key: :edit, label: 'Edit', param: nil },
+            { key: :priority, label: 'Set Priority', param: 'Priority (1-5)' },
+            { key: :move, label: 'Move to Project', param: 'Project' },
+            { key: :restore, label: 'Restore', param: nil },
+            { key: :archive, label: 'Archive', param: nil },
+            { key: :note, label: 'Add Note', param: 'Note' }
+          ]
+          # Add plugin options directly to the actions menu if there are enabled plugins with metadata
+          begin
+            available_plugins = []
+            NA::Plugins.ensure_plugins_home
+            NA::Plugins.list_plugins.each_value do |path|
+              meta = NA::Plugins.parse_plugin_metadata(path)
+              # Only include plugins with both input and output metadata
+              next unless meta['input'] && meta['output']
+
+              disp = meta['name'] || File.basename(path, File.extname(path))
+              available_plugins << { label: disp, plugin_path: path }
+            end
+            available_plugins.each do |plugin|
+              actions_menu << {
+                key: :_plugin,
+                label: "Plugin: #{plugin[:label]}",
+                param: nil,
+                plugin_path: plugin[:plugin_path]
+              }
+            end
+          rescue StandardError
+            # ignore plugin discovery errors in menu
+          end
+          selector = nil
+          if TTY::Which.exist?('fzf')
+            selector = 'fzf --prompt="Select action> "'
+          elsif TTY::Which.exist?('gum')
+            selector = 'gum choose'
+          end
+          menu_labels = actions_menu.map { |a| a[:label] }
+          selected_action = nil
+          if selector
+            require 'open3'
+            input = menu_labels.join("\n")
+            output, = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{selector}")
+            selected_action = output.strip
+          else
+            puts 'Select an action:'
+            menu_labels.each_with_index { |label, i| puts "#{i + 1}. #{label}" }
+            idx = ($stdin.gets || '').strip.to_i - 1
+            selected_action = menu_labels[idx] if idx >= 0 && idx < menu_labels.size
+          end
+          action_obj = actions_menu.find { |a| a[:label] == selected_action }
+          NA.notify("#{NA.theme[:error]}No action selected, cancelled", exit_code: 1) if action_obj.nil?
+
+          if action_obj[:key] == :_plugin
+            # Plugin selected directly from the main actions menu
+            options[:plugin] = action_obj[:plugin_path]
+          else
+            # Prompt for parameter if needed
+            param_value = nil
+            # Only prompt for param if not :move (which has custom menu logic)
+            if action_obj[:param] && action_obj[:key] != :move
+              if TTY::Which.exist?('gum')
+                gum = TTY::Which.which('gum')
+                prompt = "Enter #{action_obj[:param]}: "
+                param_value = `#{gum} input --placeholder "#{prompt}"`.strip
+              else
+                print "Enter #{action_obj[:param]}: "
+                param_value = (STDIN.gets || '').strip
+              end
+            end
+            # Set options for update
+            case action_obj[:key]
+            when :add_tag
+              options[:tag] = [param_value]
+            when :remove_tag
+              options[:remove] = [param_value]
+            when :delete
+              options[:delete] = true
+            when :finish
+              options[:finish] = true
+              # Timed finish? Prompt user for optional start/date inputs
+              if NA.yn(NA::Color.template("#{NA.theme[:prompt]}Timed?"), default: false)
+                # Ask for start date expression
+                start_expr = nil
+                if TTY::Which.exist?('gum')
+                  gum = TTY::Which.which('gum')
+                  prompt = 'Enter start date/time (e.g. "30 minutes ago" or "3pm"):'
+                  start_expr = `#{gum} input --placeholder "#{prompt}"`.strip
+                else
+                  print 'Enter start date/time (e.g. "30 minutes ago" or "3pm"): '
+                  start_expr = (STDIN.gets || '').strip
+                end
+                start_time = NA::Types.parse_date_begin(start_expr)
+                options[:started] = start_time if start_time
+              end
+            when :edit
+              # Just set the flag - multi-action editor will handle it below
+              options[:edit] = true
+            when :priority
+              options[:priority] = param_value
+            when :move
+              # Gather projects from the same file as the selected action
+              selected_file = targets_for_selection[selected_indices.first][:file]
+              todo = NA::Todo.new(file_path: selected_file)
+              project_names = todo.projects.map { |proj| proj.project }
+              project_menu = project_names + ['New project']
+              move_selector = nil
+              if TTY::Which.exist?('fzf')
+                move_selector = 'fzf --prompt="Select project> "'
+              elsif TTY::Which.exist?('gum')
+                move_selector = 'gum choose'
+              end
+              selected_project = nil
+              if move_selector
+                require 'open3'
+                input = project_menu.join("\n")
+                output, _ = Open3.capture2("echo \"#{input.gsub('"', '\"')}\" | #{move_selector}")
+                selected_project = output.strip
+              else
+                puts 'Select a project:'
+                project_menu.each_with_index { |label, i| puts "#{i+1}. #{label}" }
+                idx = (STDIN.gets || '').strip.to_i - 1
+                selected_project = project_menu[idx] if idx >= 0 && idx < project_menu.size
+              end
+              if selected_project == 'New project'
+                if TTY::Which.exist?('gum')
+                  gum = TTY::Which.which('gum')
+                  prompt = 'Enter new project name: '
+                  new_proj_name = `#{gum} input --placeholder "#{prompt}"`.strip
+                else
+                  print 'Enter new project name: '
+                  new_proj_name = (STDIN.gets || '').strip
+                end
+                # Create the new project in the file
+                NA.insert_project(selected_file, new_proj_name)
+                options[:move] = new_proj_name
+              else
+                options[:move] = selected_project
+              end
+            when :restore
+              options[:restore] = true
+            when :archive
+              options[:archive] = true
+            when :note
+              options[:note] = true
+              note = [param_value]
+            end
+          end
+        end
+        did_direct_update = false
+
+        # Group selected actions by file for batch processing
+        actions_by_file = {}
+        selected_indices.each do |idx|
+          file = targets_for_selection[idx][:file]
+          actions_by_file[file] ||= []
+          actions_by_file[file] << targets_for_selection[idx][:action]
+        end
+
+        # If a plugin is specified, run it on all selected actions and apply results
+        if options[:plugin]
+          plugin_path = options[:plugin]
+          unless File.exist?(plugin_path)
+            # Resolve by name via registry
+            resolved = NA::Plugins.resolve_plugin(plugin_path)
+            plugin_path = resolved if resolved
+          end
+          meta = NA::Plugins.parse_plugin_metadata(plugin_path)
+          input_fmt = (options[:input] || meta['input'] || 'json').to_s
+          output_fmt = (options[:output] || meta['output'] || input_fmt).to_s
+          divider = (options[:divider] || '||')
+
+          all_actions = []
+          actions_by_file.each_value { |list| all_actions.concat(list) }
+          io_actions = all_actions.map(&:to_plugin_io_hash)
+          stdin_str = NA::Plugins.serialize_actions(io_actions, format: input_fmt, divider: divider)
+          stdout = NA::Plugins.run_plugin(plugin_path, stdin_str)
+          returned = NA::Plugins.parse_actions(stdout, format: output_fmt, divider: divider)
+          Array(returned).each { |h| NA.apply_plugin_result(h) }
+          did_direct_update = true
+          next
+        end
+
+        # Process each file's actions (non-plugin paths)
+        actions_by_file.each do |file, action_list|
+          # Rebuild all derived variables from options after menu-driven assignment
+          add_tags = options[:tag] ? options[:tag].join(',').split(/ *, */).map { |t| t.sub(/^@/, '') } : []
+          remove_tags = options[:remove] ? options[:remove].join(',').split(/ *, */).map { |t| t.sub(/^@/, '') } : []
+          remove_tags << 'done' if options[:restore]
+          priority = options[:priority].to_i if options[:priority]&.to_i&.positive?
+          target_proj = if options[:move]
+                          options[:move]
+                        elsif NA.respond_to?(:cwd_is) && NA.cwd_is == :project
+                          NA.cwd
+                        end
+          note_val = note
+          if options[:note] && defined?(param_value) && param_value
+            note_val = [param_value]
+          end
+
+          # Handle edit with multiple actions
+          if options[:edit]
+            # Open editor once with all actions for this file
+            editor_content = NA::Editor.format_multi_action_input(action_list)
+            edited_content = NA::Editor.fork_editor(editor_content)
+            edited_actions = NA::Editor.parse_multi_action_output(edited_content)
+
+            # If markers were removed but we have the same number of actions, match by position
+            if edited_actions.empty? && action_list.size > 0
+              # Parse content line by line, skipping comments and blanks
+              non_comment_lines = edited_content.lines.map(&:strip).reject { |l| l.empty? || l.start_with?('#') }
+
+              # Match each non-comment line to an action by position
+              action_list.each_with_index do |action_obj, idx|
+                if non_comment_lines[idx]
+                  # Split into action and notes
+                  lines = non_comment_lines[idx..-1]
+                  action_text = lines[0]
+                  note_lines = lines[1..-1] || []
+
+                  # Store by file:line key
+                  key = "#{action_obj.file_path}:#{action_obj.file_line}"
+                  edited_actions[key] = [action_text, note_lines]
+                end
+              end
+            end
+
+            # Update each action with edited content
+            action_list.each do |action_obj|
+              key = "#{action_obj.file_path}:#{action_obj.file_line}"
+              if edited_actions[key]
+                action_obj.action, action_obj.note = edited_actions[key]
+              end
+            end
+          end
+
+          # Update each action (process from bottom to top to avoid line shifts)
+          action_list.sort_by(&:file_line).reverse.each do |action_obj|
+            NA.update_action(file, nil,
+              add: action_obj,
+              add_tag: add_tags,
+              all: true,
+              append: append,
+              delete: options[:delete],
+              done: options[:done],
+              edit: false,  # Already handled above
+              finish: options[:finish],
+              move: target_proj,
+              note: note_val,
+              overwrite: options[:overwrite],
+              priority: priority,
+              project: options[:project],
+              remove_tag: remove_tags,
+              replace: options[:replace],
+              search_note: options[:search_notes],
+              tagged: nil)
+          end
+          did_direct_update = true
+        end
+        if did_direct_update
+          next
+        end
+
+      end
       all_req = options[:tagged].join(' ') !~ /[+!-]/ && !options[:or]
       tags = []
       options[:tagged].join(',').split(/ *, */).each do |arg|
@@ -709,7 +716,7 @@ class App
         options[:move] = 'Archive'
       end
 
-      NA.notify("#{NA.theme[:error]}No search terms provided", exit_code: 1) if tokens.nil? && options[:tagged].empty?
+      NA.notify("#{NA.theme[:error]}No search terms provided", exit_code: 1) if tokens.nil? && options[:tagged].empty? && !options[:target_line]
 
       # Handle target_line if provided (from PATH:LINE format)
       search_tokens = if options[:target_line]

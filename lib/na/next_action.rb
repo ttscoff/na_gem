@@ -264,7 +264,9 @@ module NA
     # @param target_line [Integer] Specific line number to target
     # @return [Array] Projects and actions
     def find_actions(target, search, tagged = nil, all: false, done: false, project: nil, search_note: true, target_line: nil)
-      todo = NA::Todo.new({ search: search,
+      # PATH:LINE passes search as { target_line: n }; Todo expects string/array/regexp for :search.
+      search_for_todo = target_line ? nil : search
+      todo = NA::Todo.new({ search: search_for_todo,
                             search_note: search_note,
                             require_na: false,
                             file_path: target,
@@ -278,9 +280,9 @@ module NA
         return [todo.projects, NA::Actions.new]
       end
 
-      return [todo.projects, todo.actions] if todo.actions.one? || all
-
-      # If target_line is specified, find the action at that specific line
+      # If target_line is specified, find the action at that specific line (must run before
+      # the `all` shortcut below, otherwise --all would return every action and skip this filter).
+      # target_line is Action#line (0-based file line index). PATH:LINE on the CLI converts to 0-based in update.rb.
       if target_line
         matching_action = todo.actions.find { |a| a.line == target_line }
         return [todo.projects, NA::Actions.new([matching_action])] if matching_action
@@ -289,6 +291,8 @@ module NA
         return [todo.projects, NA::Actions.new]
 
       end
+
+      return [todo.projects, todo.actions] if todo.actions.one? || all
 
       options = todo.actions.map { |action| "#{action.file} : #{action.action}" }
       res = choose_from(options, prompt: 'Make a selection: ', multiple: true, sorted: true)
