@@ -1,3 +1,26 @@
+### 1.2.103
+
+2026-05-04 04:11
+
+#### CHANGED
+
+- Allow next --available with filters to match actions without the default @na tag.
+- Bump the gem version to 1.2.101.
+- Bump the gem version to 1.2.102.
+- Bump the locked gem version to 1.2.103.
+
+#### NEW
+
+- Add next --available/-a to show the first available action per project.
+
+#### FIXED
+
+- Match unique nested projects by leaf name in add/update
+- Make --color force colored output even when stdout is not a TTY.
+- Make -f FILE --color force colored output when stdout is not a TTY.
+- Make update PATH:LINE use 1-based editor line numbers and update only the requested action.
+- Let update PATH:LINE run without search terms and skip fzf/gum selection prompts.
+
 ### 1.2.102
 
 2026-04-27 04:36
